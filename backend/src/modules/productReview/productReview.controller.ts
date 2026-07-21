@@ -190,3 +190,122 @@ export const replyToReview = async (
     next(error);
   }
 };
+
+export const getReviews = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const isApproved = req.query.isApproved as string | undefined;
+
+    const where: any = {};
+    if (isApproved !== undefined) {
+      where.isApproved = isApproved === "true";
+    }
+
+    const reviews = await prisma.review.findMany({
+      where,
+      include: {
+        customer: {
+          select: {
+            email: true,
+            profile: { select: { fullName: true } },
+          },
+        },
+        product: { select: { id: true, name: true, thumbnail: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        reviews,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const patchReview = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+    const { isApproved } = req.body;
+
+    const review = await prisma.review.findUnique({ where: { id } });
+    if (!review) {
+      throw new NotFoundError("Review not found");
+    }
+
+    const updated = await prisma.review.update({
+      where: { id },
+      data: { isApproved: !!isApproved },
+    });
+
+    res.status(200).json({
+      status: "success",
+      message: isApproved ? "Review approved" : "Review marked as unapproved",
+      data: { review: updated },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteReview = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+    const review = await prisma.review.findUnique({ where: { id } });
+    if (!review) {
+      throw new NotFoundError("Review not found");
+    }
+
+    if (req.user!.role === Role.CUSTOMER && review.customerId !== req.user!.id) {
+      throw new ForbiddenError("You cannot delete this review");
+    }
+
+    await prisma.review.delete({ where: { id } });
+    res.status(200).json({
+      status: "success",
+      message: "Review deleted successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getMyReviews = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const userId = req.user!.id;
+    const reviews = await prisma.review.findMany({
+      where: { customerId: userId },
+      include: {
+        product: { select: { id: true, name: true, thumbnail: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        reviews,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};

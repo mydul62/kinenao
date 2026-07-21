@@ -94,3 +94,42 @@ export const getMe = async (req: Request, res: Response, next: NextFunction): Pr
     next(error);
   }
 };
+
+export const changePassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      throw new UnauthorizedError("Not authenticated");
+    }
+    const result = await authService.changeUserPassword(req.user.id, req.body);
+    res.status(200).json({
+      status: "success",
+      message: result.message,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateProfile = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      throw new UnauthorizedError("Not authenticated");
+    }
+    const profile = await authService.updateUserProfile(req.user.id, req.body);
+    res.status(200).json({
+      status: "success",
+      message: "Profile updated successfully",
+      data: { profile },
+    });
+  } catch (error) {
+    next(error);
+  }
+};

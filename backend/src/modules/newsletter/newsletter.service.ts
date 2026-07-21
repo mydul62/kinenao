@@ -20,3 +20,9 @@ export const getSubscribers = async () => {
     orderBy: { createdAt: "desc" },
   });
 };
+
+export const unsubscribeEmail = async (id: string) => {
+  return prisma.newsletterSubscriber.delete({
+    where: { id },
+  });
+};

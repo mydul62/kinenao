@@ -10,9 +10,17 @@ export const validate = (schema: ZodSchema) => {
         params: req.params,
       })) as any;
       // Replace properties with parsed/validated versions
-      req.body = parsed.body || req.body;
-      req.query = parsed.query || req.query;
-      req.params = parsed.params || req.params;
+      if (parsed.body) {
+        req.body = parsed.body;
+      }
+      if (parsed.query) {
+        Object.keys(req.query).forEach((key) => delete req.query[key]);
+        Object.assign(req.query, parsed.query);
+      }
+      if (parsed.params) {
+        Object.keys(req.params).forEach((key) => delete req.params[key]);
+        Object.assign(req.params, parsed.params);
+      }
       next();
     } catch (error) {
       if (error instanceof ZodError) {

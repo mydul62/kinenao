@@ -1,14 +1,27 @@
 import { Router } from "express";
-import { getContentByKey, updateContentByKey } from "./websiteSetting.controller";
+import {
+  getContentByKey,
+  updateContentByKey,
+  getAllSettings,
+  createOrUpdateSetting,
+} from "./websiteSetting.controller";
 import { authMiddleware, roleMiddleware } from "../../app/middlewares/auth";
 import { Role } from "@prisma/client";
 
 const router = Router();
 
-// Publicly read content (e.g. settings, banners, faqs, testimonials)
+// Retrieve all settings or single key (publicly readable)
+router.get("/", getAllSettings);
 router.get("/:key", getContentByKey);
 
-// Admin/Manager only to write/update
+// Save setting via POST or PUT (restricted to Admin/Manager)
+router.post(
+  "/",
+  authMiddleware,
+  roleMiddleware([Role.ADMIN, Role.MANAGER]),
+  createOrUpdateSetting
+);
+
 router.put(
   "/:key",
   authMiddleware,
