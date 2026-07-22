@@ -37,3 +37,20 @@ export const listSubscribers = async (
     next(error);
   }
 };
+
+export const deleteSubscriber = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+    await newsletterService.unsubscribeEmail(id);
+    res.status(200).json({
+      status: "success",
+      message: "Subscriber removed successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};

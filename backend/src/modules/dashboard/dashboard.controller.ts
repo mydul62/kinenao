@@ -191,3 +191,68 @@ export const getChartData = async (
     next(error);
   }
 };
+
+export const getCustomers = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { page = "1", limit = "20", search } = req.query;
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const where: any = { role: Role.CUSTOMER };
+
+    if (search) {
+      where.OR = [
+        { email: { contains: String(search), mode: "insensitive" } },
+        {
+          profile: {
+            fullName: { contains: String(search), mode: "insensitive" },
+          },
+        },
+      ];
+    }
+
+    const [customers, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          createdAt: true,
+          profile: {
+            select: {
+              fullName: true,
+              phoneNumber: true,
+              avatarUrl: true,
+            },
+          },
+          _count: {
+            select: { orders: true },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: Number(limit),
+      }),
+      prisma.user.count({ where }),
+    ]);
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        customers,
+        pagination: {
+          total,
+          page: Number(page),
+          limit: Number(limit),
+          totalPages: Math.ceil(total / Number(limit)),
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};

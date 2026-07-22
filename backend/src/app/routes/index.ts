@@ -15,6 +15,11 @@ import wishlistRoutes from "../../modules/wishlist/wishlist.routes";
 import dashboardRoutes from "../../modules/dashboard/dashboard.routes";
 import newsletterRoutes from "../../modules/newsletter/newsletter.routes";
 import websiteSettingRoutes from "../../modules/websiteSetting/websiteSetting.routes";
+import bannerRoutes from "../../modules/banner/banner.routes";
+import faqRoutes from "../../modules/faq/faq.routes";
+import testimonialRoutes from "../../modules/testimonial/testimonial.routes";
+import inventoryRoutes from "../../modules/inventory/inventory.routes";
+import notificationRoutes from "../../modules/notification/notification.routes";
 
 const router = Router();
 
@@ -35,6 +40,11 @@ const moduleRoutes = [
   { path: "/dashboard", route: dashboardRoutes },
   { path: "/newsletter", route: newsletterRoutes },
   { path: "/settings", route: websiteSettingRoutes },
+  { path: "/banners", route: bannerRoutes },
+  { path: "/faqs", route: faqRoutes },
+  { path: "/testimonials", route: testimonialRoutes },
+  { path: "/inventory", route: inventoryRoutes },
+  { path: "/notifications", route: notificationRoutes },
 ];
 
 moduleRoutes.forEach((routeInfo) => {

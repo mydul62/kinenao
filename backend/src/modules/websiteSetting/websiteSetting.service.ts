@@ -15,3 +15,12 @@ export const updateSectionContent = async (sectionKey: string, value: any) => {
     create: { sectionKey, value },
   });
 };
+
+export const getAllSettings = async () => {
+  const contents = await prisma.homepageContent.findMany();
+  const settings: Record<string, any> = {};
+  contents.forEach((item) => {
+    settings[item.sectionKey] = item.value;
+  });
+  return settings;
+};

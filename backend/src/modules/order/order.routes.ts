@@ -41,4 +41,11 @@ router.put(
   updateOrderStatus
 );
 
+router.patch(
+  "/:id/status",
+  roleMiddleware([Role.ADMIN, Role.MANAGER]),
+  validate(updateStatusSchema),
+  updateOrderStatus
+);
+
 export default router;

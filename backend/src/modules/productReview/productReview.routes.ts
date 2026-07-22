@@ -5,6 +5,10 @@ import {
   approveReview,
   voteHelpful,
   replyToReview,
+  getReviews,
+  patchReview,
+  deleteReview,
+  getMyReviews,
 } from "./productReview.controller";
 import { authMiddleware, roleMiddleware } from "../../app/middlewares/auth";
 import { validate } from "../../app/middlewares/validate";
@@ -13,11 +17,29 @@ import { Role } from "@prisma/client";
 
 const router = Router();
 
+// Public / Customer routes
 router.post(
   "/",
   authMiddleware,
   validate(createReviewSchema),
   createReview
+);
+
+router.get(
+  "/",
+  getReviews
+);
+
+router.get(
+  "/my",
+  authMiddleware,
+  getMyReviews
+);
+
+router.delete(
+  "/:id",
+  authMiddleware,
+  deleteReview
 );
 
 router.post(
@@ -26,6 +48,7 @@ router.post(
   voteHelpful
 );
 
+// Admin / Moderation routes
 router.get(
   "/pending",
   authMiddleware,
@@ -38,6 +61,13 @@ router.post(
   authMiddleware,
   roleMiddleware([Role.ADMIN, Role.MANAGER]),
   approveReview
+);
+
+router.patch(
+  "/:id",
+  authMiddleware,
+  roleMiddleware([Role.ADMIN, Role.MANAGER]),
+  patchReview
 );
 
 router.post(

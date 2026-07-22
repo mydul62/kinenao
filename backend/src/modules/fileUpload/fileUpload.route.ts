@@ -5,7 +5,34 @@ import { authMiddleware } from "../../app/middlewares/auth";
 
 const router = Router();
 
-// Endpoint for single/multiple image uploads to Cloudinary
+// Endpoint for single image upload matching the frontend (POST /api/upload/image with field name "file")
+router.post(
+  "/image",
+  authMiddleware,
+  upload.single("file"),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const file = req.file;
+      const folder = req.body.folder || "cosmetics";
+
+      if (!file) {
+        throw new BadRequestError("No file uploaded with field name 'file'");
+      }
+
+      const secureUrl = await uploadToCloudinary(file.buffer, folder);
+      res.status(200).json({
+        status: "success",
+        data: {
+          url: secureUrl,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Fallback for fields: image (single) or images (multiple)
 router.post(
   "/",
   authMiddleware,
@@ -16,13 +43,12 @@ router.post(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
-      const folder = req.body.folder || "grocery";
+      const folder = req.body.folder || "cosmetics";
 
       if (!files || (Object.keys(files).length === 0)) {
         throw new BadRequestError("No files uploaded");
       }
 
-      // Handle single image upload
       if (files["image"] && files["image"][0]) {
         const file = files["image"][0];
         const secureUrl = await uploadToCloudinary(file.buffer, folder);
@@ -35,7 +61,6 @@ router.post(
         return;
       }
 
-      // Handle multiple images upload
       if (files["images"] && files["images"].length > 0) {
         const uploadPromises = files["images"].map((file) =>
           uploadToCloudinary(file.buffer, folder)
