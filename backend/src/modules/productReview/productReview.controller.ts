@@ -309,3 +309,37 @@ export const getMyReviews = async (
     next(error);
   }
 };
+
+export const getProductReviewsByProductId = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { productId } = req.params as any;
+    const reviews = await prisma.review.findMany({
+      where: { productId, isApproved: true },
+      include: {
+        customer: {
+          select: {
+            id: true,
+            profile: {
+              select: { fullName: true, avatarUrl: true },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        reviews,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

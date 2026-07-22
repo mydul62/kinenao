@@ -32,6 +32,14 @@ router.put(
   updateBrand
 );
 
+router.patch(
+  "/:id",
+  authMiddleware,
+  roleMiddleware([Role.ADMIN, Role.MANAGER]),
+  validate(updateBrandSchema),
+  updateBrand
+);
+
 router.delete(
   "/:id",
   authMiddleware,

@@ -35,7 +35,14 @@ export const dbCreateCategory = async (input: ICategoryCreateInput) => {
 };
 
 export const dbGetCategories = async (type?: string) => {
-  const categories = await prisma.category.findMany();
+  const categories = await prisma.category.findMany({
+    include: {
+      parentCategory: {
+        select: { id: true, name: true, slug: true },
+      },
+    },
+    orderBy: { name: "asc" },
+  });
 
   if (type === "tree") {
     const buildTree = (parentId: string | null = null): any[] => {

@@ -32,6 +32,14 @@ router.put(
   updateCategory
 );
 
+router.patch(
+  "/:id",
+  authMiddleware,
+  roleMiddleware([Role.ADMIN, Role.MANAGER]),
+  validate(updateCategorySchema),
+  updateCategory
+);
+
 router.delete(
   "/:id",
   authMiddleware,
