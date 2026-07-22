@@ -59,7 +59,7 @@ export default function Home() {
         // 2. Fetch products and distribute
         const prodRes = await api.get("/products?limit=50");
         const allProds = prodRes.data.data.products || [];
-        
+
         if (allProds.length > 0) {
           setFeaturedProducts(allProds.filter((p: any) => p.isFeatured).slice(0, 8));
           setBestSellers(allProds.filter((p: any) => p.isBestSeller).slice(0, 8));

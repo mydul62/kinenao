@@ -9,6 +9,7 @@ import {
   patchReview,
   deleteReview,
   getMyReviews,
+  getProductReviewsByProductId,
 } from "./productReview.controller";
 import { authMiddleware, roleMiddleware } from "../../app/middlewares/auth";
 import { validate } from "../../app/middlewares/validate";
@@ -18,6 +19,11 @@ import { Role } from "@prisma/client";
 const router = Router();
 
 // Public / Customer routes
+router.get(
+  "/product/:productId",
+  getProductReviewsByProductId
+);
+
 router.post(
   "/",
   authMiddleware,

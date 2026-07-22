@@ -64,9 +64,9 @@ export default function AdminCategoriesPage() {
     if (!form.name.trim()) return;
     setSubmitting(true);
     try {
-      const payload = { ...form, parentId: form.parentId || undefined };
+      const payload = { ...form, parentId: form.parentId ? form.parentId : null };
       if (editTarget) {
-        await api.patch(`/categories/${editTarget.id}`, payload);
+        await api.put(`/categories/${editTarget.id}`, payload);
         toast.success("Category updated");
       } else {
         await api.post("/categories", payload);

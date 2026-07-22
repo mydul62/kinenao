@@ -187,9 +187,9 @@ export default function AdminProductsPage() {
                     </td>
                     <td className="p-4">
                       <div className="flex items-center gap-2">
-                        <a href={`/admin/products/${product.id}/edit`} className="p-1.5 rounded bg-slate-700 hover:bg-blue-500/10 text-slate-400 hover:text-blue-400 transition-colors">
+                        <Link href={`/admin/products/${product.id}/edit`} className="p-1.5 rounded bg-slate-700 hover:bg-blue-500/10 text-slate-400 hover:text-blue-400 transition-colors">
                           <Edit className="h-3.5 w-3.5" />
-                        </a>
+                        </Link>
                         <button onClick={() => setDeleteTarget(product)} className="p-1.5 rounded bg-slate-700 hover:bg-red-500/10 text-slate-400 hover:text-red-400 transition-colors">
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
