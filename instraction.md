@@ -37,6 +37,14 @@ grocery_server/
 │   │   ├── category/
 │   │   ├── brand/
 │   │   ├── product/
+│
+├── product.constant.ts
+├── product.interface.ts
+├── product.validation.ts
+├── product.service.ts
+├── product.controller.ts
+├── product.routes.ts
+
 │   │   ├── inventory/
 │   │   ├── productReview/
 │   │   ├── wishlist/

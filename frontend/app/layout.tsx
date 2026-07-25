@@ -23,8 +23,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={cn("font-sans", outfit.variable)}>
-      <body className="antialiased font-sans bg-background text-foreground min-h-screen">
+    <html lang="en" className={cn("font-sans", outfit.variable)} suppressHydrationWarning>
+      <body className="antialiased font-sans bg-background text-foreground min-h-screen" suppressHydrationWarning>
         <ScrollToTop />
         <AuthProvider>
           <CartProvider>

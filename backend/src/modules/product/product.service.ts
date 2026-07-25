@@ -40,6 +40,8 @@ export const dbCreateProduct = async (input: IProductCreateInput) => {
     isFeatured,
     isBestSeller,
     isFlashSale,
+    customBadge,
+    promotionalBadges,
     seoTitle,
     seoDescription,
     isActive,
@@ -70,31 +72,34 @@ export const dbCreateProduct = async (input: IProductCreateInput) => {
     }
   }
 
-  return prisma.product.create({
-    data: {
-      name,
-      slug,
-      sku,
-      barcode: barcode || null,
-      description,
-      categoryId,
-      brandId: brandId || null,
-      price,
-      discountPrice: discountPrice || null,
-      weight: weight || null,
-      unit: unit || null,
-      stockQty: stockQty !== undefined ? stockQty : 0,
-      tags: tags || null,
-      isFeatured: isFeatured !== undefined ? isFeatured : false,
-      isBestSeller: isBestSeller !== undefined ? isBestSeller : false,
-      isFlashSale: isFlashSale !== undefined ? isFlashSale : false,
-      seoTitle: seoTitle || null,
-      seoDescription: seoDescription || null,
-      isActive: isActive !== undefined ? isActive : true,
-      images: images || [],
-      thumbnail: thumbnail || null,
-    },
-  });
+  const data: any = {
+    name,
+    slug,
+    sku,
+    barcode: barcode || null,
+    description,
+    categoryId,
+    brandId: brandId || null,
+    price,
+    discountPrice: discountPrice || null,
+    weight: weight || null,
+    unit: unit || null,
+    stockQty: stockQty !== undefined ? stockQty : 0,
+    tags: tags || null,
+    isFeatured: isFeatured !== undefined ? isFeatured : false,
+    isBestSeller: isBestSeller !== undefined ? isBestSeller : false,
+    isFlashSale: isFlashSale !== undefined ? isFlashSale : false,
+    seoTitle: seoTitle || null,
+    seoDescription: seoDescription || null,
+    isActive: isActive !== undefined ? isActive : true,
+    images: images || [],
+    thumbnail: thumbnail || null,
+  };
+
+  if (customBadge !== undefined) data.customBadge = customBadge || null;
+  if (promotionalBadges !== undefined) data.promotionalBadges = promotionalBadges || [];
+
+  return prisma.product.create({ data });
 };
 
 export const dbGetProducts = async (query: IProductQuery) => {
@@ -271,8 +276,8 @@ export const dbGetAdminProducts = async (query: { search?: string; categoryId?: 
 };
 
 export const dbGetProductById = async (id: string) => {
-  const product = await prisma.product.findUnique({
-    where: { id },
+  let product = await prisma.product.findFirst({
+    where: { OR: [{ id }, { slug: id }, { sku: id }] },
     include: {
       category: true,
       brand: true,
@@ -294,7 +299,7 @@ export const dbGetProductById = async (id: string) => {
   });
 
   if (!product) {
-    throw new NotFoundError("Product not found");
+    throw new NotFoundError(`Product record "${id}" not found`);
   }
 
   return product;
@@ -412,6 +417,8 @@ export const dbUpdateProduct = async (id: string, input: IProductUpdateInput) =>
   if (isFeatured !== undefined) data.isFeatured = isFeatured;
   if (isBestSeller !== undefined) data.isBestSeller = isBestSeller;
   if (isFlashSale !== undefined) data.isFlashSale = isFlashSale;
+  if (input.customBadge !== undefined) data.customBadge = input.customBadge;
+  if (input.promotionalBadges !== undefined) data.promotionalBadges = input.promotionalBadges;
   if (seoTitle !== undefined) data.seoTitle = seoTitle;
   if (seoDescription !== undefined) data.seoDescription = seoDescription;
   if (isActive !== undefined) data.isActive = isActive;

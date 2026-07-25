@@ -1,81 +1,111 @@
-import React from "react";
+"use client";
+
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ProductGallery from "@/components/ProductGallery";
-import AddToCartButton from "@/components/AddToCartButton";
+import RichTextContent from "@/components/RichTextContent";
+import ProductCard from "@/components/ProductCard";
+import StickyBottomBar from "@/components/StickyBottomBar";
+import { useCart } from "@/context/CartContext";
 import { api } from "@/lib/api";
-import { Star, ArrowLeft, Shield, RotateCcw, Truck, MessageSquare } from "lucide-react";
+import { toast } from "sonner";
+import {
+  ArrowLeft,
+  Truck,
+  RotateCcw,
+  PackageCheck,
+  ShoppingBag,
+  Plus,
+  Minus,
+  ChevronDown,
+  ChevronUp,
+  MessageCircle,
+  PhoneCall,
+  Loader2,
+  FileText,
+  HelpCircle,
+} from "lucide-react";
 import { mockProducts } from "@/lib/mockData";
 
-interface ProductPageProps {
-  params: Promise<{ id: string }>;
-}
+export default function ProductDetailPage() {
+  const params = useParams();
+  const router = useRouter();
+  const slug = params?.id as string;
 
-export default async function ProductPage({ params }: ProductPageProps) {
-  const { id: slug } = await params;
+  const { addToCart } = useCart();
 
-  let product: any = null;
-  let relatedProducts: any[] = [];
-  let reviews: any[] = [];
+  const [product, setProduct] = useState<any>(null);
+  const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  try {
-    // 1. Fetch active product by slug from API
-    const prodRes = await api.get(`/products/slug/${slug}`);
-    product = prodRes.data.data.product;
+  // Interactive quantity state
+  const [quantity, setQuantity] = useState(1);
+  const [adding, setAdding] = useState(false);
+  const [orderingNow, setOrderingNow] = useState(false);
 
-    if (product) {
-      // 2. Fetch related items
-      const relRes = await api.get(`/products?categoryId=${product.categoryId}&limit=4`);
-      relatedProducts = (relRes.data.data.products || []).filter((p: any) => p.id !== product.id);
+  // Accordion open/close toggles
+  const [descOpen, setDescOpen] = useState(true);
+  const [faqOpen, setFaqOpen] = useState(true);
 
-      // 3. Fetch reviews
-      const revRes = await api.get(`/reviews/product/${product.id}`);
-      reviews = revRes.data.data.reviews || [];
-    }
-  } catch (error) {
-    console.error("Error loading product details from backend, falling back to mock:", error);
-  }
+  useEffect(() => {
+    if (!slug) return;
 
-  // Fallback lookup from mockData
-  if (!product) {
-    const foundMock = mockProducts.find(p => p.slug === slug || p.id === slug);
-    if (foundMock) {
-      product = foundMock;
-      // Get related from mock
-      relatedProducts = mockProducts.filter(p => p.categoryId === product.categoryId && p.id !== product.id).slice(0, 3);
-      // Generate some dummy reviews for the mock item
-      reviews = [
-        {
-          id: "rev-1",
-          rating: 5,
-          comment: "Absolutely authentic and high-quality! The formula is perfect, exactly like bought from store.",
-          createdAt: new Date().toISOString(),
-          user: { profile: { fullName: "Sadia Islam" } }
-        },
-        {
-          id: "rev-2",
-          rating: 4,
-          comment: "Very elegant packaging and pigmentation is amazing. Highly recommended beauty product.",
-          createdAt: new Date().toISOString(),
-          user: { profile: { fullName: "Nusrat Jahan" } }
+    const fetchProductDetails = async () => {
+      setLoading(true);
+      try {
+        const prodRes = await api.get(`/products/slug/${slug}`);
+        const found = prodRes.data.data.product;
+
+        if (found) {
+          setProduct(found);
+
+          const relRes = await api.get(`/products?limit=10`);
+          const items = (relRes.data.data.products || []).filter((p: any) => p.id !== found.id);
+          setRelatedProducts(items.length > 0 ? items : mockProducts.filter((p) => p.id !== found.id));
         }
-      ];
-    }
+      } catch (err) {
+        console.error("Error fetching product details from API, using fallback:", err);
+        const fallback = mockProducts.find((p) => p.slug === slug || p.id === slug);
+        if (fallback) {
+          setProduct(fallback);
+          setRelatedProducts(mockProducts.filter((p) => p.id !== fallback.id));
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProductDetails();
+  }, [slug]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-[#fafafa]">
+        <Header />
+        <main className="flex-1 flex flex-col items-center justify-center py-24 space-y-3">
+          <Loader2 className="h-8 w-8 animate-spin text-[#009669]" />
+          <p className="text-xs text-slate-500 font-semibold">পণ্য লোড হচ্ছে...</p>
+        </main>
+        <Footer />
+      </div>
+    );
   }
 
   if (!product) {
     return (
-      <div className="flex flex-col min-h-screen bg-rose-50/20">
+      <div className="flex flex-col min-h-screen bg-[#fafafa]">
         <Header />
         <main className="flex-1 container mx-auto px-4 py-24 text-center space-y-4">
-          <h2 className="text-2xl font-black text-primary uppercase tracking-wider">Product Not Found</h2>
-          <p className="text-sm text-slate-500 max-w-sm mx-auto">
-            The requested beauty product "{slug}" could not be located in our catalog index.
+          <h2 className="text-2xl font-black text-slate-900 uppercase">Product Not Found</h2>
+          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+            The requested product "{slug}" could not be found.
           </p>
           <Link
             href="/shop"
-            className="inline-block bg-primary text-primary-foreground font-bold px-6 py-2.5 rounded-lg text-xs uppercase tracking-wider hover:bg-primary/90"
+            className="inline-block bg-[#009669] text-white font-bold px-6 py-2.5 rounded-xl text-xs uppercase tracking-wider hover:bg-[#007f59]"
           >
             Browse Storefront
           </Link>
@@ -86,182 +116,254 @@ export default async function ProductPage({ params }: ProductPageProps) {
   }
 
   const imagesList = product.images && product.images.length > 0 ? product.images : [product.thumbnail || "/file.svg"];
+  const currentPrice = product.discountPrice !== null && product.discountPrice !== undefined ? product.discountPrice : product.price;
+  const originalPrice = product.price;
+  const discountPercent = product.discountPrice !== null && product.discountPrice !== undefined && product.price > 0
+    ? Math.round(((product.price - product.discountPrice) / product.price) * 100)
+    : 0;
+
+  const handleAddToCart = () => {
+    setAdding(true);
+    setTimeout(() => {
+      addToCart(product, quantity);
+      setAdding(false);
+      toast.success(`"${product.name}" added to cart!`);
+    }, 300);
+  };
+
+  const handleOrderNow = () => {
+    setOrderingNow(true);
+    setTimeout(() => {
+      addToCart(product, quantity);
+      setOrderingNow(false);
+      router.push("/checkout");
+    }, 300);
+  };
 
   return (
-    <div className="flex flex-col min-h-screen bg-rose-50/20">
+    <div className="flex flex-col min-h-screen bg-[#fafafa]">
       <Header />
 
-      <main className="flex-1 container mx-auto px-4 py-8 max-w-5xl space-y-12">
+      <main className="flex-1 container mx-auto px-4 py-6 max-w-6xl space-y-12">
         {/* Back Link */}
         <div>
           <Link
             href="/shop"
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-primary transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-[#009669] transition-colors"
           >
             <ArrowLeft className="h-3.5 w-3.5" /> Back to Storefront
           </Link>
         </div>
 
-        {/* Product Showcase */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start bg-white p-6 md:p-8 rounded-3xl border border-rose-100/50 shadow-sm">
-          {/* Gallery Column */}
+        {/* Primary Product Showcase Container (Recreating Demo Screenshots) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start bg-white p-4 md:p-8 rounded-[28px] border border-slate-200/80 shadow-sm">
+          {/* Left Column: Image Gallery Slider */}
           <ProductGallery images={imagesList} name={product.name} />
 
-          {/* Details Column */}
+          {/* Right Column: Details & Purchase Options */}
           <div className="space-y-6">
-            <div className="space-y-2">
-              <span className="inline-block bg-primary/10 text-primary text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider">
-                {product.category?.name || "Beauty"}
+            {/* Title */}
+            <h1 className="text-2xl md:text-3xl font-black text-[#1c3d5a] tracking-tight leading-snug">
+              {product.name}
+            </h1>
+
+            {/* Price & Discount Pill Row */}
+            <div className="flex items-center gap-3">
+              <span className="text-2xl md:text-3xl font-black text-[#d97706] sm:text-[#c49a16]">
+                {currentPrice}Tk
               </span>
-              <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-tight">{product.name}</h1>
-              <div className="flex items-center gap-2 text-yellow-500 text-sm">
-                <div className="flex items-center gap-0.5">
-                  <Star className="h-4 w-4 fill-current" />
-                  <span className="font-bold text-slate-800">
-                    {reviews.length > 0
-                      ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1)
-                      : "4.8"}
-                  </span>
-                </div>
-                <span className="text-slate-400 text-xs font-semibold">
-                  | {reviews.length} Customer reviews
-                </span>
-              </div>
-            </div>
-
-            {/* Price Detail */}
-            <div className="border-y border-rose-100/60 py-4 flex items-baseline gap-2">
-              {product.discountPrice !== null ? (
+              {discountPercent > 0 && (
                 <>
-                  <span className="text-3xl font-black text-slate-900">৳{product.discountPrice}</span>
-                  <span className="text-slate-400 line-through text-sm">৳{product.price}</span>
+                  <span className="text-rose-500 line-through text-sm sm:text-base font-normal">
+                    {originalPrice}Tk
+                  </span>
+                  <span className="bg-[#009669] text-white text-xs font-extrabold px-3 py-1.5 rounded-2xl shadow-sm uppercase tracking-wide">
+                    Save {discountPercent}%
+                  </span>
                 </>
-              ) : (
-                <span className="text-3xl font-black text-slate-900">৳{product.price}</span>
               )}
-              {product.weight && (
-                <span className="text-xs text-slate-500 ml-3">
-                  ({product.weight} {product.unit})
+            </div>
+
+            <hr className="border-slate-100" />
+
+            {/* Quantity Selector & Action Buttons Row */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                {/* Quantity Counter Pill */}
+                <div className="flex items-center border border-amber-300 rounded-xl bg-white h-11 px-3">
+                  <button
+                    type="button"
+                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                    className="p-1 text-slate-500 hover:text-slate-900 transition-colors"
+                  >
+                    <Minus className="h-4 w-4" />
+                  </button>
+                  <span className="w-10 text-center font-extrabold text-sm text-slate-800">
+                    {quantity}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setQuantity((q) => q + 1)}
+                    className="p-1 text-slate-500 hover:text-slate-900 transition-colors"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
+
+                {/* ADD TO CART Button */}
+                <button
+                  type="button"
+                  onClick={handleAddToCart}
+                  disabled={adding}
+                  className="flex-1 bg-[#1c3d5a] hover:bg-[#11273c] text-white font-extrabold text-xs sm:text-sm h-11 px-5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer uppercase tracking-wider disabled:opacity-70"
+                >
+                  {adding ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <ShoppingBag className="h-4 w-4 stroke-[2.5]" /> ADD TO CART
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Order Now Button (Full Width Green) */}
+              <button
+                type="button"
+                onClick={handleOrderNow}
+                disabled={orderingNow}
+                className="w-full bg-[#009669] hover:bg-[#007f59] text-white font-black text-sm md:text-base h-12 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-[#009669]/20 cursor-pointer uppercase tracking-wider"
+              >
+                {orderingNow ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <>
+                    <ShoppingBag className="h-5 w-5 stroke-[2.5]" /> Order Now
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* 3 Trust Badges Box (Exact Replica of Demo Screenshot #1) */}
+            <div className="border-2 border-slate-900 rounded-2xl p-3 grid grid-cols-3 gap-2 bg-white">
+              {/* Badge 1: Cash on Delivery */}
+              <div className="flex flex-col sm:flex-row items-center justify-center text-center sm:text-left gap-2 p-2 rounded-xl border border-slate-200 bg-white">
+                <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center flex-shrink-0">
+                  <PackageCheck className="h-4 w-4" />
+                </div>
+                <span className="text-[10px] font-extrabold text-[#1c3d5a] leading-tight">
+                  Cash on Delivery
                 </span>
+              </div>
+
+              {/* Badge 2: Fast Delivery */}
+              <div className="flex flex-col sm:flex-row items-center justify-center text-center sm:text-left gap-2 p-2 rounded-xl border border-slate-200 bg-white">
+                <div className="w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center flex-shrink-0">
+                  <Truck className="h-4 w-4" />
+                </div>
+                <span className="text-[10px] font-extrabold text-[#1c3d5a] leading-tight">
+                  Fast Delivery
+                </span>
+              </div>
+
+              {/* Badge 3: Easy Return */}
+              <div className="flex flex-col sm:flex-row items-center justify-center text-center sm:text-left gap-2 p-2 rounded-xl border border-slate-200 bg-white">
+                <div className="w-8 h-8 rounded-full bg-[#1c3d5a] text-white flex items-center justify-center flex-shrink-0">
+                  <RotateCcw className="h-4 w-4" />
+                </div>
+                <span className="text-[10px] font-extrabold text-[#1c3d5a] leading-tight">
+                  Easy Return
+                </span>
+              </div>
+            </div>
+
+            {/* Collapsible Accordion: Description (Exact Replica of Demo Screenshot #2) */}
+            <div className="border-t border-slate-100 pt-4 space-y-2">
+              <button
+                type="button"
+                onClick={() => setDescOpen(!descOpen)}
+                className="w-full flex items-center justify-between font-extrabold text-sm text-[#1c3d5a] text-left cursor-pointer py-1"
+              >
+                <span className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-[#1c3d5a]" /> Description
+                </span>
+                {descOpen ? <ChevronUp className="h-4 w-4 text-slate-500" /> : <ChevronDown className="h-4 w-4 text-slate-500" />}
+              </button>
+
+              {descOpen && (
+                <div className="pt-2 text-xs text-slate-700 leading-relaxed transition-all">
+                  <RichTextContent content={product.description} />
+                </div>
               )}
             </div>
 
-            {/* Description */}
-            <div className="space-y-2">
-              <h3 className="font-extrabold text-xs uppercase tracking-wider text-slate-700">Product Description</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                {product.description || "Fresh and premium quality cosmetic item, sourced carefully and handled under strict sanitary guidelines to ensure best formulation and safety."}
-              </p>
+            {/* Collapsible Accordion: Ask a Question (Exact Replica of Demo Screenshot #3) */}
+            <div className="border-t border-slate-100 pt-4 space-y-2">
+              <button
+                type="button"
+                onClick={() => setFaqOpen(!faqOpen)}
+                className="w-full flex items-center justify-between font-extrabold text-sm text-[#1c3d5a] text-left cursor-pointer py-1"
+              >
+                <span className="flex items-center gap-2">
+                  <HelpCircle className="h-4 w-4 text-[#1c3d5a]" /> ASK A QUESTION
+                </span>
+                {faqOpen ? <ChevronUp className="h-4 w-4 text-slate-500" /> : <ChevronDown className="h-4 w-4 text-slate-500" />}
+              </button>
+
+              {faqOpen && (
+                <div className="pt-2 text-xs text-slate-700 space-y-2 leading-relaxed">
+                  <p>
+                    🔥 দাম বেশি লাগছে বা কোনো সমস্যা? সমাধান পেতে এখানে ক্লিক করুন 👉{" "}
+                    <a
+                      href="https://ticket-htbazar.karbar.app/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-amber-600 underline font-bold"
+                    >
+                      https://ticket-htbazar.karbar.app/
+                    </a>
+                  </p>
+                </div>
+              )}
             </div>
 
-            {/* Add to Cart */}
-            <div className="pt-2">
-              <AddToCartButton product={product} />
-            </div>
-
-            {/* Value Badges */}
-            <div className="grid grid-cols-3 gap-4 pt-6 border-t border-rose-100/50">
-              <div className="flex flex-col items-center text-center p-3 bg-rose-50/20 border border-rose-100/30 rounded-2xl">
-                <Truck className="h-5 w-5 text-primary mb-1.5" />
-                <span className="text-[9px] font-bold text-slate-700 uppercase tracking-wider">Swift Delivery</span>
-              </div>
-              <div className="flex flex-col items-center text-center p-3 bg-rose-50/20 border border-rose-100/30 rounded-2xl">
-                <RotateCcw className="h-5 w-5 text-primary mb-1.5" />
-                <span className="text-[9px] font-bold text-slate-700 uppercase tracking-wider">Easy Returns</span>
-              </div>
-              <div className="flex flex-col items-center text-center p-3 bg-rose-50/20 border border-rose-100/30 rounded-2xl">
-                <Shield className="h-5 w-5 text-primary mb-1.5" />
-                <span className="text-[9px] font-bold text-slate-700 uppercase tracking-wider">100% Authentic</span>
+            {/* WhatsApp & Call Direct Order Box (Exact Replica of Demo Screenshot #3) */}
+            <div className="p-4 rounded-2xl bg-[#e6f4ea] border border-emerald-200/80 space-y-2">
+              <h4 className="font-extrabold text-xs text-[#d97706] sm:text-[#c49a16] leading-snug">
+                আমাদের যে কোন পণ্য অর্ডার করতে কল বা WhatsApp করুন:
+              </h4>
+              <div className="space-y-1 text-xs font-bold text-slate-800">
+                <p className="flex items-center gap-2">
+                  <MessageCircle className="h-4 w-4 text-emerald-600" />
+                  <span>WhatsApp: 01407-016799</span>
+                </p>
+                <p className="flex items-center gap-2">
+                  <PhoneCall className="h-4 w-4 text-rose-500" />
+                  <span>Phone: 09617-100900</span>
+                </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Customer Reviews Section */}
-        <section className="border-t border-rose-100/50 pt-12 space-y-6">
-          <h2 className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-primary" /> Customer Reviews
-          </h2>
-
-          <div className="space-y-4">
-            {reviews.map((rev) => (
-              <div key={rev.id} className="border border-rose-100/40 p-5 rounded-2xl space-y-2 bg-white shadow-sm">
-                <div className="flex justify-between items-center">
-                  <span className="font-bold text-sm text-slate-800">{rev.user?.profile?.fullName || "Verified Buyer"}</span>
-                  <div className="flex items-center gap-0.5 text-yellow-500">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`h-3.5 w-3.5 ${i < rev.rating ? "fill-current" : "text-slate-300"}`}
-                      />
-                    ))}
-                  </div>
-                </div>
-                <p className="text-xs text-slate-600 leading-relaxed">{rev.comment}</p>
-                <span className="text-[10px] text-slate-400 block">
-                  Reviewed on {new Date(rev.createdAt).toLocaleDateString()}
-                </span>
-              </div>
-            ))}
-            {reviews.length === 0 && (
-              <p className="text-xs text-slate-400 italic py-4">No reviews recorded yet for this beauty product.</p>
-            )}
-          </div>
-        </section>
-
-        {/* Related Products Section */}
+        {/* Recommended For You Section (Exact Replica of Demo Screenshot #4) */}
         {relatedProducts.length > 0 && (
-          <section className="border-t border-rose-100/50 pt-12 space-y-6">
-            <div>
-              <h2 className="text-2xl font-black text-slate-900 tracking-tight">Related Products</h2>
-              <p className="text-xs text-slate-500 mt-1">Recommended beauty picks for you in this category.</p>
-            </div>
+          <section className="space-y-6 pt-6">
+            <h2 className="text-2xl md:text-3xl font-black text-[#1c3d5a] tracking-tight">
+              Recommended For You
+            </h2>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               {relatedProducts.map((prod) => (
-                <div
-                  key={prod.id}
-                  className="bg-white border border-rose-100/50 rounded-2xl overflow-hidden hover:shadow-md transition-all flex flex-col"
-                >
-                  <Link href={`/product/${prod.slug}`} className="relative aspect-square block bg-rose-50/10 border-b border-rose-100/30">
-                    <img
-                      src={prod.thumbnail || "/file.svg"}
-                      alt={prod.name}
-                      loading="lazy"
-                      className="w-full h-full object-cover hover:scale-105 transition-all duration-300"
-                    />
-                  </Link>
-                  <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
-                    <div>
-                      <Link
-                        href={`/product/${prod.slug}`}
-                        className="block font-bold text-sm text-slate-800 hover:text-primary transition-colors truncate"
-                      >
-                        {prod.name}
-                      </Link>
-                      <div className="flex items-center gap-1 text-yellow-500 text-xs mt-1">
-                        <Star className="h-3 w-3 fill-current" />
-                        <span className="font-semibold text-slate-700">{prod.rating || "4.8"}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between pt-1">
-                      <span className="font-bold text-sm text-slate-900">
-                        ৳{prod.price}
-                      </span>
-                      <Link
-                        href={`/product/${prod.slug}`}
-                        className="bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground text-[10px] font-bold px-3 py-1.5 rounded-lg transition-all uppercase tracking-wider"
-                      >
-                        View Details
-                      </Link>
-                    </div>
-                  </div>
-                </div>
+                <ProductCard key={prod.id} product={prod} />
               ))}
             </div>
           </section>
         )}
       </main>
+
+      {/* Floating Sticky Purchase Bar on Scroll */}
+      <StickyBottomBar product={product} />
 
       <Footer />
     </div>
