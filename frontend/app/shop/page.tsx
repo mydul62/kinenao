@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import ProductCard from "@/components/ProductCard";
 import { api } from "@/lib/api";
 import { useCart } from "@/context/CartContext";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -382,75 +383,10 @@ const ShopContent = () => {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {products.map((prod) => {
-              const price = prod.discountPrice !== null ? prod.discountPrice : prod.price;
-              const discount =
-                prod.discountPrice !== null
-                  ? Math.round(((prod.price - prod.discountPrice) / prod.price) * 100)
-                  : 0;
-
-              return (
-                <div
-                  key={prod.id}
-                  className="relative flex flex-col bg-white border border-rose-100/50 rounded-2xl overflow-hidden hover:shadow-lg transition-all"
-                >
-                  {discount > 0 && (
-                    <span className="absolute top-3 left-3 bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-full z-10 uppercase tracking-wider">
-                      {discount}% OFF
-                    </span>
-                  )}
-
-                  <a href={`/product/${prod.slug}`} className="block relative aspect-square bg-rose-50/10">
-                    <img
-                      src={prod.thumbnail || "/file.svg"}
-                      alt={prod.name}
-                      loading="lazy"
-                      className="w-full h-full object-cover hover:scale-105 transition-all duration-300"
-                    />
-                  </a>
-
-                  <div className="flex-1 p-5 flex flex-col justify-between space-y-4">
-                    <div>
-                      <span className="text-[9px] uppercase tracking-wider font-extrabold text-primary">
-                        {prod.category?.name || "Cosmetics"}
-                      </span>
-                      <a
-                        href={`/product/${prod.slug}`}
-                        className="block font-bold text-sm text-slate-800 hover:text-primary transition-colors line-clamp-2 mt-1"
-                      >
-                        {prod.name}
-                      </a>
-                      <div className="flex items-center gap-1 mt-2 text-yellow-500 text-xs">
-                        <Star className="h-3.5 w-3.5 fill-current" />
-                        <span className="font-semibold text-slate-700">{prod.rating || "4.8"}</span>
-                        <span className="text-slate-400 text-[10px]">({prod.reviewsCount || 12} reviews)</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div>
-                        {prod.discountPrice !== null ? (
-                          <div className="space-y-0.5">
-                            <span className="text-slate-900 font-black text-base">৳{prod.discountPrice}</span>
-                            <span className="text-slate-400 line-through text-xs ml-1.5">৳{prod.price}</span>
-                          </div>
-                        ) : (
-                          <span className="text-slate-900 font-black text-base">৳{prod.price}</span>
-                        )}
-                      </div>
-
-                      <button
-                        onClick={() => handleAddToCart(prod)}
-                        className="bg-primary/5 hover:bg-primary text-primary hover:text-primary-foreground p-2 rounded-xl transition-all cursor-pointer"
-                      >
-                        <ShoppingBag className="h-5 w-5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            {products.map((prod) => (
+              <ProductCard key={prod.id} product={prod} />
+            ))}
           </div>
         )}
 

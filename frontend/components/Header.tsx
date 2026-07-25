@@ -33,19 +33,25 @@ export const Header: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [categories, setCategories] = useState<any[]>([]);
-  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
-  const router = useRouter();
+  const [announcementText, setAnnouncementText] = useState(
+    "FREE SHIPPING ON ALL ORDERS OF ৳1500 | 100% AUTHENTIC COSMETICS | ⚡ SPECIAL DISCOUNT ON ALL PRODUCTS!"
+  );
 
   useEffect(() => {
-    // Fetch categories
-    api
-      .get("/categories?type=tree")
-      .then((res) => {
-        const cats = res.data.data.categories || [];
+    // Fetch categories and website settings
+    Promise.all([api.get("/categories?type=tree"), api.get("/settings")])
+      .then(([catRes, setRes]) => {
+        const cats = catRes.data?.data?.categories || [];
         setCategories(cats.length > 0 ? cats : mockCategories);
+
+        const settingsData = setRes.data?.data?.settings || {};
+        const textVal = settingsData.announcementText?.value || settingsData.announcementText;
+        if (textVal && typeof textVal === "string") {
+          setAnnouncementText(textVal);
+        }
       })
       .catch((err) => {
-        console.error("Error fetching categories:", err);
+        console.error("Error fetching header data:", err);
         setCategories(mockCategories);
       });
   }, []);
@@ -60,27 +66,30 @@ export const Header: React.FC = () => {
 
   return (
     <header className="w-full bg-background">
-      {/* 1. Red Top Bar */}
-      <div className="bg-primary text-primary-foreground text-[10px] font-bold h-9 flex items-center justify-between px-4 tracking-wider uppercase border-b">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1 cursor-pointer">
-            ENGLISH <ChevronDown className="h-3 w-3" />
+      {/* 1. Red Top Bar with Slow Smooth Scrolling Promotional Ticker */}
+      <div className="bg-primary text-primary-foreground text-[10px] font-bold h-9 flex items-center justify-between px-3 md:px-4 tracking-wider uppercase border-b relative overflow-hidden">
+        {/* Center Dynamic Scrolling Promotional Marquee Ticker */}
+        <div className="flex-1 overflow-hidden mx-3 relative flex items-center h-full">
+          <div className="whitespace-nowrap animate-marquee flex items-center gap-8 text-white font-extrabold text-[11px] tracking-widest">
+            <span>{announcementText}</span>
+            <span className="text-amber-300 font-bold">✦</span>
+            <span>{announcementText}</span>
+            <span className="text-amber-300 font-bold">✦</span>
+            <span>{announcementText}</span>
+            <span className="text-amber-300 font-bold">✦</span>
+            <span>{announcementText}</span>
           </div>
-          <div className="flex items-center gap-1 cursor-pointer">
-            USD <ChevronDown className="h-3 w-3" />
-          </div>
-          <span className="hidden md:inline font-medium">
-            FREE SHIPPING ON ALL ORDERS OF ৳1500 | 100% AUTHENTIC COSMETICS
-          </span>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
+
+        {/* Right Social Icons & Links */}
+        <div className="flex items-center gap-3 z-10 bg-primary pl-2 shrink-0">
+          <div className="hidden sm:flex items-center gap-2">
             <a href="#" className="hover:opacity-80 transition-opacity"><Facebook className="h-3.5 w-3.5" /></a>
             <a href="#" className="hover:opacity-80 transition-opacity"><Twitter className="h-3.5 w-3.5" /></a>
             <a href="#" className="hover:opacity-80 transition-opacity"><Instagram className="h-3.5 w-3.5" /></a>
             <a href="#" className="hover:opacity-80 transition-opacity"><Youtube className="h-3.5 w-3.5" /></a>
           </div>
-          <span className="text-white/40">|</span>
+          <span className="hidden sm:inline text-white/40">|</span>
           <a href="/#faqs" className="hover:underline">Contact Us</a>
           <a href="/#faqs" className="hover:underline">FAQS</a>
         </div>

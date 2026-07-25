@@ -5,12 +5,22 @@ export const createOrderSchema = z.object({
   body: z.object({
     items: z.array(
       z.object({
-        productId: z.string().uuid("Invalid product ID"),
+        productId: z.string().min(1, "Invalid product ID"),
         quantity: z.number().int().positive("Quantity must be positive"),
       })
     ).min(1, "Order must contain at least one item"),
-    deliveryAddressId: z.string().uuid("Invalid address ID"),
-    deliveryZoneId: z.string().uuid("Invalid delivery zone ID"),
+    deliveryAddressId: z.string().optional().nullable(),
+    guestInfo: z.object({
+      fullName: z.string().min(1, "Full Name is required"),
+      email: z.string().optional().nullable().or(z.literal("")),
+      phone: z.string().min(1, "Phone number is required"),
+      street: z.string().min(1, "Street address is required"),
+      city: z.string().optional().nullable().or(z.literal("")),
+      postalCode: z.string().optional().nullable(),
+      country: z.string().optional().nullable(),
+      orderNotes: z.string().optional().nullable(),
+    }).optional().nullable(),
+    deliveryZoneId: z.string().min(1, "Invalid delivery zone ID"),
     couponCode: z.string().toUpperCase().optional().nullable(),
     customerNote: z.string().optional().nullable(),
   }),
@@ -18,15 +28,15 @@ export const createOrderSchema = z.object({
 
 export const submitPaymentSchema = z.object({
   body: z.object({
-    paymentMethodId: z.string().uuid("Invalid payment method ID"),
-    senderNumber: z.string().min(10, "Sender phone number must be at least 10 digits"),
-    transactionId: z.string().min(5, "Transaction ID must be at least 5 characters"),
+    paymentMethodId: z.string().min(1, "Invalid payment method ID"),
+    senderNumber: z.string().optional().nullable().or(z.literal("")),
+    transactionId: z.string().optional().nullable().or(z.literal("")),
     paidAmount: z.number().positive("Paid amount must be positive"),
     paymentScreenshotUrl: z.string().url("Invalid screenshot URL").optional().nullable(),
     customerNote: z.string().optional().nullable(),
   }),
   params: z.object({
-    id: z.string().uuid("Invalid order ID"),
+    id: z.string().min(1, "Invalid order ID"),
   }),
 });
 
@@ -36,7 +46,7 @@ export const updateStatusSchema = z.object({
     note: z.string().optional().nullable(),
   }),
   params: z.object({
-    id: z.string().uuid("Invalid order ID"),
+    id: z.string().min(1, "Invalid order ID"),
   }),
 });
 
@@ -46,6 +56,6 @@ export const verifyPaymentSchema = z.object({
     note: z.string().optional().nullable(),
   }),
   params: z.object({
-    id: z.string().uuid("Invalid order ID"),
+    id: z.string().min(1, "Invalid order ID"),
   }),
 });

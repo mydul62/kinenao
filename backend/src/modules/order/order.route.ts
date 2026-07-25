@@ -7,7 +7,7 @@ import {
   getOrders,
   getOrderById,
 } from "./order.controller";
-import { authMiddleware, roleMiddleware } from "../../app/middlewares/auth";
+import { authMiddleware, optionalAuthMiddleware, roleMiddleware } from "../../app/middlewares/auth";
 import { validate } from "../../app/middlewares/validate";
 import {
   createOrderSchema,
@@ -19,13 +19,11 @@ import { Role } from "@prisma/client";
 
 const router = Router();
 
-router.use(authMiddleware); // All order actions require authentication
+router.post("/", optionalAuthMiddleware, validate(createOrderSchema), createOrder);
+router.post("/:id/submit-payment", optionalAuthMiddleware, validate(submitPaymentSchema), submitPaymentProof);
 
-router.post("/", validate(createOrderSchema), createOrder);
-router.get("/", getOrders);
-router.get("/:id", getOrderById);
-
-router.post("/:id/submit-payment", validate(submitPaymentSchema), submitPaymentProof);
+router.get("/", authMiddleware, getOrders);
+router.get("/:id", optionalAuthMiddleware, getOrderById);
 
 // Admin/Manager routes
 router.post(

@@ -14,6 +14,8 @@ export interface IProductCreateInput {
   isFeatured?: boolean;
   isBestSeller?: boolean;
   isFlashSale?: boolean;
+  customBadge?: string | null;
+  promotionalBadges?: string[];
   seoTitle?: string | null;
   seoDescription?: string | null;
   isActive?: boolean;

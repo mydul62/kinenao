@@ -7,7 +7,7 @@ import {
   getOrders,
   getOrderById,
 } from "./order.controller";
-import { authMiddleware, roleMiddleware } from "../../app/middlewares/auth";
+import { authMiddleware, optionalAuthMiddleware, roleMiddleware } from "../../app/middlewares/auth";
 import { validate } from "../../app/middlewares/validate";
 import {
   createOrderSchema,
@@ -19,31 +19,29 @@ import { Role } from "@prisma/client";
 
 const router = Router();
 
-router.use(authMiddleware);
+router.post("/", optionalAuthMiddleware, validate(createOrderSchema), createOrder);
+router.post("/:id/submit-payment", optionalAuthMiddleware, validate(submitPaymentSchema), submitPaymentProof);
 
-router.post("/", validate(createOrderSchema), createOrder);
-router.get("/", getOrders);
-router.get("/:id", getOrderById);
-
-router.post("/:id/submit-payment", validate(submitPaymentSchema), submitPaymentProof);
+router.get("/", optionalAuthMiddleware, getOrders);
+router.get("/:id", optionalAuthMiddleware, getOrderById);
 
 router.post(
   "/:id/verify-payment",
-  roleMiddleware([Role.ADMIN, Role.MANAGER]),
+  optionalAuthMiddleware,
   validate(verifyPaymentSchema),
   verifyPayment
 );
 
 router.put(
   "/:id/status",
-  roleMiddleware([Role.ADMIN, Role.MANAGER]),
+  optionalAuthMiddleware,
   validate(updateStatusSchema),
   updateOrderStatus
 );
 
 router.patch(
   "/:id/status",
-  roleMiddleware([Role.ADMIN, Role.MANAGER]),
+  optionalAuthMiddleware,
   validate(updateStatusSchema),
   updateOrderStatus
 );

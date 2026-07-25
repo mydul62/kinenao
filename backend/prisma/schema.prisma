@@ -106,6 +106,8 @@ model Product {
   isFeatured        Boolean     @default(false)
   isBestSeller      Boolean     @default(false)
   isFlashSale       Boolean     @default(false)
+  customBadge       String?
+  promotionalBadges String[]    @default([])
   seoTitle          String?
   seoDescription    String?
   isActive          Boolean     @default(true)
@@ -133,8 +135,9 @@ model PaymentMethod {
 model Order {
   id                   String          @id @default(uuid())
   orderNumber          Int             @unique @default(autoincrement())
-  customerId           String
-  customer             User            @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  customerId           String?
+  customer             User?           @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  guestInfo            Json?
   status               OrderStatus     @default(PENDING_PAYMENT)
   paymentMethodId      String?
   paymentMethod        PaymentMethod?  @relation(fields: [paymentMethodId], references: [id], onDelete: SetNull)
