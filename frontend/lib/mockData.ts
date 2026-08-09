@@ -75,6 +75,13 @@ export const mockCategories: Category[] = [
     imageUrl: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop",
     description: "ঐতিহ্যবাহী ঢাকাই জামদানি, মিরপুর কাতান, বেনারসি, সিল্ক ও সুতি শাড়ির এক্সক্লুসিভ কালেকশন",
     itemCount: 10,
+    childCategories: [
+      { id: "sub-jamdani", name: "জামদানি শাড়ি", slug: "jamdani-sari", parentId: "cat-sari", imageUrl: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=400" },
+      { id: "sub-katan", name: "কাতান ও বেনারসি", slug: "katan-banarasi-sari", parentId: "cat-sari", imageUrl: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=400" },
+      { id: "sub-silk", name: "সিল্ক ও মসলিন", slug: "silk-muslin-sari", parentId: "cat-sari", imageUrl: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=400" },
+      { id: "sub-cotton", name: "সুতি ও হ্যান্ডলুম", slug: "cotton-handloom-sari", parentId: "cat-sari", imageUrl: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=400" },
+      { id: "sub-georgette", name: "পার্টি ও জর্জেট", slug: "party-georgette-sari", parentId: "cat-sari", imageUrl: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=400" },
+    ],
   },
   {
     id: "cat-three-piece",
@@ -83,6 +90,12 @@ export const mockCategories: Category[] = [
     imageUrl: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop",
     description: "এমব্রয়ডারি, পিওর কটন, পাকিস্তানি লন, জর্জেট ও গর্জিয়াস পার্টি থ্রি-পিসের সমাহার",
     itemCount: 10,
+    childCategories: [
+      { id: "sub-cotton-tp", name: "পিওর কটন থ্রি-পিস", slug: "cotton-three-piece", parentId: "cat-three-piece", imageUrl: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=400" },
+      { id: "sub-emb-tp", name: "এমব্রয়ডারি থ্রি-পিস", slug: "embroidered-three-piece", parentId: "cat-three-piece", imageUrl: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=400" },
+      { id: "sub-lawn-tp", name: "পাকিস্তানি ডিজিটাল লন", slug: "pakistani-lawn", parentId: "cat-three-piece", imageUrl: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=400" },
+      { id: "sub-party-tp", name: "গর্জিয়াস পার্টি ওয়্যার", slug: "party-three-piece", parentId: "cat-three-piece", imageUrl: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=400" },
+    ],
   },
   {
     id: "cat-kids",
@@ -91,6 +104,12 @@ export const mockCategories: Category[] = [
     imageUrl: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800&auto=format&fit=crop",
     description: "নবজাতক ও শিশুদের নরম আরামদায়ক পোশাক, বেবি ফ্রক, রম্পার এবং খেলনা",
     itemCount: 10,
+    childCategories: [
+      { id: "sub-boy", name: "বেবি বয় ড্রেস", slug: "baby-boy-clothing", parentId: "cat-kids", imageUrl: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=400" },
+      { id: "sub-girl", name: "বেবি গার্ল ফ্রক ও ড্রেস", slug: "baby-girl-frocks", parentId: "cat-kids", imageUrl: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=400" },
+      { id: "sub-newborn", name: "নিউবর্ন বেবি কেয়ার", slug: "newborn-baby-care", parentId: "cat-kids", imageUrl: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=400" },
+      { id: "sub-toys", name: "শিক্ষণীয় ও বিনোদন খেলনা", slug: "educational-toys", parentId: "cat-kids", imageUrl: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=400" },
+    ],
   },
   {
     id: "cat-bag-and-pump",
@@ -99,6 +118,12 @@ export const mockCategories: Category[] = [
     imageUrl: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800&auto=format&fit=crop",
     description: "লেডিস প্রিমিয়াম হ্যান্ডব্যাগ, শোল্ডার ব্যাগ, ফ্যাশনেবল ক্লাচ, ওয়ালেট ও হিল পাম্প জুতা",
     itemCount: 10,
+    childCategories: [
+      { id: "sub-handbag", name: "লেডিস হ্যান্ডব্যাগ", slug: "ladies-handbags", parentId: "cat-bag-and-pump", imageUrl: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=400" },
+      { id: "sub-clutch", name: "পার্টি ক্লাচ ও পার্স", slug: "party-clutches", parentId: "cat-bag-and-pump", imageUrl: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=400" },
+      { id: "sub-heels", name: "হিল ও পাম্প শু", slug: "pump-shoes-heels", parentId: "cat-bag-and-pump", imageUrl: "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?q=80&w=400" },
+      { id: "sub-wallet", name: "লেডিস ওয়ালেট ও ব্যাকপ্যাক", slug: "ladies-wallets", parentId: "cat-bag-and-pump", imageUrl: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=400" },
+    ],
   },
   {
     id: "cat-couple-items",
@@ -107,6 +132,12 @@ export const mockCategories: Category[] = [
     imageUrl: "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=800&auto=format&fit=crop",
     description: "কাপল ম্যাচিং ড্রেস, রোমান্টিক সিরামিক মগ সেট, কাপল ব্রেসলেট, ফটো ফ্রেম ও স্পেশাল গিফট",
     itemCount: 10,
+    childCategories: [
+      { id: "sub-couple-dress", name: "কাপল ম্যাচিং ড্রেস", slug: "couple-matching-dress", parentId: "cat-couple-items", imageUrl: "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=400" },
+      { id: "sub-couple-mug", name: "রোমান্টিক মগ ও ফ্রেম", slug: "couple-mugs-frames", parentId: "cat-couple-items", imageUrl: "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=400" },
+      { id: "sub-couple-watch", name: "কাপল ওয়াচ ও ব্রেসলেট", slug: "couple-watch-bracelets", parentId: "cat-couple-items", imageUrl: "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=400" },
+      { id: "sub-couple-gift", name: "কাপল কম্বো গিফট বক্স", slug: "couple-gift-box", parentId: "cat-couple-items", imageUrl: "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=400" },
+    ],
   },
   {
     id: "cat-jewelry-and-accessories",
@@ -115,6 +146,12 @@ export const mockCategories: Category[] = [
     imageUrl: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800&auto=format&fit=crop",
     description: "কুন্দন নেকলেস সেট, ঐতিহ্যবাহী ঝুমকা, প্রিমিয়াম চুড়ি সেট, ফিঙ্গার রিং ও এক্সেসরিজ",
     itemCount: 10,
+    childCategories: [
+      { id: "sub-kundan", name: "কুন্দন ও ব্রাইডাল সেট", slug: "kundan-bridal-sets", parentId: "cat-jewelry-and-accessories", imageUrl: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=400" },
+      { id: "sub-jhumka", name: "ঐতিহ্যবাহী ঝুমকা ও দুল", slug: "traditional-jhumkas", parentId: "cat-jewelry-and-accessories", imageUrl: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=400" },
+      { id: "sub-bangles", name: "প্রিমিয়াম চুড়ি ও বালা", slug: "bangles-bracelets", parentId: "cat-jewelry-and-accessories", imageUrl: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=400" },
+      { id: "sub-rings", name: "ফিঙ্গার রিং ও নূপুর", slug: "rings-accessories", parentId: "cat-jewelry-and-accessories", imageUrl: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=400" },
+    ],
   },
   {
     id: "cat-watch-and-bagel",
@@ -123,6 +160,11 @@ export const mockCategories: Category[] = [
     imageUrl: "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800&auto=format&fit=crop",
     description: "নারী ও পুরুষের লাক্সারি কোয়ার্টজ ঘড়ি, মেটাল চেইন ওয়াচ, স্মার্ট ঘড়ি ও ফ্যাশন ব্যাগেল",
     itemCount: 10,
+    childCategories: [
+      { id: "sub-ladies-watch", name: "লেডিস লাক্সারি ঘড়ি", slug: "ladies-luxury-watches", parentId: "cat-watch-and-bagel", imageUrl: "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=400" },
+      { id: "sub-gents-watch", name: "জেন্টস মেটাল ও লেদার ঘড়ি", slug: "gents-chronograph-watches", parentId: "cat-watch-and-bagel", imageUrl: "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=400" },
+      { id: "sub-smart-watch", name: "স্মার্ট ওয়াচ ও ফিটনেস ব্যান্ড", slug: "smart-watches-band", parentId: "cat-watch-and-bagel", imageUrl: "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=400" },
+    ],
   },
   {
     id: "cat-electronics-and-gadgets",
@@ -131,6 +173,12 @@ export const mockCategories: Category[] = [
     imageUrl: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800&auto=format&fit=crop",
     description: "ওয়্যারলেস ব্লুটুথ ইয়ারবাড, হেডফোন, ফাস্ট চার্জিং পাওয়ার ব্যাংক, স্পিকার ও স্মার্ট গ্যাজেট",
     itemCount: 10,
+    childCategories: [
+      { id: "sub-earbuds", name: "ওয়্যারলেস ব্লুটুথ ইয়ারবাড", slug: "bluetooth-earbuds", parentId: "cat-electronics-and-gadgets", imageUrl: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=400" },
+      { id: "sub-smart-gadgets", name: "স্মার্ট গ্যাজেট ও অ্যাক্সেসরিজ", slug: "smart-gadgets", parentId: "cat-electronics-and-gadgets", imageUrl: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=400" },
+      { id: "sub-speakers", name: "পোর্টেবল ব্লুটুথ স্পিকার", slug: "bluetooth-speakers", parentId: "cat-electronics-and-gadgets", imageUrl: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=400" },
+      { id: "sub-powerbank", name: "ফাস্ট চার্জার ও পাওয়ার ব্যাংক", slug: "powerbanks-chargers", parentId: "cat-electronics-and-gadgets", imageUrl: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=400" },
+    ],
   },
   {
     id: "cat-home-decor",
@@ -139,6 +187,12 @@ export const mockCategories: Category[] = [
     imageUrl: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800&auto=format&fit=crop",
     description: "দেয়াল ঘড়ি, আধুনিক ফুলদানি, টেবিল ল্যাম্প, ক্যালিগ্রাফি ওয়াল আর্ট, কুশন কভার ও শোপিস",
     itemCount: 10,
+    childCategories: [
+      { id: "sub-wall-clock", name: "দেয়াল ঘড়ি ও আর্ট ফ্রেম", slug: "wall-clocks-art", parentId: "cat-home-decor", imageUrl: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=400" },
+      { id: "sub-lamps", name: "টেবিল ল্যাম্প ও লাইটিং", slug: "table-lamps-decor", parentId: "cat-home-decor", imageUrl: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=400" },
+      { id: "sub-vases", name: "সিরামিক ও মেটাল ফুলদানি", slug: "flower-vases", parentId: "cat-home-decor", imageUrl: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=400" },
+      { id: "sub-cushions", name: "কুশন কভার ও রাগস", slug: "cushions-rugs", parentId: "cat-home-decor", imageUrl: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=400" },
+    ],
   },
   {
     id: "cat-organic-products",
@@ -147,6 +201,12 @@ export const mockCategories: Category[] = [
     imageUrl: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=800&auto=format&fit=crop",
     description: "১০০% প্রাকৃতিক সুন্দরবনের মধু, খাঁটি সরিষার তেল, নারিকেল তেল, খেজুরের গুড় ও ড্রাই ফ্রুটস",
     itemCount: 10,
+    childCategories: [
+      { id: "sub-honey", name: "সুন্দরবনের মধু ও ঘি", slug: "pure-honey-ghee", parentId: "cat-organic-products", imageUrl: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=400" },
+      { id: "sub-oil-org", name: "সরিষা ও নারিকেল তেল", slug: "cold-pressed-mustard-oil", parentId: "cat-organic-products", imageUrl: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=400" },
+      { id: "sub-dryfruits", name: "ড্রাই ফ্রুটস ও বাদাম", slug: "dry-fruits-nuts", parentId: "cat-organic-products", imageUrl: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=400" },
+      { id: "sub-tea", name: "অর্গানিক চা ও মসলা", slug: "organic-tea-spices", parentId: "cat-organic-products", imageUrl: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=400" },
+    ],
   },
   {
     id: "cat-kitchen-items",
@@ -155,6 +215,12 @@ export const mockCategories: Category[] = [
     imageUrl: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=800&auto=format&fit=crop",
     description: "নন-স্টিক ফ্রাইপ্যান, স্টেইনলেস স্টিল কুকিং পট সেট, শেফ নাইফ, কাটিং বোর্ড ও কিচেন অর্গানাইজার",
     itemCount: 10,
+    childCategories: [
+      { id: "sub-cookware", name: "নন-স্টিক কুকওয়্যার সেট", slug: "nonstick-cookware", parentId: "cat-kitchen-items", imageUrl: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=400" },
+      { id: "sub-knives", name: "শেফ নাইফ ও কাটিং বোর্ড", slug: "chef-knives-boards", parentId: "cat-kitchen-items", imageUrl: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=400" },
+      { id: "sub-organizer", name: "স্পাইস ও কিচেন অর্গানাইজার", slug: "kitchen-organizers", parentId: "cat-kitchen-items", imageUrl: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=400" },
+      { id: "sub-blender", name: "ইলেকট্রিক চপার ও ব্লেন্ডার", slug: "choppers-blenders", parentId: "cat-kitchen-items", imageUrl: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=400" },
+    ],
   },
 ];
 

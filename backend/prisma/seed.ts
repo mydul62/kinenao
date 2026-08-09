@@ -411,7 +411,97 @@ async function main() {
     createdCategories[cat.slug] = created.id;
   }
 
-  console.log("11 Categories created successfully.");
+  console.log("11 Parent Categories created successfully.");
+
+  // Create Subcategories with parentId
+  const subcategoryDefinitions = [
+    // 1. শাড়ি (sari)
+    { name: "জামদানি শাড়ি", slug: "jamdani-sari", parentSlug: "sari", imageUrl: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=400" },
+    { name: "কাতান ও বেনারসি", slug: "katan-banarasi-sari", parentSlug: "sari", imageUrl: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=400" },
+    { name: "সিল্ক ও মসলিন শাড়ি", slug: "silk-muslin-sari", parentSlug: "sari", imageUrl: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=400" },
+    { name: "সুতি ও হ্যান্ডলুম", slug: "cotton-handloom-sari", parentSlug: "sari", imageUrl: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=400" },
+    { name: "পার্টি ও জর্জেট", slug: "party-georgette-sari", parentSlug: "sari", imageUrl: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=400" },
+
+    // 2. থ্রি-পিস (three-piece)
+    { name: "পিওর কটন থ্রি-পিস", slug: "cotton-three-piece", parentSlug: "three-piece", imageUrl: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=400" },
+    { name: "এমব্রয়ডারি থ্রি-পিস", slug: "embroidered-three-piece", parentSlug: "three-piece", imageUrl: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=400" },
+    { name: "পাকিস্তানি ডিজিটাল লন", slug: "pakistani-lawn", parentSlug: "three-piece", imageUrl: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=400" },
+    { name: "গর্জিয়াস পার্টি ওয়্যার", slug: "party-three-piece", parentSlug: "three-piece", imageUrl: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=400" },
+    { name: "কুর্তি ও টিউনিক", slug: "kurti-tunic", parentSlug: "three-piece", imageUrl: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=400" },
+
+    // 3. বাচ্চাদের পোশাক ও খেলনা (kids)
+    { name: "বেবি বয় ড্রেস", slug: "baby-boy-clothing", parentSlug: "kids", imageUrl: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=400" },
+    { name: "বেবি গার্ল ফ্রক ও ড্রেস", slug: "baby-girl-frocks", parentSlug: "kids", imageUrl: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=400" },
+    { name: "নিউবর্ন বেবি কেয়ার", slug: "newborn-baby-care", parentSlug: "kids", imageUrl: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=400" },
+    { name: "শিক্ষণীয় ও বিনোদন খেলনা", slug: "educational-toys", parentSlug: "kids", imageUrl: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=400" },
+
+    // 4. ব্যাগ ও পাম্প (bag-and-pump)
+    { name: "লেডিস হ্যান্ডব্যাগ", slug: "ladies-handbags", parentSlug: "bag-and-pump", imageUrl: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=400" },
+    { name: "পার্টি ক্লাচ ও পার্স", slug: "party-clutches", parentSlug: "bag-and-pump", imageUrl: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=400" },
+    { name: "হিল ও পাম্প শু", slug: "pump-shoes-heels", parentSlug: "bag-and-pump", imageUrl: "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?q=80&w=400" },
+    { name: "লেডিস ওয়ালেট ও ব্যাকপ্যাক", slug: "ladies-wallets", parentSlug: "bag-and-pump", imageUrl: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=400" },
+
+    // 5. প্রেম/কাপল আইটেম (couple-items)
+    { name: "কাপল ম্যাচিং ড্রেস", slug: "couple-matching-dress", parentSlug: "couple-items", imageUrl: "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=400" },
+    { name: "রোমান্টিক মগ ও ফ্রেম", slug: "couple-mugs-frames", parentSlug: "couple-items", imageUrl: "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=400" },
+    { name: "কাপল ওয়াচ ও ব্রেসলেট", slug: "couple-watch-bracelets", parentSlug: "couple-items", imageUrl: "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=400" },
+    { name: "কাপল কম্বো গিফট বক্স", slug: "couple-gift-box", parentSlug: "couple-items", imageUrl: "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=400" },
+
+    // 6. জুয়েলারি ও এক্সেসরিজ (jewelry-and-accessories)
+    { name: "কুন্দন ও ব্রাইডাল সেট", slug: "kundan-bridal-sets", parentSlug: "jewelry-and-accessories", imageUrl: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=400" },
+    { name: "ঐতিহ্যবাহী ঝুমকা ও দুল", slug: "traditional-jhumkas", parentSlug: "jewelry-and-accessories", imageUrl: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=400" },
+    { name: "প্রিমিয়াম চুড়ি ও বালা", slug: "bangles-bracelets", parentSlug: "jewelry-and-accessories", imageUrl: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=400" },
+    { name: "ফিঙ্গার রিং ও নূপুর", slug: "rings-accessories", parentSlug: "jewelry-and-accessories", imageUrl: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=400" },
+
+    // 7. ঘড়ি ও ব্যাগেল (watch-and-bagel)
+    { name: "লেডিস লাক্সারি ঘড়ি", slug: "ladies-luxury-watches", parentSlug: "watch-and-bagel", imageUrl: "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=400" },
+    { name: "জেন্টস মেটাল ও লেদার ঘড়ি", slug: "gents-chronograph-watches", parentSlug: "watch-and-bagel", imageUrl: "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=400" },
+    { name: "স্মার্ট ওয়াচ ও ফিটনেস ব্যান্ড", slug: "smart-watches-band", parentSlug: "watch-and-bagel", imageUrl: "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=400" },
+    { name: "ফ্যাশন ব্যাগেল ও চেইন", slug: "fashion-bagel-chain", parentSlug: "watch-and-bagel", imageUrl: "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=400" },
+
+    // 8. ইলেকট্রনিক্স ও গ্যাজেট (electronics-and-gadgets)
+    { name: "ওয়্যারলেস ব্লুটুথ ইয়ারবাড", slug: "bluetooth-earbuds", parentSlug: "electronics-and-gadgets", imageUrl: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=400" },
+    { name: "স্মার্ট গ্যাজেট ও অ্যাক্সেসরিজ", slug: "smart-gadgets", parentSlug: "electronics-and-gadgets", imageUrl: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=400" },
+    { name: "পোর্টেবল ব্লুটুথ স্পিকার", slug: "bluetooth-speakers", parentSlug: "electronics-and-gadgets", imageUrl: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=400" },
+    { name: "ফাস্ট চার্জার ও পাওয়ার ব্যাংক", slug: "powerbanks-chargers", parentSlug: "electronics-and-gadgets", imageUrl: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=400" },
+
+    // 9. হোম ডেকোর (home-decor)
+    { name: "দেয়াল ঘড়ি ও আর্ট ফ্রেম", slug: "wall-clocks-art", parentSlug: "home-decor", imageUrl: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=400" },
+    { name: "টেবিল ল্যাম্প ও লাইটিং", slug: "table-lamps-decor", parentSlug: "home-decor", imageUrl: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=400" },
+    { name: "সিরামিক ও মেটাল ফুলদানি", slug: "flower-vases", parentSlug: "home-decor", imageUrl: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=400" },
+    { name: "কুশন কভার ও রাগস", slug: "cushions-rugs", parentSlug: "home-decor", imageUrl: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=400" },
+
+    // 10. অর্গানিক পণ্য (organic-products)
+    { name: "সুন্দরবনের মধু ও ঘি", slug: "pure-honey-ghee", parentSlug: "organic-products", imageUrl: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=400" },
+    { name: "সরিষা ও নারিকেল তেল", slug: "cold-pressed-mustard-oil", parentSlug: "organic-products", imageUrl: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=400" },
+    { name: "ড্রাই ফ্রুটস ও বাদাম", slug: "dry-fruits-nuts", parentSlug: "organic-products", imageUrl: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=400" },
+    { name: "অর্গানিক চা ও মসলা", slug: "organic-tea-spices", parentSlug: "organic-products", imageUrl: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=400" },
+
+    // 11. কিচেন আইটেম (kitchen-items)
+    { name: "নন-স্টিক কুকওয়্যার সেট", slug: "nonstick-cookware", parentSlug: "kitchen-items", imageUrl: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=400" },
+    { name: "শেফ নাইফ ও কাটিং বোর্ড", slug: "chef-knives-boards", parentSlug: "kitchen-items", imageUrl: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=400" },
+    { name: "স্পাইস ও কিচেন অর্গানাইজার", slug: "kitchen-organizers", parentSlug: "kitchen-items", imageUrl: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=400" },
+    { name: "ইলেকট্রিক চপার ও ব্লেন্ডার", slug: "choppers-blenders", parentSlug: "kitchen-items", imageUrl: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=400" },
+  ];
+
+  for (const sub of subcategoryDefinitions) {
+    const parentId = createdCategories[sub.parentSlug];
+    if (parentId) {
+      const createdSub = await prisma.category.create({
+        data: {
+          name: sub.name,
+          slug: sub.slug,
+          imageUrl: sub.imageUrl,
+          parentId,
+          sortOrder: 1,
+          isActive: true,
+        },
+      });
+      createdCategories[sub.slug] = createdSub.id;
+    }
+  }
+
+  console.log("Subcategories created successfully.");
 
   // 8. CREATE AT LEAST 10 REALISTIC PRODUCTS FOR EACH OF THE 11 CATEGORIES
   console.log("8. Seeding Products (Minimum 10 products per category = 110+ products)...");

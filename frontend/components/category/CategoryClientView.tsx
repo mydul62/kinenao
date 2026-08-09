@@ -176,63 +176,76 @@ export default function CategoryClientView({
         </div>
       </div>
 
-      {/* Horizontal Subcategories Carousel */}
+      {/* Subcategories Visual Cards Grid */}
       {subcategories.length > 0 && (
-        <div className="mb-4 sm:mb-6">
-          <div className="flex items-center justify-between mb-2 px-1">
-            <h2 className="text-xs sm:text-sm font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+        <div className="mb-5 sm:mb-7 space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-xs sm:text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
               <Layers className="w-4 h-4 text-emerald-600" />
               <span>সাব-ক্যাটাগরি সমূহ</span>
+              <span className="text-slate-400 text-xs font-semibold">({subcategories.length})</span>
             </h2>
             {activeSubcat && (
               <button
                 type="button"
                 onClick={() => setActiveSubcat(null)}
-                className="text-[11px] font-bold text-emerald-700 hover:underline cursor-pointer"
+                className="text-xs font-bold text-emerald-700 hover:underline cursor-pointer"
               >
-                সবগুলো দেখুন (Reset)
+                সবগুলো দেখুন (Reset Filter)
               </button>
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5 sm:gap-3.5">
+            {/* All Products in Category Card */}
             <button
               type="button"
               onClick={() => setActiveSubcat(null)}
-              className={`px-3.5 py-2 rounded-2xl flex items-center gap-2 transition-all cursor-pointer border ${
+              className={`group flex flex-col items-center justify-center p-3 rounded-2xl border transition-all text-center cursor-pointer ${
                 activeSubcat === null
-                  ? "bg-emerald-600 text-white font-extrabold shadow-sm border-emerald-600 ring-2 ring-emerald-200"
-                  : "bg-white text-slate-700 hover:bg-slate-50 font-bold border-slate-200/90 shadow-2xs"
+                  ? "bg-emerald-600 text-white border-emerald-600 ring-2 ring-emerald-300 shadow-md scale-102"
+                  : "bg-white hover:bg-slate-50 border-slate-200/90 text-slate-800 shadow-2xs hover:border-emerald-300"
               }`}
             >
-              <div className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs font-black">
+              <div
+                className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center text-xl font-black mb-2 transition-transform group-hover:scale-105 ${
+                  activeSubcat === null
+                    ? "bg-white/20 text-white"
+                    : "bg-emerald-50 text-emerald-700"
+                }`}
+              >
                 ✦
               </div>
-              <div className="text-left">
-                <span className="text-xs block leading-tight">সবগুলো</span>
-                <span className="text-[10px] opacity-80 font-medium">ক্যাটাগরি পণ্য</span>
-              </div>
+              <span className="text-xs sm:text-sm font-extrabold line-clamp-1">সবগুলো</span>
+              <span
+                className={`text-[10px] font-medium mt-0.5 ${
+                  activeSubcat === null ? "text-emerald-100" : "text-slate-400"
+                }`}
+              >
+                {initialProducts.length} টি পণ্য
+              </span>
             </button>
 
+            {/* Subcategory Cards */}
             {subcategories.map((sub: any) => {
               const isSelected = activeSubcat === sub.slug || activeSubcat === sub.id;
               const subImage =
                 sub.imageUrl ||
                 category?.imageUrl ||
-                "https://images.unsplash.com/photo-1610832958506-aa56368176cf?q=80&w=300&auto=format&fit=crop";
+                "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=400&auto=format&fit=crop";
 
               return (
                 <button
                   key={sub.id || sub.slug}
                   type="button"
                   onClick={() => setActiveSubcat(isSelected ? null : sub.slug)}
-                  className={`px-3 py-1.5 rounded-2xl flex items-center gap-2 transition-all cursor-pointer border ${
+                  className={`group flex flex-col items-center p-2.5 sm:p-3 rounded-2xl border transition-all text-center cursor-pointer ${
                     isSelected
-                      ? "bg-emerald-600 text-white font-extrabold shadow-sm border-emerald-600 ring-2 ring-emerald-200 scale-102"
-                      : "bg-white text-slate-700 hover:bg-slate-50 font-bold border-slate-200/90 hover:border-emerald-300 shadow-2xs"
+                      ? "bg-emerald-600 text-white border-emerald-600 ring-2 ring-emerald-300 shadow-md scale-102"
+                      : "bg-white hover:bg-slate-50 border-slate-200/90 text-slate-800 shadow-2xs hover:border-emerald-300"
                   }`}
                 >
-                  <div className="w-7 h-7 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-100">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl overflow-hidden bg-slate-100 mb-2 border border-slate-100 transition-transform group-hover:scale-105 shadow-2xs">
                     <img
                       src={subImage}
                       alt={sub.name}
@@ -240,16 +253,14 @@ export default function CategoryClientView({
                       loading="lazy"
                     />
                   </div>
-                  <div className="text-left max-w-[130px]">
-                    <span className="text-xs block leading-tight truncate">{sub.name}</span>
-                    <span
-                      className={`text-[10px] font-medium ${
-                        isSelected ? "text-emerald-100" : "text-slate-400"
-                      }`}
-                    >
-                      সাব-ক্যাটাগরি
-                    </span>
-                  </div>
+                  <span className="text-xs sm:text-sm font-extrabold line-clamp-1">{sub.name}</span>
+                  <span
+                    className={`text-[10px] font-medium mt-0.5 ${
+                      isSelected ? "text-emerald-100" : "text-slate-400"
+                    }`}
+                  >
+                    সাব-ক্যাটাগরি
+                  </span>
                 </button>
               );
             })}
