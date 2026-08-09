@@ -6,10 +6,13 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface ProductGalleryProps {
   images: string[];
-  name: string;
+  name?: string;
 }
 
-export const ProductGallery: React.FC<ProductGalleryProps> = ({ images, name }) => {
+export const ProductGallery: React.FC<ProductGalleryProps> = ({
+  images,
+  name = "Product image",
+}) => {
   const imagesList = images && images.length > 0 ? images : ["/file.svg"];
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -29,7 +32,7 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({ images, name }) 
       <div className="relative aspect-square w-full rounded-3xl border border-slate-200/80 bg-slate-50 overflow-hidden shadow-sm group">
         <Image
           src={activeImage}
-          alt={name}
+          alt={name || "Product image"}
           fill
           priority
           sizes="(max-width: 768px) 100vw, 50vw"
@@ -76,7 +79,7 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({ images, name }) 
             >
               <Image
                 src={img}
-                alt={`${name} thumbnail ${index + 1}`}
+                alt={`${name || "Product"} thumbnail ${index + 1}`}
                 fill
                 sizes="64px"
                 className="object-cover"

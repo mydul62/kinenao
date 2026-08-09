@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ShoppingBag, Loader2, Check, Zap } from "lucide-react";
+import { ShoppingBag, Loader2, Check, Zap, Film, Star } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { toast } from "sonner";
 
@@ -15,10 +15,16 @@ interface ProductCardProps {
     price: number;
     discountPrice?: number | null;
     thumbnail?: string | null;
+    images?: string[];
+    videoUrl?: string | null;
+    variants?: any[];
     brand?: { name?: string; logoUrl?: string } | null;
-    category?: { name?: string } | null;
+    category?: { name?: string; slug?: string } | null;
     stockQty?: number;
     reservedStockQty?: number;
+    customBadge?: string | null;
+    rating?: number;
+    reviewsCount?: number;
   };
   className?: string;
 }
@@ -30,9 +36,10 @@ export default function ProductCard({ product, className = "" }: ProductCardProp
   const [buyingNow, setBuyingNow] = useState(false);
   const [addedSuccess, setAddedSuccess] = useState(false);
 
-  const price = product.discountPrice !== null && product.discountPrice !== undefined
-    ? product.discountPrice
-    : product.price;
+  const price =
+    product.discountPrice !== null && product.discountPrice !== undefined
+      ? product.discountPrice
+      : product.price;
 
   const originalPrice = product.price;
 
@@ -41,16 +48,26 @@ export default function ProductCard({ product, className = "" }: ProductCardProp
       ? Math.round(((product.price - product.discountPrice) / product.price) * 100)
       : 0;
 
+  const hasVariants = product.variants && product.variants.length > 0;
+  const hasVideo = Boolean(product.videoUrl);
+
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
     setAdding(true);
     setTimeout(() => {
-      addToCart(product);
+      addToCart({
+        id: product.id,
+        name: product.name,
+        slug: product.slug,
+        price: product.price,
+        discountPrice: product.discountPrice,
+        thumbnail: product.thumbnail || (product.images && product.images[0]) || "",
+      });
       setAdding(false);
       setAddedSuccess(true);
-      toast.success(`"${product.name}" added to cart!`);
+      toast.success(`"${product.name}" কার্টে যুক্ত হয়েছে!`);
       setTimeout(() => setAddedSuccess(false), 1800);
     }, 300);
   };
@@ -60,125 +77,125 @@ export default function ProductCard({ product, className = "" }: ProductCardProp
     e.stopPropagation();
 
     setBuyingNow(true);
-    setTimeout(() => {
-      addToCart(product);
-      setBuyingNow(false);
-      router.push("/checkout");
-    }, 300);
+    router.push(`/product/${product.slug || product.id}`);
   };
 
-  // Get brand initial or logo
-  const brandInitial = product.brand?.name
-    ? product.brand.name.substring(0, 2).toUpperCase()
-    : "HT";
+  const imageSrc =
+    product.thumbnail ||
+    (product.images && product.images.length > 0 ? product.images[0] : "") ||
+    "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=600&auto=format&fit=crop";
 
   return (
     <div
-      className={`bg-white border border-slate-200/90 rounded-[26px] p-3 sm:p-3.5 flex flex-col justify-between hover:shadow-xl hover:border-slate-300 transition-all duration-300 group ${className}`}
+      className={`bg-white border border-slate-200/90 rounded-[22px] p-3 sm:p-3.5 flex flex-col justify-between hover:shadow-xl hover:border-emerald-300/80 transition-all duration-300 group ${className}`}
     >
-      {/* Top Image Showcase Container */}
-      <div className="relative w-full aspect-square rounded-[20px] overflow-hidden bg-slate-50 mb-3 border border-slate-100">
-        {/* Brand Logo Badge (Top Left) */}
-        <div className="absolute top-2.5 left-2.5 z-10 w-9 h-9 rounded-full bg-white shadow-md flex items-center justify-center border border-slate-100 overflow-hidden">
-          {product.brand?.logoUrl ? (
-            <img src={product.brand.logoUrl} alt="" className="w-6 h-6 object-contain" />
-          ) : (
-            <span className="font-black text-[11px] tracking-tighter text-[#009669]">
-              {brandInitial}
-            </span>
-          )}
-        </div>
+      {/* Image Showcase Container */}
+      <Link
+        href={`/product/${product.slug || product.id}`}
+        className="relative w-full aspect-square rounded-[18px] overflow-hidden bg-slate-50 mb-3 border border-slate-100 block"
+      >
+        <img
+          src={imageSrc}
+          alt={product.name}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          loading="lazy"
+        />
 
-        {/* Dynamic Promotional Badge Pill (Top Right) */}
-        {(product as any).customBadge ? (
-          <span className="absolute top-2.5 right-2.5 z-10 bg-[#009669] text-white text-[11px] font-black px-3 py-1 rounded-full shadow-sm tracking-wide uppercase max-w-[120px] truncate">
-            {(product as any).customBadge}
+        {/* Video Indicator Badge */}
+        {hasVideo && (
+          <div className="absolute bottom-2 left-2 z-10 bg-black/70 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+            <Film className="w-3 h-3 text-emerald-400" />
+            <span>ভিডিও</span>
+          </div>
+        )}
+
+        {/* Promotional Badge Pill */}
+        {product.customBadge ? (
+          <span className="absolute top-2.5 right-2.5 z-10 bg-emerald-700 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-sm uppercase max-w-[120px] truncate">
+            {product.customBadge}
           </span>
         ) : discountPercent > 0 ? (
-          <span className="absolute top-2.5 right-2.5 z-10 bg-[#009669] text-white text-[11px] font-black px-3 py-1 rounded-full shadow-sm tracking-wide uppercase">
+          <span className="absolute top-2.5 right-2.5 z-10 bg-emerald-700 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-sm uppercase">
             {discountPercent}% OFF
-          </span>
-        ) : (product as any).promotionalBadges?.length > 0 ? (
-          <span className="absolute top-2.5 right-2.5 z-10 bg-[#6C5CE7] text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-sm tracking-wide uppercase">
-            {(product as any).promotionalBadges[0]}
           </span>
         ) : null}
 
-        {/* Product Image Link */}
-        <Link href={`/product/${product.slug}`} className="block w-full h-full">
-          <img
-            src={product.thumbnail || "/file.svg"}
-            alt={product.name}
-            loading="lazy"
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          />
-        </Link>
-      </div>
+        {/* Variant count badge */}
+        {hasVariants && (
+          <div className="absolute top-2.5 left-2.5 z-10 bg-white/90 backdrop-blur-md border border-slate-200 text-slate-800 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+            {product.variants!.length} টি কালার
+          </div>
+        )}
+      </Link>
 
-      {/* Product Information (Centered Alignment) */}
-      <div className="flex-1 flex flex-col items-center text-center justify-between space-y-2 mb-3">
-        {/* Product Title */}
-        <Link
-          href={`/product/${product.slug}`}
-          className="font-extrabold text-base md:text-lg text-[#1e293b] hover:text-[#009669] transition-colors line-clamp-2 leading-snug px-1"
-        >
-          {product.name}
-        </Link>
-
-        {/* Price Row */}
-        <div className="flex items-baseline justify-center gap-2">
-          <span className="text-[#1e293b] font-extrabold text-base md:text-lg">
-            {price}Tk
-          </span>
-          {discountPercent > 0 && (
-            <span className="text-slate-400 line-through text-xs md:text-sm font-normal">
-              {originalPrice}Tk
+      {/* Info Container */}
+      <div className="flex-1 flex flex-col justify-between space-y-2.5">
+        <div>
+          {/* Category breadcrumb pill */}
+          {product.category && (
+            <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
+              {product.category.name}
             </span>
           )}
+
+          {/* Product Title */}
+          <Link
+            href={`/product/${product.slug || product.id}`}
+            className="block font-bold text-sm text-slate-900 group-hover:text-emerald-700 transition-colors line-clamp-2 leading-snug mt-0.5"
+          >
+            {product.name}
+          </Link>
         </div>
-      </div>
 
-      {/* Dual Action Buttons Side-by-Side (Grid 2) */}
-      <div className="grid grid-cols-2 gap-2 pt-1">
-        {/* ADD TO CART Button (Navy) */}
-        <button
-          type="button"
-          onClick={handleAddToCart}
-          disabled={adding || buyingNow}
-          className={`w-full font-extrabold text-[10px] sm:text-xs py-2.5 px-1.5 rounded-xl flex items-center justify-center gap-1 transition-all shadow-sm active:scale-[0.98] cursor-pointer uppercase tracking-wider whitespace-nowrap ${
-            addedSuccess
-              ? "bg-emerald-700 text-white"
-              : "bg-[#1c3d5a] hover:bg-[#11273c] text-white"
-          }`}
-        >
-          {adding ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : addedSuccess ? (
-            <>
-              <Check className="w-3.5 h-3.5" /> ADDED
-            </>
-          ) : (
-            <>
-              <ShoppingBag className="w-3.5 h-3.5 stroke-[2.5]" /> ADD TO CART
-            </>
-          )}
-        </button>
+        {/* Price & Rating */}
+        <div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-base sm:text-lg font-black text-emerald-700 tracking-tight">
+              ৳{price.toLocaleString()}
+            </span>
+            {discountPercent > 0 && (
+              <span className="text-xs text-slate-400 line-through font-semibold">
+                ৳{originalPrice.toLocaleString()}
+              </span>
+            )}
+          </div>
+        </div>
 
-        {/* ORDER NOW (অর্ডার করুন) Button (Vibrant Green) */}
-        <button
-          type="button"
-          onClick={handleBuyNow}
-          disabled={adding || buyingNow}
-          className="w-full bg-[#009669] hover:bg-[#007f59] text-white font-black text-[10px] sm:text-xs py-2.5 px-1.5 rounded-xl flex items-center justify-center gap-1 transition-all shadow-md shadow-[#009669]/20 active:scale-[0.98] cursor-pointer uppercase tracking-wider whitespace-nowrap"
-        >
-          {buyingNow ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : (
-            <>
-              <Zap className="w-3.5 h-3.5 fill-current" /> ORDER NOW
-            </>
-          )}
-        </button>
+        {/* Actions Button Row */}
+        <div className="pt-2 grid grid-cols-2 gap-2 border-t border-slate-100">
+          <button
+            type="button"
+            onClick={handleAddToCart}
+            disabled={adding}
+            className={`py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+              addedSuccess
+                ? "bg-emerald-600 text-white"
+                : "bg-slate-100 hover:bg-slate-200 text-slate-800"
+            }`}
+          >
+            {adding ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : addedSuccess ? (
+              <>
+                <Check className="w-3.5 h-3.5" /> কার্টে যুক্ত
+              </>
+            ) : (
+              <>
+                <ShoppingBag className="w-3.5 h-3.5" /> কার্ট
+              </>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleBuyNow}
+            disabled={buyingNow}
+            className="py-2 px-2 rounded-xl text-xs font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center gap-1 shadow-sm hover:shadow transition-all cursor-pointer"
+          >
+            <Zap className="w-3.5 h-3.5 fill-white" />
+            <span>অর্ডার করুন</span>
+          </button>
+        </div>
       </div>
     </div>
   );

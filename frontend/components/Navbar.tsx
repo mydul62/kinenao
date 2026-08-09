@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { categories } from "../data/products";
+import { mockCategories } from "@/lib/mockData";
 import { useCart } from "../context/CartContext";
 import { ShoppingBag, ChevronDown, Menu, X } from "lucide-react";
 
@@ -16,7 +16,9 @@ export const Navbar: React.FC = () => {
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         {/* Brand Name */}
         <Link href="/" className="flex items-center gap-2 font-bold text-xl text-primary">
-          <span className="tracking-wider bg-primary/10 px-3 py-1 rounded-xl">NextShop</span>
+          <span className="tracking-wider bg-primary/10 px-3 py-1 rounded-xl text-emerald-800 font-black">
+            KineNao
+          </span>
         </Link>
 
         {/* Navigation Links - Desktop */}
@@ -46,7 +48,7 @@ export const Navbar: React.FC = () => {
                   className="absolute top-8 left-0 z-20 w-48 rounded-xl border bg-card p-2 shadow-lg"
                   onMouseLeave={() => setDropdownOpen(false)}
                 >
-                  {categories.map((cat) => (
+                  {mockCategories.map((cat) => (
                     <Link
                       key={cat.id}
                       href={`/category/${cat.slug}`}

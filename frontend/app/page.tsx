@@ -42,10 +42,10 @@ export default function Home() {
   const [newArrivals, setNewArrivals] = useState<any[]>([]);
   const [trending, setTrending] = useState<any[]>([]);
   const [recommended, setRecommended] = useState<any[]>([]);
-  const [banners, setBanners] = useState<any[]>([]);
+  const [banners, setBanners] = useState<any[]>(mockBanners);
   const [currentBanner, setCurrentBanner] = useState(0);
-  const [faqs, setFaqs] = useState<any[]>([]);
-  const [brands, setBrands] = useState<any[]>([]);
+  const [faqs, setFaqs] = useState<any[]>(mockFaqs);
+  const [brands, setBrands] = useState<any[]>(mockBrands);
   const [isLoading, setIsLoading] = useState(true);
 
   const categoryScrollRef = useRef<HTMLDivElement>(null);
@@ -56,7 +56,8 @@ export default function Home() {
       try {
         // 1. Fetch categories
         const catRes = await api.get("/categories?type=tree");
-        setCategories(catRes.data.data.categories?.length > 0 ? catRes.data.data.categories : mockCategories);
+        const cats = catRes.data?.data?.categories;
+        setCategories(cats && cats.length > 0 ? cats : mockCategories);
       } catch (err) {
         console.error("Categories fetch error, using mock:", err);
         setCategories(mockCategories);
@@ -65,7 +66,7 @@ export default function Home() {
       try {
         // 2. Fetch products and distribute
         const prodRes = await api.get("/products?limit=50");
-        const allProds = prodRes.data.data.products || [];
+        const allProds = prodRes.data?.data?.products || [];
 
         if (allProds.length > 0) {
           const featured = allProds.filter((p: any) => p.isActive && p.isFeatured);
@@ -98,7 +99,8 @@ export default function Home() {
       try {
         // 3. Fetch brands
         const brandRes = await api.get("/brands");
-        setBrands(brandRes.data.data.brands?.length > 0 ? brandRes.data.data.brands : mockBrands);
+        const brandList = brandRes.data?.data?.brands;
+        setBrands(brandList && brandList.length > 0 ? brandList : mockBrands);
       } catch (err) {
         console.error("Brands error, using mock:", err);
         setBrands(mockBrands);
@@ -107,7 +109,8 @@ export default function Home() {
       try {
         // 4. Fetch banners
         const bannerRes = await api.get("/settings/hero_banners");
-        setBanners(bannerRes.data.data.value?.length > 0 ? bannerRes.data.data.value : mockBanners);
+        const bannerList = bannerRes.data?.data?.value;
+        setBanners(bannerList && bannerList.length > 0 ? bannerList : mockBanners);
       } catch {
         setBanners(mockBanners);
       }
@@ -115,7 +118,8 @@ export default function Home() {
       try {
         // 5. Fetch FAQs
         const faqRes = await api.get("/settings/faqs");
-        setFaqs(faqRes.data.data.value?.length > 0 ? faqRes.data.data.value : mockFaqs);
+        const faqList = faqRes.data?.data?.value;
+        setFaqs(faqList && faqList.length > 0 ? faqList : mockFaqs);
       } catch {
         setFaqs(mockFaqs);
       }
@@ -138,17 +142,19 @@ export default function Home() {
   useEffect(() => {
     if (!banners || banners.length <= 1) return;
     const interval = setInterval(() => {
-      setCurrentBanner((prev) => (prev === banners.length - 1 ? 0 : prev + 1));
+      setCurrentBanner((prev) => (prev >= banners.length - 1 ? 0 : prev + 1));
     }, 4500);
     return () => clearInterval(interval);
   }, [banners]);
 
   const nextBanner = () => {
-    setCurrentBanner((prev) => (prev === banners.length - 1 ? 0 : prev + 1));
+    if (!banners || banners.length === 0) return;
+    setCurrentBanner((prev) => (prev >= banners.length - 1 ? 0 : prev + 1));
   };
 
   const prevBanner = () => {
-    setCurrentBanner((prev) => (prev === 0 ? banners.length - 1 : prev - 1));
+    if (!banners || banners.length === 0) return;
+    setCurrentBanner((prev) => (prev <= 0 ? banners.length - 1 : prev - 1));
   };
 
   const scrollCategoryLeft = () => {
@@ -174,7 +180,8 @@ export default function Home() {
     return ShoppingBag;
   };
 
-  const activeBannerImage = banners[currentBanner]?.imageUrl || banners[currentBanner]?.image;
+  const currentItem = banners && banners.length > 0 ? banners[currentBanner] || banners[0] : null;
+  const activeBannerImage = currentItem?.imageUrl || currentItem?.image || "";
 
   return (
     <div className="flex flex-col min-h-screen bg-[#fafafa]">
@@ -187,7 +194,7 @@ export default function Home() {
 
       {/* Hero Banner Carousel (With Auto-Slide) */}
       <section className="relative h-[480px] w-full overflow-hidden bg-slate-900">
-        {banners.length > 0 && (
+        {currentItem && (
           <div
             className="absolute inset-0 bg-cover bg-center transition-all duration-700 ease-in-out flex items-center"
             style={{
@@ -199,13 +206,13 @@ export default function Home() {
                 <Sparkles className="h-3.5 w-3.5" /> Exclusive Collection
               </span>
               <h1 className="text-4xl md:text-6xl font-black max-w-xl leading-tight tracking-tight text-white">
-                {banners[currentBanner]?.title}
+                {currentItem?.title}
               </h1>
               <p className="text-base md:text-lg text-slate-200 max-w-md font-medium">
-                {banners[currentBanner]?.subtitle}
+                {currentItem?.subtitle}
               </p>
               <a
-                href={banners[currentBanner]?.linkUrl || banners[currentBanner]?.link || "/shop"}
+                href={currentItem?.linkUrl || currentItem?.link || "/shop"}
                 className="inline-flex items-center justify-center bg-[#009669] hover:bg-[#007f59] text-white font-extrabold px-8 py-3.5 rounded-xl transition-all shadow-lg uppercase tracking-widest text-xs"
               >
                 Explore Collection
@@ -253,59 +260,55 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Categories Grid Slider (Exact Replica of Demo Screenshot) */}
-      <section className="py-14 container mx-auto px-4 relative">
-        <div className="text-center max-w-xl mx-auto mb-8">
-          <h2 className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 uppercase">
-            Shop by Category
+      {/* Popular Categories Grid (Exact Replica of User's Reference Screenshot) */}
+      <section className="py-12 container mx-auto px-4 max-w-7xl">
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            Popular Categories
           </h2>
+          <a
+            href="/shop"
+            className="text-xs sm:text-sm font-extrabold text-purple-700 hover:text-purple-800 transition-colors"
+          >
+            View All →
+          </a>
         </div>
 
-        <div className="relative max-w-6xl mx-auto px-4 md:px-8">
-          {/* Left Arrow Button */}
-          <button
-            type="button"
-            onClick={scrollCategoryLeft}
-            className="absolute -left-3 md:-left-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white border border-slate-300 shadow-lg text-slate-800 flex items-center justify-center hover:bg-slate-100 hover:scale-105 transition-all cursor-pointer"
-            title="Scroll Left"
-          >
-            <ChevronLeft className="h-6 w-6" />
-          </button>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5 sm:gap-4.5">
+          {categories.map((cat, idx) => {
+            const subCount = cat.childCategories ? cat.childCategories.length : 6;
+            const catImage =
+              cat.imageUrl ||
+              "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?q=80&w=600&auto=format&fit=crop";
 
-          {/* Scrollable Container */}
-          <div
-            ref={categoryScrollRef}
-            className="flex items-center gap-4 sm:gap-6 overflow-x-auto scroll-smooth py-3 px-2 no-scrollbar"
-            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-          >
-            {categories.map((cat, idx) => {
-              const IconComponent = getCategoryIcon(cat.name);
-              return (
-                <a
-                  key={cat.id || idx}
-                  href={`/shop?category=${cat.id}`}
-                  className="flex-shrink-0 w-36 sm:w-44 h-36 sm:h-44 bg-[#f8f9fa] border border-slate-200/80 rounded-2xl flex flex-col items-center justify-center p-4 hover:border-slate-400 hover:shadow-md transition-all cursor-pointer group text-center"
-                >
-                  <div className="w-14 h-14 rounded-xl flex items-center justify-center text-slate-800 mb-3 group-hover:scale-110 transition-transform">
-                    <IconComponent className="h-9 w-9 stroke-[1.5]" />
-                  </div>
-                  <span className="font-extrabold text-xs sm:text-sm tracking-wider uppercase text-slate-800 group-hover:text-[#009669] transition-colors leading-tight line-clamp-2">
-                    {cat.name}
-                  </span>
-                </a>
-              );
-            })}
-          </div>
+            return (
+              <a
+                key={cat.id || idx}
+                href={`/category/${cat.slug || cat.id}`}
+                className="bg-white border border-slate-100 rounded-3xl p-3 sm:p-4 flex flex-col items-center text-center group hover:border-purple-300 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer shadow-xs"
+              >
+                {/* Image showcase */}
+                <div className="w-full aspect-[4/3] rounded-2xl overflow-hidden bg-slate-50 flex items-center justify-center p-2 mb-3 group-hover:scale-105 transition-transform duration-500">
+                  <img
+                    src={catImage}
+                    alt={cat.name}
+                    className="w-full h-full object-contain mix-blend-multiply"
+                    loading="lazy"
+                  />
+                </div>
 
-          {/* Right Arrow Button */}
-          <button
-            type="button"
-            onClick={scrollCategoryRight}
-            className="absolute -right-3 md:-right-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white border border-slate-300 shadow-lg text-slate-800 flex items-center justify-center hover:bg-slate-100 hover:scale-105 transition-all cursor-pointer"
-            title="Scroll Right"
-          >
-            <ChevronRight className="h-6 w-6" />
-          </button>
+                {/* Title */}
+                <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 group-hover:text-purple-700 transition-colors line-clamp-1">
+                  {cat.name}
+                </h3>
+
+                {/* Subcategories count pill */}
+                <span className="text-[11px] font-medium text-slate-400 mt-0.5">
+                  {subCount} subcategories
+                </span>
+              </a>
+            );
+          })}
         </div>
       </section>
 

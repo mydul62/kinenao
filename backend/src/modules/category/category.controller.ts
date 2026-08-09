@@ -25,8 +25,11 @@ export const getCategories = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { type } = req.query as any;
-    const categories = await categoryService.dbGetCategories(type as string);
+    const { type, includeInactive } = req.query as any;
+    const categories = await categoryService.dbGetCategories(
+      type as string,
+      includeInactive === "true" || includeInactive === true
+    );
     res.status(200).json({
       status: "success",
       data: {
@@ -38,14 +41,14 @@ export const getCategories = async (
   }
 };
 
-export const getCategoryById = async (
+export const getCategoryByIdOrSlug = async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
     const { id } = req.params as any;
-    const category = await categoryService.dbGetCategoryById(id);
+    const category = await categoryService.dbGetCategoryByIdOrSlug(id);
     res.status(200).json({
       status: "success",
       data: {

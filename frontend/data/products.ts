@@ -1,100 +1,97 @@
-import { Category, Product } from "../types/shop";
+export interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  imageUrl: string;
+  parentId?: string | null;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  discountPrice?: number | null;
+  categoryId: string;
+  rating?: number;
+  images: string[];
+  videoUrl?: string | null;
+  variants?: any[];
+}
 
 export const categories: Category[] = [
   {
-    id: "cat_electronics",
-    name: "Electronics",
-    slug: "electronics",
-    imageUrl: "https://images.unsplash.com/photo-1498049794561-7780e7231661?q=80&w=600&auto=format&fit=crop",
+    id: "cat_saree",
+    name: "Saree (শাড়ি)",
+    slug: "saree",
+    imageUrl: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=600&auto=format&fit=crop",
   },
   {
-    id: "cat_apparel",
-    name: "Apparel",
-    slug: "apparel",
-    imageUrl: "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?q=80&w=600&auto=format&fit=crop",
+    id: "cat_three_piece",
+    name: "Three Piece (থ্রি-পিস)",
+    slug: "three-piece",
+    imageUrl: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=600&auto=format&fit=crop",
   },
   {
-    id: "cat_home_living",
-    name: "Home & Living",
-    slug: "home-living",
-    imageUrl: "https://images.unsplash.com/photo-1484101403633-562f891dc89a?q=80&w=600&auto=format&fit=crop",
+    id: "cat_kids",
+    name: "Kids (বাচ্চাদের পণ্য)",
+    slug: "kids",
+    imageUrl: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=600&auto=format&fit=crop",
+  },
+  {
+    id: "cat_bags",
+    name: "Bags & Purses",
+    slug: "bags-purses",
+    imageUrl: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=600&auto=format&fit=crop",
+  },
+  {
+    id: "cat_jewellery",
+    name: "Jewellery",
+    slug: "jewellery",
+    imageUrl: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=600&auto=format&fit=crop",
+  },
+  {
+    id: "cat_watches",
+    name: "Watches",
+    slug: "watches",
+    imageUrl: "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=600&auto=format&fit=crop",
   },
 ];
 
 export const products: Product[] = [
   {
-    id: "prod_iphone",
-    name: "Premium Smartphone X1",
-    description: "Experience the next level of mobile computing with state-of-the-art processors, OLED screen resolution, and triple camera matrix capture.",
-    price: 999.99,
-    categoryId: "cat_electronics",
-    rating: 4.8,
+    id: "prod_saree_1",
+    name: "Premium Handloom Soft Cotton Saree",
+    description: "আমাদের নিজস্ব তাঁতে তৈরি শতভাগ খাঁটি সুতি শাড়ি। হালকা, আরামদায়ক এবং যেকোনো ঋতুতে পরিধানের জন্য অত্যন্ত উপযোগী।",
+    price: 1750.0,
+    discountPrice: 2450.0,
+    categoryId: "cat_saree",
+    rating: 5.0,
+    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
     images: [
-      "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=600&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1565849906663-bd227193a558?q=80&w=600&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1523206489230-c012c64b2b48?q=80&w=600&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=600&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=600&auto=format&fit=crop",
+    ],
+    variants: [
+      { id: "v1", name: "Crimson Red", colorName: "Red", colorCode: "#DC2626", price: 1750.0 },
+      { id: "v2", name: "Royal Blue", colorName: "Blue", colorCode: "#2563EB", price: 1750.0 },
     ],
   },
   {
-    id: "prod_headphones",
-    name: "Wireless ANC Headphones Pro",
-    description: "Immerse yourself in acoustic purity with active noise cancellation, low-latency audio transmission, and premium ergonomic leather ear cups.",
-    price: 249.99,
-    categoryId: "cat_electronics",
-    rating: 4.6,
+    id: "prod_three_piece_1",
+    name: "Designer Embroidered Cotton Three Piece Suit",
+    description: "উন্নত মানের প্রিমিয়াম জর্জেট ও কটন কম্বিনেশনের গর্জিয়াস থ্রি-পিস সেট।",
+    price: 2290.0,
+    discountPrice: 3200.0,
+    categoryId: "cat_three_piece",
+    rating: 4.9,
+    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
     images: [
-      "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=600&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1484704849700-f032a568e944?q=80&w=600&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1524678606370-a47ad25cb82a?q=80&w=600&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=600&auto=format&fit=crop",
     ],
-  },
-  {
-    id: "prod_tshirt",
-    name: "Organic Cotton Comfort T-Shirt",
-    description: "Crafted from 100% certified organic long-staple cotton, providing unmatched breathable comfort, clean tailoring, and durable wash structure.",
-    price: 29.99,
-    categoryId: "cat_apparel",
-    rating: 4.4,
-    images: [
-      "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?q=80&w=600&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?q=80&w=600&auto=format&fit=crop",
-    ],
-  },
-  {
-    id: "prod_shoes",
-    name: "SpeedRun Performance Trainers",
-    description: "Engineered speed running trainers equipped with responsive nitrogen-infused foam mid-soles and high-grip carbon rubber outsoles.",
-    price: 129.99,
-    categoryId: "cat_apparel",
-    rating: 4.7,
-    images: [
-      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=600&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?q=80&w=600&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1608231387042-66d1773070a5?q=80&w=600&auto=format&fit=crop",
-    ],
-  },
-  {
-    id: "prod_coffeemaker",
-    name: "Artisan Drip Coffee Station",
-    description: "Programmed precision water temperature and pre-infusion bloom cycle mapping delivers barista-quality pour-over drip coffee at home.",
-    price: 89.99,
-    categoryId: "cat_home_living",
-    rating: 4.5,
-    images: [
-      "https://images.unsplash.com/photo-1517256064527-09c53b2d0bc6?q=80&w=600&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=600&auto=format&fit=crop",
-    ],
-  },
-  {
-    id: "prod_lamp",
-    name: "Minimalist Modern Oak Desk Lamp",
-    description: "Warm adjustable LED desk light wrapped in custom machined oak timber and brushed steel details. Elevates home workspace atmospheres.",
-    price: 49.99,
-    categoryId: "cat_home_living",
-    rating: 4.3,
-    images: [
-      "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=600&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1534224039826-c7a0dea0e66a?q=80&w=600&auto=format&fit=crop",
+    variants: [
+      { id: "v3", name: "Maroon", colorName: "Maroon", colorCode: "#831843", price: 2290.0 },
+      { id: "v4", name: "Navy Blue", colorName: "Navy", colorCode: "#1E3A8A", price: 2290.0 },
     ],
   },
 ];

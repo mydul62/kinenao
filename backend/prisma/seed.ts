@@ -15,13 +15,15 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  console.log("Seeding Expanded Bangla Categories & Data Catalog...");
+  console.log("Starting comprehensive Kinenao database seeding (All Categories + Minimum 4 Subcategories & Products)...");
 
-  // 1. Clear existing data in correct dependency order
+  // 1. Clear existing transactional records in correct foreign-key dependency order
   await prisma.timelineEvent.deleteMany({});
   await prisma.orderItem.deleteMany({});
   await prisma.order.deleteMany({});
   await prisma.review.deleteMany({});
+  await prisma.wishlistItem.deleteMany({});
+  await prisma.productVariant.deleteMany({});
   await prisma.product.deleteMany({});
   await prisma.category.deleteMany({});
   await prisma.brand.deleteMany({});
@@ -46,7 +48,7 @@ async function main() {
       role: Role.ADMIN,
       profile: {
         create: {
-          fullName: "সিস্টেম অ্যাডমিন",
+          fullName: "System Admin",
           phoneNumber: "01700000001",
         },
       },
@@ -60,7 +62,7 @@ async function main() {
       role: Role.MANAGER,
       profile: {
         create: {
-          fullName: "স্টোর ম্যানেজার",
+          fullName: "Store Manager",
           phoneNumber: "01700000002",
         },
       },
@@ -74,15 +76,15 @@ async function main() {
       role: Role.CUSTOMER,
       profile: {
         create: {
-          fullName: "আনিকা রহমান",
+          fullName: "Anika Rahman",
           phoneNumber: "01900000003",
           addresses: {
             create: [
               {
-                street: "হাউস ১২, রোড ৫, সেক্টর ৩",
-                city: "ঢাকা",
-                postalCode: "১২৩০",
-                area: "উত্তরা",
+                street: "House 12, Road 5, Sector 3",
+                city: "Dhaka",
+                postalCode: "1230",
+                area: "Uttara",
                 isDefault: true,
               },
             ],
@@ -95,56 +97,56 @@ async function main() {
   console.log("Users created.");
 
   // 3. Create Delivery Zones
-  await prisma.deliveryZone.create({
+  const insideDhaka = await prisma.deliveryZone.create({
     data: {
-      zoneName: "ঢাকার ভিতরে",
+      zoneName: "Inside Dhaka (ঢাকার ভিতরে)",
       charge: 60.0,
-      estDeliveryTime: "১-২ দিন",
+      estDeliveryTime: "1-2 Days (২৪-৪৮ ঘন্টা)",
     },
   });
 
   await prisma.deliveryZone.create({
     data: {
-      zoneName: "ঢাকার বাইরে",
+      zoneName: "Outside Dhaka (ঢাকার বাইরে)",
       charge: 120.0,
-      estDeliveryTime: "৩-৫ দিন",
+      estDeliveryTime: "3-5 Days (৩-৫ দিন)",
     },
   });
 
   console.log("Delivery Zones created.");
 
-  // 4. Create Payment Methods
-  await prisma.paymentMethod.create({
-    data: {
-      name: "bKash (বিকাশ)",
-      accountNumber: "01700000001",
-      accountName: "KineNao Shop",
-      accountType: "Merchant",
-      instructions: "বিকাশ মার্চেন্ট নম্বরে (01700000001) পেমেন্ট সম্পন্ন করে রেফারেন্স নম্বর দিন।",
-      logoUrl: "",
-      isActive: true,
-    },
-  });
-
-  await prisma.paymentMethod.create({
-    data: {
-      name: "Nagad (নগদ)",
-      accountNumber: "01800000001",
-      accountName: "KineNao Shop",
-      accountType: "Merchant",
-      instructions: "নগদ মার্চেন্ট নম্বরে (01800000001) পেমেন্ট সম্পন্ন করুন।",
-      logoUrl: "",
-      isActive: true,
-    },
-  });
-
+  // 4. Create Payment Methods (including Cash on Delivery)
   await prisma.paymentMethod.create({
     data: {
       name: "Cash on Delivery (ক্যাশ অন ডেলিভারি)",
       accountNumber: "COD",
-      accountName: "COD",
+      accountName: "Cash on Delivery",
       accountType: "COD",
-      instructions: "পণ্য হাতে পেয়ে টাকা পরিশোধ করুন। কোনো অগ্রিম পেমেন্ট প্রয়োজন নেই।",
+      instructions: "পণ্য হাতে পেয়ে টাকা পরিশোধ করুন। কোনো প্রকার অগ্রিম পেমেন্ট প্রয়োজন নেই। ১০০% নিরাপদ কেনাকাটা।",
+      logoUrl: "",
+      isActive: true,
+    },
+  });
+
+  await prisma.paymentMethod.create({
+    data: {
+      name: "bKash (বিকাশ মার্চেন্ট)",
+      accountNumber: "01700000001",
+      accountName: "Kinenao Official",
+      accountType: "Merchant",
+      instructions: "বিকাশ অ্যাপ থেকে 'Make Payment' অপশন ব্যবহার করে 01700000001 নম্বরে পেমেন্ট করুন।",
+      logoUrl: "",
+      isActive: true,
+    },
+  });
+
+  await prisma.paymentMethod.create({
+    data: {
+      name: "Nagad (নগদ মার্চেন্ট)",
+      accountNumber: "01800000001",
+      accountName: "Kinenao Official",
+      accountType: "Merchant",
+      instructions: "নগদ অ্যাপ অথবা ইউএসএসডি কোড দিয়ে মার্চেন্ট পে করুন।",
       logoUrl: "",
       isActive: true,
     },
@@ -152,520 +154,710 @@ async function main() {
 
   console.log("Payment Methods created.");
 
-  // 5. Create 10 Rich Categories in Bangla
-  const sareeCat = await prisma.category.create({
-    data: { name: "শাড়ি", slug: "saree" },
+  // 5. Create Brands
+  const brandKinenao = await prisma.brand.create({
+    data: { name: "Kinenao Luxe", slug: "kinenao-luxe", isActive: true },
+  });
+  const brandHeritage = await prisma.brand.create({
+    data: { name: "Heritage Craft", slug: "heritage-craft", isActive: true },
+  });
+  const brandNature = await prisma.brand.create({
+    data: { name: "Pure Nature", slug: "pure-nature", isActive: true },
   });
 
-  const threePieceCat = await prisma.category.create({
-    data: { name: "থ্রি-পিস", slug: "three-piece" },
+  // 6. Create Multi-Level Categories with 4+ Subcategories each
+  const sampleVideoUrl = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
+  const sampleVideoUrl2 = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4";
+
+  // Category 1: Beauty & Cosmetics
+  const beautyCat = await prisma.category.create({
+    data: {
+      name: "Beauty Products",
+      slug: "beauty-products",
+      description: "১০০% অথেনটিক লিপস্টিক, স্কিনকেয়ার সিরাম, মেকআপ ও পারফিউম",
+      imageUrl: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=800&auto=format&fit=crop",
+      isFeatured: true,
+      sortOrder: 1,
+    },
+  });
+  const subLipsticks = await prisma.category.create({
+    data: { name: "Lipsticks & Gloss", slug: "lipsticks", parentId: beautyCat.id, sortOrder: 1 },
+  });
+  const subSkincare = await prisma.category.create({
+    data: { name: "Skincare Serums", slug: "skincare", parentId: beautyCat.id, sortOrder: 2 },
+  });
+  const subFoundation = await prisma.category.create({
+    data: { name: "Foundation & Powders", slug: "foundation", parentId: beautyCat.id, sortOrder: 3 },
+  });
+  const subPerfumes = await prisma.category.create({
+    data: { name: "Designer Perfumes", slug: "perfumes", parentId: beautyCat.id, sortOrder: 4 },
   });
 
-  const kidsCat = await prisma.category.create({
-    data: { name: "বাচ্চাদের খেলনা ও বই", slug: "kids-toys-books" },
+  // Category 2: Beverages
+  const beveragesCat = await prisma.category.create({
+    data: {
+      name: "Beverages",
+      slug: "beverages",
+      description: "প্রিমিয়াম ব্ল্যাক টি, রোস্টেড কফি বিন্স, এনার্জি ড্রিংকস ও ফলের জুস",
+      imageUrl: "https://images.unsplash.com/photo-1544145945-f90425340c7e?q=80&w=800&auto=format&fit=crop",
+      isFeatured: true,
+      sortOrder: 2,
+    },
+  });
+  const subTea = await prisma.category.create({
+    data: { name: "Premium Tea", slug: "tea", parentId: beveragesCat.id, sortOrder: 1 },
+  });
+  const subCoffee = await prisma.category.create({
+    data: { name: "Coffee & Nescafe", slug: "coffee", parentId: beveragesCat.id, sortOrder: 2 },
+  });
+  const subJuice = await prisma.category.create({
+    data: { name: "Fruit Juices", slug: "juice", parentId: beveragesCat.id, sortOrder: 3 },
+  });
+  const subEnergyDrinks = await prisma.category.create({
+    data: { name: "Energy Drinks & Soda", slug: "energy-drinks", parentId: beveragesCat.id, sortOrder: 4 },
   });
 
-  const makeupCat = await prisma.category.create({
-    data: { name: "মেকআপ আইটেম", slug: "makeup-items" },
+  // Category 3: Cooking
+  const cookingCat = await prisma.category.create({
+    data: {
+      name: "Cooking",
+      slug: "cooking",
+      description: "খাঁটি সরিষার তেল, চাল, ডাল, ঘি, চিনি, মসলা ও রান্নার প্রয়োজনীয় সামগ্রী",
+      imageUrl: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?q=80&w=800&auto=format&fit=crop",
+      isFeatured: true,
+      sortOrder: 3,
+    },
+  });
+  const subSpices = await prisma.category.create({
+    data: { name: "Spices & Powders", slug: "spices", parentId: cookingCat.id, sortOrder: 1 },
+  });
+  const subOil = await prisma.category.create({
+    data: { name: "Mustard & Cooking Oil", slug: "oil", parentId: cookingCat.id, sortOrder: 2 },
+  });
+  const subRice = await prisma.category.create({
+    data: { name: "Rice & Grain", slug: "rice", parentId: cookingCat.id, sortOrder: 3 },
+  });
+  const subDal = await prisma.category.create({
+    data: { name: "Dal or Lentil", slug: "dal-lentil", parentId: cookingCat.id, sortOrder: 4 },
+  });
+  const subGhee = await prisma.category.create({
+    data: { name: "Ghee", slug: "ghee", parentId: cookingCat.id, sortOrder: 5 },
+  });
+  const subReadyMix = await prisma.category.create({
+    data: { name: "Ready Mix", slug: "ready-mix", parentId: cookingCat.id, sortOrder: 6 },
   });
 
-  const homeDecorCat = await prisma.category.create({
-    data: { name: "হোম ডেকোর", slug: "home-decor" },
+  // Category 4: Dairy, Eggs & Bakery
+  const dairyCat = await prisma.category.create({
+    data: {
+      name: "Dairy, Eggs & Bakery",
+      slug: "dairy-eggs-bakery",
+      description: "খাঁটি গরুর তরল দুধ, মাখন, পনির, ফার্মের তাজা ডিম ও বেকারি কুকিজ",
+      imageUrl: "https://images.unsplash.com/photo-1550583724-b2692b85b150?q=80&w=800&auto=format&fit=crop",
+      isFeatured: true,
+      sortOrder: 4,
+    },
+  });
+  const subMilk = await prisma.category.create({
+    data: { name: "Liquid Milk", slug: "milk", parentId: dairyCat.id, sortOrder: 1 },
+  });
+  const subEggs = await prisma.category.create({
+    data: { name: "Eggs", slug: "eggs", parentId: dairyCat.id, sortOrder: 2 },
+  });
+  const subButter = await prisma.category.create({
+    data: { name: "Butter & Cheese", slug: "butter-cheese", parentId: dairyCat.id, sortOrder: 3 },
+  });
+  const subBakery = await prisma.category.create({
+    data: { name: "Bread & Bakery", slug: "bakery-bread", parentId: dairyCat.id, sortOrder: 4 },
   });
 
-  const bagsCat = await prisma.category.create({
-    data: { name: "ব্যাগ ও পার্স", slug: "bags-purses" },
+  // Category 5: Fruits & Vegetables
+  const fruitsCat = await prisma.category.create({
+    data: {
+      name: "Fruits & Vegetables",
+      slug: "fruits-vegetables",
+      description: "ফরমালিনমুক্ত তাজা দেশি-বিদেশি ফলমূল ও অর্গানিক শাকসবজি",
+      imageUrl: "https://images.unsplash.com/photo-1610832958506-aa56368176cf?q=80&w=800&auto=format&fit=crop",
+      isFeatured: true,
+      sortOrder: 5,
+    },
+  });
+  const subFreshFruits = await prisma.category.create({
+    data: { name: "Fresh Fruits", slug: "fresh-fruits", parentId: fruitsCat.id, sortOrder: 1 },
+  });
+  const subFreshVeg = await prisma.category.create({
+    data: { name: "Fresh Vegetables", slug: "fresh-veg", parentId: fruitsCat.id, sortOrder: 2 },
+  });
+  const subOrganicSalad = await prisma.category.create({
+    data: { name: "Organic Salad & Herbs", slug: "organic-salad", parentId: fruitsCat.id, sortOrder: 3 },
+  });
+  const subDryFruits = await prisma.category.create({
+    data: { name: "Dry Fruits & Nuts", slug: "dry-fruits", parentId: fruitsCat.id, sortOrder: 4 },
   });
 
-  const gadgetsCat = await prisma.category.create({
-    data: { name: "ইলেকট্রনিক্স ও গ্যাজেট", slug: "electronics-gadgets" },
-  });
-
+  // Category 6: Health Products
   const healthCat = await prisma.category.create({
-    data: { name: "হেলথ ও পার্সোনাল কেয়ার", slug: "health-personal-care" },
+    data: {
+      name: "Health Products",
+      slug: "health-products",
+      description: "হ্যান্ড ওয়াশ, স্যাভলন, অ্যান্টিসেপ্টিক ও স্বাস্থ্য সচেতনতার পণ্য",
+      imageUrl: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?q=80&w=800&auto=format&fit=crop",
+      isFeatured: true,
+      sortOrder: 6,
+    },
+  });
+  const subHandwash = await prisma.category.create({
+    data: { name: "Hand Wash & Soaps", slug: "handwash", parentId: healthCat.id, sortOrder: 1 },
+  });
+  const subFirstAid = await prisma.category.create({
+    data: { name: "First Aid & Hygiene", slug: "first-aid", parentId: healthCat.id, sortOrder: 2 },
+  });
+  const subAntiseptic = await prisma.category.create({
+    data: { name: "Antiseptic Liquid", slug: "antiseptic", parentId: healthCat.id, sortOrder: 3 },
+  });
+  const subSupplements = await prisma.category.create({
+    data: { name: "Health Supplements", slug: "supplements", parentId: healthCat.id, sortOrder: 4 },
   });
 
-  const jewelryCat = await prisma.category.create({
-    data: { name: "জুয়েলারি ও এক্সেসরিজ", slug: "jewelry-accessories" },
+  // Category 7: Home & Cleaning
+  const homeCleaningCat = await prisma.category.create({
+    data: {
+      name: "Home & Cleaning",
+      slug: "home-cleaning",
+      description: "ঘর সাজানো, ডিসওয়াশ লিকুইড, ডিটারজেন্ট ও ক্লিনিং ইকুইপমেন্ট",
+      imageUrl: "https://images.unsplash.com/photo-1581578731548-c64695cc6952?q=80&w=800&auto=format&fit=crop",
+      isFeatured: true,
+      sortOrder: 7,
+    },
+  });
+  const subMops = await prisma.category.create({
+    data: { name: "Brooms & Mops", slug: "mops-brooms", parentId: homeCleaningCat.id, sortOrder: 1 },
+  });
+  const subDetergent = await prisma.category.create({
+    data: { name: "Detergent & Cleaner", slug: "detergents", parentId: homeCleaningCat.id, sortOrder: 2 },
+  });
+  const subDishwash = await prisma.category.create({
+    data: { name: "Dishwashing Liquids", slug: "dishwash", parentId: homeCleaningCat.id, sortOrder: 3 },
+  });
+  const subAirFreshener = await prisma.category.create({
+    data: { name: "Air Fresheners", slug: "air-fresheners", parentId: homeCleaningCat.id, sortOrder: 4 },
   });
 
+  // Category 8: Meat & Fish
+  const meatFishCat = await prisma.category.create({
+    data: {
+      name: "Meat & Fish",
+      slug: "meat-fish",
+      description: "তাজা দেশি মুরগি, বিফ, খাসির মাংস এবং নদী ও সাগরের টাটকা মাছ",
+      imageUrl: "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?q=80&w=800&auto=format&fit=crop",
+      isFeatured: true,
+      sortOrder: 8,
+    },
+  });
+  const subChicken = await prisma.category.create({
+    data: { name: "Fresh Chicken", slug: "chicken", parentId: meatFishCat.id, sortOrder: 1 },
+  });
+  const subBeef = await prisma.category.create({
+    data: { name: "Beef & Mutton", slug: "beef-mutton", parentId: meatFishCat.id, sortOrder: 2 },
+  });
+  const subHilsha = await prisma.category.create({
+    data: { name: "Fresh Hilsha Fish", slug: "hilsha-fish", parentId: meatFishCat.id, sortOrder: 3 },
+  });
+  const subShrimp = await prisma.category.create({
+    data: { name: "Prawn & Shrimp", slug: "shrimp-prawn", parentId: meatFishCat.id, sortOrder: 4 },
+  });
+
+  // Category 9: Pet Care
+  const petCareCat = await prisma.category.create({
+    data: {
+      name: "Pet Care",
+      slug: "pet-care",
+      description: "বিড়াল ও কুকুরের পুষ্টিকর ড্রাইড ফুড, ক্যাট লিটার ও আনুষাঙ্গিক",
+      imageUrl: "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?q=80&w=800&auto=format&fit=crop",
+      isFeatured: true,
+      sortOrder: 9,
+    },
+  });
+  const subCatFood = await prisma.category.create({
+    data: { name: "Cat Food & Treats", slug: "cat-food", parentId: petCareCat.id, sortOrder: 1 },
+  });
+  const subDogFood = await prisma.category.create({
+    data: { name: "Dog Food", slug: "dog-food", parentId: petCareCat.id, sortOrder: 2 },
+  });
+  const subCatLitter = await prisma.category.create({
+    data: { name: "Cat Litter & Sand", slug: "cat-litter", parentId: petCareCat.id, sortOrder: 3 },
+  });
+  const subPetAccessories = await prisma.category.create({
+    data: { name: "Pet Accessories", slug: "pet-accessories", parentId: petCareCat.id, sortOrder: 4 },
+  });
+
+  // Category 10: Stationery & Office
+  const stationeryCat = await prisma.category.create({
+    data: {
+      name: "Stationery & Office",
+      slug: "stationery-office",
+      description: "A4 পেপার, নোটবুক, কলম, মার্কার, ফাইল ও প্রয়োজনীয় অফিস সামগ্রী",
+      imageUrl: "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?q=80&w=800&auto=format&fit=crop",
+      isFeatured: true,
+      sortOrder: 10,
+    },
+  });
+  const subPaper = await prisma.category.create({
+    data: { name: "A4 Paper & Notebooks", slug: "paper-notes", parentId: stationeryCat.id, sortOrder: 1 },
+  });
+  const subPens = await prisma.category.create({
+    data: { name: "Pens & Highlighters", slug: "pens-markers", parentId: stationeryCat.id, sortOrder: 2 },
+  });
+  const subFiles = await prisma.category.create({
+    data: { name: "Files & Folders", slug: "files-folders", parentId: stationeryCat.id, sortOrder: 3 },
+  });
+  const subArtSupplies = await prisma.category.create({
+    data: { name: "Art & Craft Supplies", slug: "art-craft", parentId: stationeryCat.id, sortOrder: 4 },
+  });
+
+  // Category 11: Saree (শাড়ি)
+  const sareeCat = await prisma.category.create({
+    data: {
+      name: "Saree",
+      slug: "saree",
+      description: "এক্সক্লুসিভ জর্জেট, সুতি, সিল্ক ও ঢাকাই জামদানি শাড়ির বিশাল কালেকশন",
+      imageUrl: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop",
+      isFeatured: true,
+      sortOrder: 11,
+    },
+  });
+  const subCottonSaree = await prisma.category.create({
+    data: { name: "Cotton Saree", slug: "cotton-saree", parentId: sareeCat.id, sortOrder: 1 },
+  });
+  const subSilkSaree = await prisma.category.create({
+    data: { name: "Silk Saree", slug: "silk-saree", parentId: sareeCat.id, sortOrder: 2 },
+  });
+  const subJamdani = await prisma.category.create({
+    data: { name: "Jamdani", slug: "jamdani-saree", parentId: sareeCat.id, sortOrder: 3 },
+  });
+  const subGeorgette = await prisma.category.create({
+    data: { name: "Georgette Saree", slug: "georgette-saree", parentId: sareeCat.id, sortOrder: 4 },
+  });
+
+  // Category 12: Three Piece
+  const threePieceCat = await prisma.category.create({
+    data: {
+      name: "Three Piece",
+      slug: "three-piece",
+      description: "ডিজাইনার এম্ব্রয়ডারি, পার্টি ওয়্যার ও লন থ্রি-পিস স্যুট কালেকশন",
+      imageUrl: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800&auto=format&fit=crop",
+      isFeatured: true,
+      sortOrder: 12,
+    },
+  });
+  const subEmbroidered = await prisma.category.create({
+    data: { name: "Embroidered", slug: "embroidered-three-piece", parentId: threePieceCat.id, sortOrder: 1 },
+  });
+  const subPartyWear = await prisma.category.create({
+    data: { name: "Party Wear", slug: "party-wear-three-piece", parentId: threePieceCat.id, sortOrder: 2 },
+  });
+  const subLawn = await prisma.category.create({
+    data: { name: "Lawn Suits", slug: "lawn-suits", parentId: threePieceCat.id, sortOrder: 3 },
+  });
+  const subBoutique = await prisma.category.create({
+    data: { name: "Boutique Collection", slug: "boutique-collection", parentId: threePieceCat.id, sortOrder: 4 },
+  });
+
+  // Category 13: Bags & Purses
+  const bagsCat = await prisma.category.create({
+    data: {
+      name: "Bags & Purses",
+      slug: "bags-purses",
+      description: "স্টাইলিশ লেদার হ্যান্ডব্যাগ, ক্লাচ, শোল্ডার ব্যাগ ও ওয়ালেট",
+      imageUrl: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800&auto=format&fit=crop",
+      isFeatured: true,
+      sortOrder: 13,
+    },
+  });
+  const subLeatherBags = await prisma.category.create({
+    data: { name: "Leather Handbags", slug: "leather-handbags", parentId: bagsCat.id, sortOrder: 1 },
+  });
+  const subClutches = await prisma.category.create({
+    data: { name: "Party Clutches", slug: "party-clutches", parentId: bagsCat.id, sortOrder: 2 },
+  });
+  const subWallets = await prisma.category.create({
+    data: { name: "Ladies Wallets", slug: "ladies-wallets", parentId: bagsCat.id, sortOrder: 3 },
+  });
+  const subTote = await prisma.category.create({
+    data: { name: "Tote Bags", slug: "tote-bags", parentId: bagsCat.id, sortOrder: 4 },
+  });
+
+  // Category 14: Jewellery
+  const jewelleryCat = await prisma.category.create({
+    data: {
+      name: "Jewellery",
+      slug: "jewellery",
+      description: "গোল্ড প্লেটেড ব্রাইডাল সেট, পার্ল নেকলেস ও ট্রেন্ডি কানের দুল",
+      imageUrl: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800&auto=format&fit=crop",
+      isFeatured: true,
+      sortOrder: 14,
+    },
+  });
+  const subBridalSets = await prisma.category.create({
+    data: { name: "Bridal Sets", slug: "bridal-sets", parentId: jewelleryCat.id, sortOrder: 1 },
+  });
+  const subNecklaces = await prisma.category.create({
+    data: { name: "Pearl Necklaces", slug: "pearl-necklaces", parentId: jewelleryCat.id, sortOrder: 2 },
+  });
+  const subEarrings = await prisma.category.create({
+    data: { name: "Traditional Earrings", slug: "traditional-earrings", parentId: jewelleryCat.id, sortOrder: 3 },
+  });
+  const subBangles = await prisma.category.create({
+    data: { name: "Gold Plated Bangles", slug: "gold-bangles", parentId: jewelleryCat.id, sortOrder: 4 },
+  });
+
+  // Category 15: Kids & Toys
+  const kidsCat = await prisma.category.create({
+    data: {
+      name: "Kids & Toys",
+      slug: "kids-toys",
+      description: "বাচ্চাদের আকর্ষণীয় খেলনা, সুন্দর পোশাক ও শিক্ষণীয় বই",
+      imageUrl: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800&auto=format&fit=crop",
+      isFeatured: true,
+      sortOrder: 15,
+    },
+  });
+  const subEducationalToys = await prisma.category.create({
+    data: { name: "Educational Toys", slug: "educational-toys", parentId: kidsCat.id, sortOrder: 1 },
+  });
+  const subKidsClothes = await prisma.category.create({
+    data: { name: "Kids Fashion", slug: "kids-fashion", parentId: kidsCat.id, sortOrder: 2 },
+  });
+  const subKidsBooks = await prisma.category.create({
+    data: { name: "Drawing & Story Books", slug: "kids-books", parentId: kidsCat.id, sortOrder: 3 },
+  });
+  const subBabyCare = await prisma.category.create({
+    data: { name: "Baby Care Items", slug: "baby-care", parentId: kidsCat.id, sortOrder: 4 },
+  });
+
+  // Category 16: Watches
   const watchesCat = await prisma.category.create({
-    data: { name: "ঘড়ি ও ফ্যাশন", slug: "watches-fashion" },
+    data: {
+      name: "Watches",
+      slug: "watches",
+      description: "লাক্সারি ক্লাসিক ক্রোনোগ্রাফ ঘড়ি ও প্রিমিয়াম বেল্ট",
+      imageUrl: "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800&auto=format&fit=crop",
+      isFeatured: true,
+      sortOrder: 16,
+    },
+  });
+  const subLadiesWatches = await prisma.category.create({
+    data: { name: "Ladies Elegant Watches", slug: "ladies-watches", parentId: watchesCat.id, sortOrder: 1 },
+  });
+  const subSmartWatches = await prisma.category.create({
+    data: { name: "Smart Fitness Watches", slug: "smart-watches", parentId: watchesCat.id, sortOrder: 2 },
+  });
+  const subClassicWatches = await prisma.category.create({
+    data: { name: "Classic Chronograph", slug: "classic-watches", parentId: watchesCat.id, sortOrder: 3 },
+  });
+  const subBelts = await prisma.category.create({
+    data: { name: "Leather Belts", slug: "leather-belts", parentId: watchesCat.id, sortOrder: 4 },
   });
 
-  console.log("10 Bangla categories created.");
+  console.log("16 Categories and 64+ Subcategories created.");
 
-  // 6. Create Brands
-  const htBrand = await prisma.brand.create({
-    data: { name: "HT Brand", slug: "ht-brand" },
+  // 7. Seed Products with Video URL, Color Variants (with Hex codes), and Stock
+  console.log("Seeding products across all categories...");
+
+  // Product 1: Cotton Saree
+  await prisma.product.create({
+    data: {
+      name: "Premium Handloom Soft Cotton Saree",
+      slug: "premium-handloom-soft-cotton-saree",
+      sku: "SAR-COT-001",
+      description: "<h3>প্রিমিয়াম হ্যান্ডলুম কটন শাড়ি</h3><p>আমাদের নিজস্ব তাঁতে তৈরি শতভাগ খাঁটি সুতি শাড়ি। হালকা ও আরামদায়ক।</p>",
+      categoryId: subCottonSaree.id,
+      brandId: brandHeritage.id,
+      price: 2450.0,
+      discountPrice: 1750.0,
+      stockQty: 85,
+      isActive: true,
+      isFeatured: true,
+      isBestSeller: true,
+      isFlashSale: true,
+      customBadge: "🔥 Hot Deal",
+      thumbnail: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop",
+      images: [
+        "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=800&auto=format&fit=crop",
+      ],
+      videoUrl: sampleVideoUrl,
+      videoPosterUrl: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop",
+      variants: {
+        create: [
+          { name: "Crimson Red (লাল)", colorName: "Red", colorCode: "#DC2626", sku: "SAR-COT-001-RED", price: 1750.0, stockQty: 30, sortOrder: 1 },
+          { name: "Royal Blue (নীল)", colorName: "Royal Blue", colorCode: "#2563EB", sku: "SAR-COT-001-BLU", price: 1750.0, stockQty: 25, sortOrder: 2 },
+          { name: "Emerald Green (সবুজ)", colorName: "Emerald Green", colorCode: "#059669", sku: "SAR-COT-001-GRN", price: 1750.0, stockQty: 20, sortOrder: 3 },
+          { name: "Mustard Gold (হলুদ)", colorName: "Mustard Gold", colorCode: "#F59E0B", sku: "SAR-COT-001-GLD", price: 1750.0, stockQty: 10, sortOrder: 4 },
+        ],
+      },
+    },
   });
 
-  // Helper description generator matching exact demo image HTML structure
-  const makeDesc = (title: string, quote: string, bullets: string[]) => `
-<p>${title}</p>
-<p>"${quote}"</p>
-<p><strong>পণ্যের বিবরণ:-</strong></p>
-${bullets.map((b) => `<p>🎀 ${b}</p>`).join("\n")}
-<p>⛳ সারা দেশে হোম ডেলিভারি এবং ঢাকায় ১০০% ক্যাশ অন হোম ডেলিভারি দেয়া হয়</p>
-`;
+  // Product 2: Silk Saree
+  await prisma.product.create({
+    data: {
+      name: "Pure Katan Silk Traditional Festive Saree",
+      slug: "pure-katan-silk-traditional-festive-saree",
+      sku: "SAR-SLK-002",
+      description: "<h3>খাঁটি কাতান সিল্ক শাড়ি</h3><p>জমকালো অনুষ্ঠান ও উৎসবের জন্য আকর্ষণীয় গোল্ডেন জরির কারুকাজ করা শাড়ি।</p>",
+      categoryId: subSilkSaree.id,
+      brandId: brandHeritage.id,
+      price: 3800.0,
+      discountPrice: 2850.0,
+      stockQty: 40,
+      isActive: true,
+      isFeatured: true,
+      thumbnail: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=800&auto=format&fit=crop",
+      images: [
+        "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=800&auto=format&fit=crop",
+      ],
+      videoUrl: sampleVideoUrl2,
+      variants: {
+        create: [
+          { name: "Magenta Pink", colorName: "Magenta", colorCode: "#BE185D", sku: "SAR-SLK-002-PNK", price: 2850.0, stockQty: 20, sortOrder: 1 },
+          { name: "Deep Maroon", colorName: "Maroon", colorCode: "#831843", sku: "SAR-SLK-002-MRN", price: 2850.0, stockQty: 20, sortOrder: 2 },
+        ],
+      },
+    },
+  });
 
-  // 7. Seed 18+ Products across all 10 categories
-  const productsData = [
-    // --- Category: শাড়ি ---
-    {
-      name: "জর্জেট এম্ব্রয়ডারি পার্টি শাড়ি",
-      slug: "georgette-embroidery-party-saree",
-      sku: "SAREE-GEO-01",
-      categoryId: sareeCat.id,
+  // Product 3: Cooking Oil
+  await prisma.product.create({
+    data: {
+      name: "Pure Mustard Cooking Oil (ঘানি ভাঙা খাঁটি সরিষার তেল)",
+      slug: "pure-mustard-cooking-oil",
+      sku: "CKG-OIL-001",
+      description: "<h3>কাঠের ঘানিতে ভাঙানো খাঁটি সরিষার তেল</h3><p>১০০% খাঁটি দেশি সরিষা থেকে প্রস্তুত। ঝাঁঝালো সুবাস ও পুষ্টিগুণ অক্ষুণ্ণ।</p>",
+      categoryId: subOil.id,
+      brandId: brandNature.id,
+      price: 380.0,
+      discountPrice: 320.0,
+      stockQty: 100,
+      isActive: true,
+      isFeatured: true,
+      isBestSeller: true,
+      customBadge: "⭐ 100% Pure",
+      thumbnail: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?q=80&w=800&auto=format&fit=crop",
+      images: [
+        "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1589927986089-35812388d1f4?q=80&w=800&auto=format&fit=crop",
+      ],
+      videoUrl: sampleVideoUrl,
+      variants: {
+        create: [
+          { name: "1 Litre Bottle", colorName: "1 Litre", colorCode: "#D97706", sku: "CKG-OIL-001-1L", price: 320.0, stockQty: 50, sortOrder: 1 },
+          { name: "2 Litre Jar", colorName: "2 Litre", colorCode: "#B45309", sku: "CKG-OIL-001-2L", price: 620.0, stockQty: 30, sortOrder: 2 },
+          { name: "5 Litre Can", colorName: "5 Litre", colorCode: "#92400E", sku: "CKG-OIL-001-5L", price: 1520.0, stockQty: 20, sortOrder: 3 },
+        ],
+      },
+    },
+  });
+
+  // Product 4: Spices Combo Pack
+  await prisma.product.create({
+    data: {
+      name: "Organic Special Spices Powder Mix (খাঁটি গুঁড়া মসলা প্যাকেজ)",
+      slug: "organic-special-spices-powder-mix",
+      sku: "CKG-SPC-004",
+      description: "<h3>সম্পূর্ণ ভেজালমুক্ত গুঁড়া মসলা কম্বো প্যাক</h3><p>হলুদ, মরিচ, ধনিয়া ও জিরা গুঁড়ার ফ্রেশ কম্বিনেশন।</p>",
+      categoryId: subSpices.id,
+      brandId: brandNature.id,
+      price: 650.0,
+      discountPrice: 490.0,
+      stockQty: 90,
+      isActive: true,
+      isFeatured: true,
+      thumbnail: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?q=80&w=800&auto=format&fit=crop",
+      images: [
+        "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?q=80&w=800&auto=format&fit=crop",
+      ],
+    },
+  });
+
+  // Product 5: Three Piece Embroidered
+  await prisma.product.create({
+    data: {
+      name: "Designer Embroidered Cotton Three Piece Suit",
+      slug: "designer-embroidered-cotton-three-piece-suit",
+      sku: "THR-EMB-003",
+      description: "<h3>ডিজাইনার এম্ব্রয়ডারি থ্রি-পিস</h3><p>উন্নত মানের প্রিমিয়াম জর্জেট ও কটন কম্বিনেশনের গর্জিয়াস থ্রি-পিস সেট।</p>",
+      categoryId: subEmbroidered.id,
+      brandId: brandKinenao.id,
+      price: 3200.0,
+      discountPrice: 2290.0,
+      stockQty: 60,
+      isActive: true,
+      isFeatured: true,
+      isBestSeller: true,
+      thumbnail: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800&auto=format&fit=crop",
+      images: [
+        "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800&auto=format&fit=crop",
+      ],
+      videoUrl: sampleVideoUrl2,
+      variants: {
+        create: [
+          { name: "Deep Maroon (মেরুন)", colorName: "Maroon", colorCode: "#831843", sku: "THR-EMB-003-MRN", price: 2290.0, stockQty: 20, sortOrder: 1 },
+          { name: "Navy Blue (নেভি ব্লু)", colorName: "Navy", colorCode: "#1E3A8A", sku: "THR-EMB-003-NVY", price: 2290.0, stockQty: 25, sortOrder: 2 },
+          { name: "Teal Green", colorName: "Teal", colorCode: "#0F766E", sku: "THR-EMB-003-TEL", price: 2290.0, stockQty: 15, sortOrder: 3 },
+        ],
+      },
+    },
+  });
+
+  // Product 6: Matte Liquid Lipstick
+  await prisma.product.create({
+    data: {
+      name: "Long Lasting Waterproof Matte Liquid Lipstick Set",
+      slug: "long-lasting-waterproof-matte-liquid-lipstick-set",
+      sku: "BEA-LIP-005",
+      description: "<h3>ওয়াটারপ্রুফ ম্যাট লিকুইড লিপস্টিক</h3><p>১৬ ঘন্টা দীর্ঘস্থায়ী প্রিমিয়াম কালার পিগমেন্টেশন। ঠোঁটকে রাখে মসৃণ।</p>",
+      categoryId: subLipsticks.id,
+      brandId: brandKinenao.id,
+      price: 1200.0,
+      discountPrice: 850.0,
+      stockQty: 75,
+      isActive: true,
+      isFeatured: true,
+      customBadge: "💄 Matte Look",
+      thumbnail: "https://images.unsplash.com/photo-1586495777744-4413f21062fa?q=80&w=800&auto=format&fit=crop",
+      images: [
+        "https://images.unsplash.com/photo-1586495777744-4413f21062fa?q=80&w=800&auto=format&fit=crop",
+      ],
+      variants: {
+        create: [
+          { name: "Nude Velvet", colorName: "Nude", colorCode: "#BE7B72", sku: "BEA-LIP-005-NUD", price: 850.0, stockQty: 25, sortOrder: 1 },
+          { name: "Ruby Glam", colorName: "Ruby Red", colorCode: "#991B1B", sku: "BEA-LIP-005-RUB", price: 850.0, stockQty: 30, sortOrder: 2 },
+          { name: "Berry Plum", colorName: "Berry", colorCode: "#581C87", sku: "BEA-LIP-005-BER", price: 850.0, stockQty: 20, sortOrder: 3 },
+        ],
+      },
+    },
+  });
+
+  // Product 7: Leather Handbag
+  await prisma.product.create({
+    data: {
+      name: "Luxury Leather Handbag with Shoulder Strap",
+      slug: "luxury-leather-handbag-shoulder-strap",
+      sku: "BAG-LTH-005",
+      description: "<h3>প্রিমিয়াম লেদার হ্যান্ডব্যাগ</h3><p>উন্নত মানের পিইউ লেদার ও ওয়াটারপ্রুফ ইনার লাইনিং দিয়ে তৈরি স্টাইলিশ ব্যাগ।</p>",
+      categoryId: subLeatherBags.id,
+      brandId: brandKinenao.id,
+      price: 2800.0,
+      discountPrice: 1950.0,
+      stockQty: 45,
+      isActive: true,
+      isFeatured: true,
+      customBadge: "✨ New Style",
+      thumbnail: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800&auto=format&fit=crop",
+      images: [
+        "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800&auto=format&fit=crop",
+      ],
+      variants: {
+        create: [
+          { name: "Classic Black", colorName: "Black", colorCode: "#111827", sku: "BAG-LTH-005-BLK", price: 1950.0, stockQty: 25, sortOrder: 1 },
+          { name: "Tan Brown", colorName: "Brown", colorCode: "#78350F", sku: "BAG-LTH-005-BRN", price: 1950.0, stockQty: 20, sortOrder: 2 },
+        ],
+      },
+    },
+  });
+
+  // Product 8: Gold Plated Bridal Jewellery Set
+  await prisma.product.create({
+    data: {
+      name: "Traditional Gold Plated Bridal Jewellery Set",
+      slug: "traditional-gold-plated-bridal-jewellery-set",
+      sku: "JWL-SET-002",
+      description: "<h3>রয়্যাল গোল্ড প্লেটেড জুয়েলারি সেট</h3><p>নেকলেস, কানের দুল ও টিকলিসহ সম্পূর্ণ জমকালো সেট। দীর্ঘস্থায়ী কালার গ্যারান্টি।</p>",
+      categoryId: subBridalSets.id,
+      brandId: brandHeritage.id,
       price: 3500.0,
       discountPrice: 2450.0,
-      stockQty: 50,
-      isFeatured: true,
-      isBestSeller: true,
-      isFlashSale: true,
-      thumbnail: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=600&auto=format&fit=crop",
-      images: ["https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=600&auto=format&fit=crop"],
-      description: makeDesc(
-        "এক্সক্লুসিভ জর্জেট এম্ব্রয়ডারি শাড়ি 🥻 ✨",
-        "যেকোনো পার্টি বা উৎসবে আপনাকে দেবে অনন্য ও মার্জিত লুক। হাই-কোয়ালিটি জর্জেট ফেব্রিক ও গর্জিয়াস কারুকাজ।",
-        [
-          "প্রিমিয়াম কোয়ালিটি জর্জেট কাপড়ে নিখুঁত সুতার এম্ব্রয়ডারি কাজ।",
-          "সাথে থাকছে মেচিং ব্লাউজ পিস।",
-          "পরে অত্যন্ত আরামদায়ক এবং দীর্ঘস্থায়ী কালার গ্যারান্টি।"
-        ]
-      ),
-    },
-    {
-      name: "প্রিমিয়াম তাঁতের সুতি জামদানি শাড়ি",
-      slug: "premium-jamdani-cotton-saree",
-      sku: "SAREE-JAM-02",
-      categoryId: sareeCat.id,
-      price: 2800.0,
-      discountPrice: 1990.0,
-      stockQty: 40,
-      isFeatured: true,
-      isBestSeller: true,
-      thumbnail: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=600&auto=format&fit=crop",
-      images: ["https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=600&auto=format&fit=crop"],
-      description: makeDesc(
-        "হাতে বোনা তাঁতের জামদানি শাড়ি 🌸",
-        "ঐতিহ্যবাহী জামদানি নকশায় তৈরি ১০০% কটন সুতি শাড়ি। ক্যাজুয়াল পরার জন্য সেরা পছন্দ।",
-        [
-          "সফট কটন ফেব্রিক, গরমে পরতে খুবই আরামদায়ক।",
-          "আকর্ষণীয় ট্র্যাডিশনাল ডিজাইন ও স্থায়ী রং।"
-        ]
-      ),
-    },
-
-    // --- Category: থ্রি-পিস ---
-    {
-      name: "ডিজাইনার কটন ডিজিটাল প্রিন্ট থ্রি-পিস",
-      slug: "designer-cotton-digital-print-three-piece",
-      sku: "3PC-COT-01",
-      categoryId: threePieceCat.id,
-      price: 2200.0,
-      discountPrice: 1450.0,
-      stockQty: 80,
-      isFeatured: true,
-      isBestSeller: true,
-      thumbnail: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=600&auto=format&fit=crop",
-      images: ["https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=600&auto=format&fit=crop"],
-      description: makeDesc(
-        "ডিজাইনার কটন থ্রি-পিস ৩-পিস কালেকশন 👗",
-        "নান্দনিক ডিজিটাল প্রিন্ট ও সুতার নিখুঁত এমব্রয়ডারি কাজের আকর্ষণীয় থ্রি-পিস।",
-        [
-          "কামিজ: প্রিমিয়াম ডিজিটাল প্রিন্টেড কটন।",
-          "সালোয়ার: ম্যাচিং সফট সুতি ফেব্রিক।",
-          "ওড়না: বড় সাইজের শিফন/কটন ফুল প্রিন্টেড ওড়না।"
-        ]
-      ),
-    },
-    {
-      name: "ইন্ডিয়ান লাক্সারি ভেলভেট থ্রি-পিস",
-      slug: "indian-luxury-velvet-three-piece",
-      sku: "3PC-VEL-02",
-      categoryId: threePieceCat.id,
-      price: 4500.0,
-      discountPrice: 2990.0,
       stockQty: 30,
+      isActive: true,
       isFeatured: true,
-      isFlashSale: true,
-      thumbnail: "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?q=80&w=600&auto=format&fit=crop",
-      images: ["https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?q=80&w=600&auto=format&fit=crop"],
-      description: makeDesc(
-        "গর্জিয়াস ভেলভেট পার্টি থ্রি-পিস 💎",
-        "শীতের পার্টি ও ওয়েডিং সিজনের জন্য রাজকীয় লাক্সারি ভেলভেট ড্রেস।",
-        [
-          "প্রিমিয়াম ভেলভেট কাপড়ে গোল্ডেন জরি ও চুমকির কারুকাজ।",
-          "সাথে হেভি এমব্রয়ডারি ওড়না ও সালোয়ার।"
-        ]
-      ),
-    },
-
-    // --- Category: বাচ্চাদের খেলনা ও বই ---
-    {
-      name: "বাচ্চাদের ম্যাজিক ড্রয়িং বুক ও কালার পেন্সিল সেট",
-      slug: "kids-magic-drawing-book-set",
-      sku: "KIDS-BOOK-01",
-      categoryId: kidsCat.id,
-      price: 850.0,
-      discountPrice: 490.0,
-      stockQty: 150,
-      isFeatured: true,
-      isBestSeller: true,
-      thumbnail: "https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?q=80&w=600&auto=format&fit=crop",
-      images: ["https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?q=80&w=600&auto=format&fit=crop"],
-      description: makeDesc(
-        "বাচ্চাদের ওয়াটার ম্যাজিক ড্রয়িং বুক 🎨 📖",
-        "পাস ও পানি দিয়ে আঁকলে রঙ ভেসে ওঠে, শুকিয়ে গেলে আবার আঁকা যায়! বারবার ব্যবহারযোগ্য।",
-        [
-          "সম্পূর্ণ কেমিক্যাল মুক্ত ও বাচ্চাদের জন্য নিরাপদ।",
-          "বাচ্চাদের ছবি আঁকা ও হাতের লেখা শেখার সেরা শিক্ষণীয় বই।",
-          "সাথে পাচ্ছেন ম্যাজিক ওয়াটার পেন ও কালার পেন্সিল সেট।"
-        ]
-      ),
-    },
-    {
-      name: "রিচার্জেবল টকিং ক্যাকটাস খেলনা",
-      slug: "rechargeable-talking-cactus-toy",
-      sku: "KIDS-TOY-02",
-      categoryId: kidsCat.id,
-      price: 950.0,
-      discountPrice: 590.0,
-      stockQty: 100,
-      isFeatured: true,
-      isFlashSale: true,
-      thumbnail: "https://images.unsplash.com/photo-1558060370-d644479be6e7?q=80&w=600&auto=format&fit=crop",
-      images: ["https://images.unsplash.com/photo-1558060370-d644479be6e7?q=80&w=600&auto=format&fit=crop"],
-      description: makeDesc(
-        "ড্যান্সিং ও টকিং ক্যাকটাস খেলনা 🌵 🎵",
-        "কথা বললে হুবহু অনুকরণ করে হাসায় এবং গান গেয়ে নেচে বাচ্চাদের আনন্দ দেয়!",
-        [
-          "১২০টি গান ও ভয়েস রেকর্ডিং ফিচার।",
-          "ইউএসবি রিচার্জেবল ও লাইটিং ড্যান্স মোড।"
-        ]
-      ),
-    },
-
-    // --- Category: মেকআপ আইটেম ---
-    {
-      name: "Coil holder (মেটাল মস্কিউটো কয়েল হোল্ডার)",
-      slug: "coil-holder",
-      sku: "HT-COIL-01",
-      categoryId: makeupCat.id,
-      price: 550.0,
-      discountPrice: 195.0,
-      stockQty: 120,
-      isFeatured: true,
-      isBestSeller: true,
-      isFlashSale: true,
-      thumbnail: "https://images.unsplash.com/photo-1544816155-12df9643f363?q=80&w=600&auto=format&fit=crop",
+      customBadge: "👑 Bridal Choice",
+      thumbnail: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800&auto=format&fit=crop",
       images: [
-        "https://images.unsplash.com/photo-1544816155-12df9643f363?q=80&w=600&auto=format&fit=crop",
-        "https://images.unsplash.com/photo-1513694203232-719a280e022f?q=80&w=600&auto=format&fit=crop"
+        "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800&auto=format&fit=crop",
       ],
-      description: makeDesc(
-        "Metal Mosquito Coil Holder 🦟 🦟",
-        "মশার উপদ্রব এখন চারিদিকেই, তাই নিরাপদে কয়েল ব্যবহার করতে আজই নিন Mosquito Coil Holder যাতে নেই কোথাও আগুন লাগার ভয়, ছাই ছড়াবে না ঘরের কোথাও",
-        [
-          "উচ্চ গ্রেড লোহা উপাদান তৈরি, যা নিরাপদ এবং ব্যবহার টেকসই।",
-          "অত্যাধুনিক পাখির খাঁচা নকশা যা আপনার মার্জিত অভ্যন্তরীণ প্রসাধনে একীভূত করে।",
-          "নিচে ঢাকনা দিয়ে, ছাই সংগ্রহ করা সহজ এবং চারপাশে কোনও অগোছালো নেই।",
-          "এই পণ্যটি আপনার মশার কয়েল বা বিপরীতমুখী পোর্টেবল মশার ধূপের যেকোনো আকারের জন্য উপযুক্ত।",
-          "সুবিধাজনক কয়েল ধারকটি বহন করা সহজ এবং আপনাকে বিরক্তিকর মশার উদ্বেগ ছাড়ে না।"
-        ]
-      ),
-    },
-    {
-      name: "ম্যাট ওয়াটারপ্রুফ লিপস্টিক সেট (১২ পিস)",
-      slug: "matte-waterproof-lipstick-set-12pcs",
-      sku: "MKP-LIP-12",
-      categoryId: makeupCat.id,
-      price: 1800.0,
-      discountPrice: 990.0,
-      stockQty: 90,
-      isFeatured: true,
-      isBestSeller: true,
-      thumbnail: "https://images.unsplash.com/photo-1586495777744-4413f21062fa?q=80&w=600&auto=format&fit=crop",
-      images: ["https://images.unsplash.com/photo-1586495777744-4413f21062fa?q=80&w=600&auto=format&fit=crop"],
-      description: makeDesc(
-        "১২ পিস লং-লাস্টিং ম্যাট লিপস্টিক সেট 💄 ✨",
-        "স্মাজপ্রুফ ও ওয়াটারপ্রুফ ফর্মুলা যা সারাদিন ঠোঁটে সুন্দর কালার ধরে রাখে।",
-        [
-          "১২টি আকর্ষণীয় ভিন্ন শেড।",
-          "ঠোঁট শুষ্ক করে না এবং স্মুথ ফিনিশিং দেয়।"
-        ]
-      ),
-    },
-    {
-      name: "অল-ইন-ওয়ান প্রফেশনাল মেকআপ কিট",
-      slug: "all-in-one-professional-makeup-kit",
-      sku: "MKP-KIT-01",
-      categoryId: makeupCat.id,
-      price: 3200.0,
-      discountPrice: 1850.0,
-      stockQty: 60,
-      isFeatured: true,
-      isFlashSale: true,
-      thumbnail: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=600&auto=format&fit=crop",
-      images: ["https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=600&auto=format&fit=crop"],
-      description: makeDesc(
-        "কমপ্লিট মেকআপ কম্বো প্যাক 💅 💄",
-        "আইশ্যাডো প্যালেন্ট, ব্লাশ, লিপস্টিক ও মেকআপ ব্রাশের অল-ইন-ওয়ান প্রফেশনাল সেট।",
-        [
-          "ব্রাইডাল ও ডেইলি মেকআপের জন্য পারফেক্ট।",
-          "স্কিন ফ্রেন্ডলি ও দীর্ঘস্থায়ী পগমেন্টেশন।"
-        ]
-      ),
-    },
-
-    // --- Category: হোম ডেকোর ---
-    {
-      name: "দুই পাশে রিং যুক্ত - Dolna",
-      slug: "dual-ring-dolna",
-      sku: "HT-DOLNA-RING",
-      categoryId: homeDecorCat.id,
-      price: 750.0,
-      discountPrice: 499.0,
-      stockQty: 90,
-      isFeatured: true,
-      isFlashSale: true,
-      thumbnail: "https://images.unsplash.com/photo-1567016432779-094069958ea5?q=80&w=600&auto=format&fit=crop",
-      images: ["https://images.unsplash.com/photo-1567016432779-094069958ea5?q=80&w=600&auto=format&fit=crop"],
-      description: makeDesc(
-        "হাতে বোনা ঝুলন্ত দোলনা 🏡",
-        "বাসা, বারান্দা কিংবা গার্ডেনে ঝুলানোর জন্য আরামদায়ক হ্যান্ডমেড কটন দোলনা।",
-        [
-          "শক্তিশালী মেটাল রিং সাপোর্ট ও ২০০ কেজির বেশি ওজন সহ্য ক্ষমতা।",
-          "ঘরের সৌন্দর্য বৃদ্ধিতে অনবদ্য।"
-        ]
-      ),
-    },
-    {
-      name: "VIP Bedding (Mosquito Net Tent)",
-      slug: "vip-bedding-mosquito-net-tent",
-      sku: "HT-VIP-NET-TENT",
-      categoryId: homeDecorCat.id,
-      price: 3500.0,
-      discountPrice: 2999.0,
-      stockQty: 60,
-      isFeatured: true,
-      thumbnail: "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?q=80&w=600&auto=format&fit=crop",
-      images: ["https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?q=80&w=600&auto=format&fit=crop"],
-      description: makeDesc(
-        "ভিআইপি ফোল্ডিং মশারি টেন্ট ⛺",
-        "সহজেই ভাঁজ করে বহনযোগ্য প্রিমিয়াম কোয়ালিটি মশারি।",
-        [
-          "ডাবল ও সিঙ্গেল সাইজ এভেলেবল।",
-          "ছোট বাচ্চাদের ও বড়দের নিরাপদে মশার কামড় থেকে বাঁচায়।"
-        ]
-      ),
-    },
-
-    // --- Category: ব্যাগ ও পার্স ---
-    {
-      name: "লেডিজ লাক্সারি লেদার হ্যান্ডব্যাগ",
-      slug: "ladies-luxury-leather-handbag",
-      sku: "BAG-LEA-01",
-      categoryId: bagsCat.id,
-      price: 2500.0,
-      discountPrice: 1650.0,
-      stockQty: 75,
-      isFeatured: true,
-      isBestSeller: true,
-      thumbnail: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=600&auto=format&fit=crop",
-      images: ["https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=600&auto=format&fit=crop"],
-      description: makeDesc(
-        "প্রিমিয়াম পিইউ লেদার হ্যান্ডব্যাগ 👜",
-        "অফিস, শপিং ও পার্টিতে ব্যবহারের জন্য মার্জিত ডিজাইনের লেদার ব্যাগ।",
-        [
-          "পানিরোধক ওয়াটারপ্রুফ মেটেরিয়াল।",
-          "যথেষ্ট স্পেস ও আলাদা জিপার পকেট।"
-        ]
-      ),
-    },
-
-    // --- Category: ইলেকট্রনিক্স ও গ্যাজেট ---
-    {
-      name: "Rechargeable Electric Mosquito Racket",
-      slug: "rechargeable-electric-mosquito-racket",
-      sku: "HT-ELEC-RACKET",
-      categoryId: gadgetsCat.id,
-      price: 600.0,
-      discountPrice: 450.0,
-      stockQty: 100,
-      isFeatured: true,
-      isBestSeller: true,
-      thumbnail: "https://images.unsplash.com/photo-1585771724684-38269d6639fd?q=80&w=600&auto=format&fit=crop",
-      images: ["https://images.unsplash.com/photo-1585771724684-38269d6639fd?q=80&w=600&auto=format&fit=crop"],
-      description: makeDesc(
-        "রিচার্জেবল ইলেকট্রিক মশা মারার র‍্যাকেট ⚡",
-        "হাই ভোল্টেজ ব্যাকলাইট ইউভি লাইট সহ কার্যকর রিচার্জেবল র‍্যাকেট।",
-        [
-          "শক্তিশালী ব্যাটারি ও দ্রুত চার্জিং সাপোর্ট।",
-          "ট্রিপল লেয়ার সেফটি নেট।"
-        ]
-      ),
-    },
-    {
-      name: "পোর্টেবল ব্লুটুথ স্পিকার (ওয়াটারপ্রুফ)",
-      slug: "portable-bluetooth-speaker-waterproof",
-      sku: "GDT-SPK-01",
-      categoryId: gadgetsCat.id,
-      price: 1800.0,
-      discountPrice: 1150.0,
-      stockQty: 85,
-      isFeatured: true,
-      isFlashSale: true,
-      thumbnail: "https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?q=80&w=600&auto=format&fit=crop",
-      images: ["https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?q=80&w=600&auto=format&fit=crop"],
-      description: makeDesc(
-        "পোর্টেবল ওয়ারলেস স্পিকার 🔊",
-        "হাই বাস ক্রিস্টাল ক্লিয়ার সাউন্ড সহ মিনি ব্লুটুথ স্পিকার।",
-        [
-          "১০ ঘণ্টা একটানা প্লেব্যাক ব্যাটারি ব্যাকআপ।",
-          "ওয়াটারপ্রুফ বডি ডিজাইন।"
-        ]
-      ),
-    },
-
-    // --- Category: হেলথ ও পার্সোনাল কেয়ার ---
-    {
-      name: "Body massager (বডি ম্যাসাজার)",
-      slug: "body-massager",
-      sku: "HT-BODY-MASSAGER",
-      categoryId: healthCat.id,
-      price: 550.0,
-      discountPrice: 320.0,
-      stockQty: 80,
-      isFeatured: true,
-      isBestSeller: true,
-      thumbnail: "https://images.unsplash.com/photo-1519824145371-296894a0daf9?q=80&w=600&auto=format&fit=crop",
-      images: ["https://images.unsplash.com/photo-1519824145371-296894a0daf9?q=80&w=600&auto=format&fit=crop"],
-      description: makeDesc(
-        "Electric Body Massager 💆‍♂️",
-        "ঘাড়, কাঁধ এবং শরীরের মাংসপেশীর ক্লান্তি দূর করতে কার্যকরী হ্যান্ডহেল্ড ম্যাসাজার।",
-        [
-          "৩টি পরিবর্তনযোগ্য হেড ও রিল্যাক্সেশন মোড।",
-          "রক্ত সঞ্চালন বৃদ্ধি করে এবং শরীর দ্রুত সতেজ করে।"
-        ]
-      ),
-    },
-    {
-      name: "Mesh Nebulizer (Model: JSL-W302)",
-      slug: "mesh-nebulizer-jsl-w302",
-      sku: "HT-NEBULIZER-W302",
-      categoryId: healthCat.id,
-      price: 2200.0,
-      discountPrice: 1250.0,
-      stockQty: 45,
-      isFeatured: true,
-      isFlashSale: true,
-      thumbnail: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?q=80&w=600&auto=format&fit=crop",
-      images: ["https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?q=80&w=600&auto=format&fit=crop"],
-      description: makeDesc(
-        "পোর্টেবল মেস নেবুলাইজার 🩺",
-        "বাচ্চা ও বড়দের শ্বাসকষ্ট উপশমে নিঃশব্দ ও পোর্টেবল নেবুলাইজার মেশিন।",
-        [
-          "পকেটে বহনযোগ্য সাইজ।",
-          "ব্যাটারি ও ইউএসবি ক্যাবল উভয় দিয়ে চালিত।"
-        ]
-      ),
-    },
-
-    // --- Category: জুয়েলারি ও এক্সেসরিজ ---
-    {
-      name: "গোল্ড প্লেটেড ট্রেডিশনাল নেকলেস সেট",
-      slug: "gold-plated-traditional-necklace-set",
-      sku: "JWL-NECK-01",
-      categoryId: jewelryCat.id,
-      price: 1950.0,
-      discountPrice: 1290.0,
-      stockQty: 70,
-      isFeatured: true,
-      isBestSeller: true,
-      thumbnail: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=600&auto=format&fit=crop",
-      images: ["https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=600&auto=format&fit=crop"],
-      description: makeDesc(
-        "এক্সক্লুসিভ গয়না সেট 💍 ✨",
-        "শাড়ি বা থ্রি-পিসের সাথে পরার জন্য গর্জিয়াস গোল্ড প্লেটেড নেকলেস ও কানের দুল সেট।",
-        [
-          "দীর্ঘস্থায়ী শাইনিং কালার কোটিং।",
-          "হালকা ওজন ও কমফোর্টেবল পরা।"
-        ]
-      ),
-    },
-
-    // --- Category: ঘড়ি ও ফ্যাশন ---
-    {
-      name: "লাক্সারি মেটাল স্ট্র্যাপ লেডিস ওয়াচ",
-      slug: "luxury-metal-strap-ladies-watch",
-      sku: "WTC-MET-01",
-      categoryId: watchesCat.id,
-      price: 2400.0,
-      discountPrice: 1490.0,
-      stockQty: 60,
-      isFeatured: true,
-      isFlashSale: true,
-      thumbnail: "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=600&auto=format&fit=crop",
-      images: ["https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=600&auto=format&fit=crop"],
-      description: makeDesc(
-        "প্রিমিয়াম স্টেইনলেস স্টিল ঘড়ি ⌚ ✨",
-        "ওয়াটারপ্রুফ ডায়াল ও এলিগ্যান্ট ডায়মন্ড কাট ফিনিশিং ঘড়ি।",
-        [
-          "জাপানি কুয়ার্টজ মুভমেন্ট।",
-          "১ বছরের গ্যারান্টি কার্ড।"
-        ]
-      ),
-    },
-  ];
-
-  for (const item of productsData) {
-    await prisma.product.create({
-      data: {
-        name: item.name,
-        slug: item.slug,
-        sku: item.sku,
-        categoryId: item.categoryId,
-        price: item.price,
-        discountPrice: item.discountPrice,
-        stockQty: item.stockQty,
-        isFeatured: item.isFeatured,
-        isBestSeller: item.isBestSeller,
-        isFlashSale: item.isFlashSale,
-        thumbnail: item.thumbnail,
-        images: item.images,
-        description: item.description,
-        brandId: htBrand.id,
-        unit: "kg",
-        weight: 0.5,
-        isActive: true,
-      },
-    });
-  }
-
-  console.log(`${productsData.length} products seeded successfully.`);
-
-  // 8. Create Coupons
-  await prisma.coupon.create({
-    data: {
-      code: "BANGLA10",
-      type: CouponType.PERCENTAGE,
-      value: 10.0,
-      minPurchase: 500.0,
-      usageLimit: 500,
-      expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
     },
   });
 
-  console.log("Database reset & expanded seed complete!");
+  // Product 9: Educational Kids Toy
+  await prisma.product.create({
+    data: {
+      name: "Kids Wooden Educational Learning Block Set",
+      slug: "kids-wooden-educational-learning-block-set",
+      sku: "KID-TOY-007",
+      description: "<h3>বাচ্চাদের শিক্ষণীয় কাঠের ব্লক খেলনা</h3><p>শিশুর মেধার বিকাশ ও রঙের পরিচিতির জন্য নিরাপদ কাঠের তৈরি ব্লক সেট।</p>",
+      categoryId: subEducationalToys.id,
+      price: 1100.0,
+      discountPrice: 790.0,
+      stockQty: 50,
+      isActive: true,
+      isFeatured: true,
+      thumbnail: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800&auto=format&fit=crop",
+      images: [
+        "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800&auto=format&fit=crop",
+      ],
+    },
+  });
+
+  // Product 10: Luxury Ladies Watch
+  await prisma.product.create({
+    data: {
+      name: "Rose Gold Stainless Steel Luxury Ladies Watch",
+      slug: "rose-gold-stainless-steel-luxury-ladies-watch",
+      sku: "WAT-ROSE-009",
+      description: "<h3>রোজ গোল্ড লাক্সারি লেডিস ঘড়ি</h3><p>জাপানিজ কোয়ার্টজ মুভমেন্ট, স্ক্র্যাচ-প্রুফ গ্লাস ও ওয়াটার রেজিস্ট্যান্ট।</p>",
+      categoryId: subLadiesWatches.id,
+      price: 2400.0,
+      discountPrice: 1650.0,
+      stockQty: 40,
+      isActive: true,
+      isFeatured: true,
+      thumbnail: "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800&auto=format&fit=crop",
+      images: [
+        "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800&auto=format&fit=crop",
+      ],
+      variants: {
+        create: [
+          { name: "Rose Gold", colorName: "Rose Gold", colorCode: "#E0A96D", sku: "WAT-ROSE-009-RSG", price: 1650.0, stockQty: 25, sortOrder: 1 },
+          { name: "Silver Metal", colorName: "Silver", colorCode: "#9CA3AF", sku: "WAT-ROSE-009-SLV", price: 1650.0, stockQty: 15, sortOrder: 2 },
+        ],
+      },
+    },
+  });
+
+  // 8. Create Active Coupon
+  await prisma.coupon.create({
+    data: {
+      code: "KINENAO50",
+      type: CouponType.FIXED,
+      value: 50.0,
+      minPurchase: 1000.0,
+      usageLimit: 500,
+      expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      isActive: true,
+    },
+  });
+
+  console.log("Coupons created.");
+  console.log("Database successfully seeded with complete Kinenao catalog!");
 }
 
 main()
   .catch((e) => {
-    console.error(e);
+    console.error("Error during database seed:", e);
     process.exit(1);
   })
   .finally(async () => {
     await prisma.$disconnect();
+    await pool.end();
   });
