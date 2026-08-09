@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 
 export interface CartItem {
   id: string; // Product ID
@@ -12,6 +12,8 @@ export interface CartItem {
   quantity: number;
   stockQty: number;
   reservedStockQty: number;
+  variantId?: string;
+  variantName?: string;
 }
 
 interface CartContextType {
@@ -22,21 +24,42 @@ interface CartContextType {
   clearCart: () => void;
   cartCount: number;
   cartSubtotal: number;
+  reservationSeconds: number;
+  formattedReservationTimer: string;
+  isReservationExpired: boolean;
+  resetReservationTimer: () => void;
 }
 
+const RESERVATION_DURATION = 600; // 10 minutes in seconds
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [reservationSeconds, setReservationSeconds] = useState<number>(RESERVATION_DURATION);
+  const [isReservationExpired, setIsReservationExpired] = useState<boolean>(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Load cart from localStorage on mount
+  // Load cart and reservation timestamp from localStorage on mount
   useEffect(() => {
     const storedCart = localStorage.getItem("cart");
     if (storedCart) {
       try {
-        setCart(JSON.parse(storedCart));
+        const parsed = JSON.parse(storedCart);
+        setCart(parsed);
       } catch (error) {
         console.error("Failed to parse cart items:", error);
+      }
+    }
+
+    const storedTimerEnd = localStorage.getItem("cart_reservation_end");
+    if (storedTimerEnd) {
+      const remaining = Math.max(0, Math.floor((parseInt(storedTimerEnd, 10) - Date.now()) / 1000));
+      if (remaining > 0) {
+        setReservationSeconds(remaining);
+        setIsReservationExpired(false);
+      } else {
+        setReservationSeconds(0);
+        setIsReservationExpired(true);
       }
     }
   }, []);
@@ -46,23 +69,70 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem("cart", JSON.stringify(cart));
   }, [cart]);
 
-  const addToCart = (product: any, quantity = 1) => {
-    setCart((prevCart) => {
-      const existingItem = prevCart.find((item) => item.id === product.id);
-      const availableStock = product.stockQty - product.reservedStockQty;
+  // Reservation countdown ticker
+  useEffect(() => {
+    if (cart.length === 0) {
+      setReservationSeconds(RESERVATION_DURATION);
+      setIsReservationExpired(false);
+      localStorage.removeItem("cart_reservation_end");
+      if (timerRef.current) clearInterval(timerRef.current);
+      return;
+    }
 
-      if (existingItem) {
-        const newQty = existingItem.quantity + quantity;
+    // Set expiration timestamp if not set
+    if (!localStorage.getItem("cart_reservation_end")) {
+      const endTimestamp = Date.now() + RESERVATION_DURATION * 1000;
+      localStorage.setItem("cart_reservation_end", endTimestamp.toString());
+      setReservationSeconds(RESERVATION_DURATION);
+      setIsReservationExpired(false);
+    }
+
+    timerRef.current = setInterval(() => {
+      const storedEnd = localStorage.getItem("cart_reservation_end");
+      if (storedEnd) {
+        const remaining = Math.max(0, Math.floor((parseInt(storedEnd, 10) - Date.now()) / 1000));
+        setReservationSeconds(remaining);
+        if (remaining <= 0) {
+          setIsReservationExpired(true);
+        }
+      }
+    }, 1000);
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [cart.length]);
+
+  const resetReservationTimer = () => {
+    const endTimestamp = Date.now() + RESERVATION_DURATION * 1000;
+    localStorage.setItem("cart_reservation_end", endTimestamp.toString());
+    setReservationSeconds(RESERVATION_DURATION);
+    setIsReservationExpired(false);
+  };
+
+  const addToCart = (product: any, quantity = 1) => {
+    resetReservationTimer();
+    setCart((prevCart) => {
+      const itemKey = product.variantId ? `${product.id}-${product.variantId}` : product.id;
+      const existingItemIndex = prevCart.findIndex((item) =>
+        item.variantId ? `${item.id}-${item.variantId}` === itemKey : item.id === product.id
+      );
+
+      const availableStock = (product.stockQty ?? 99) - (product.reservedStockQty ?? 0);
+
+      if (existingItemIndex > -1) {
+        const newQty = prevCart[existingItemIndex].quantity + quantity;
         if (newQty > availableStock) {
-          alert(`Sorry, only ${availableStock} units of "${product.name}" are available in stock.`);
           return prevCart;
         }
-        return prevCart.map((item) =>
-          item.id === product.id ? { ...item, quantity: newQty } : item
-        );
+        const updated = [...prevCart];
+        updated[existingItemIndex] = {
+          ...updated[existingItemIndex],
+          quantity: newQty,
+        };
+        return updated;
       } else {
         if (quantity > availableStock) {
-          alert(`Sorry, only ${availableStock} units of "${product.name}" are available in stock.`);
           return prevCart;
         }
         return [
@@ -72,11 +142,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
             name: product.name,
             slug: product.slug,
             price: product.price,
-            discountPrice: product.discountPrice,
-            thumbnail: product.thumbnail,
+            discountPrice: product.discountPrice ?? null,
+            thumbnail: product.thumbnail || (product.images && product.images[0]) || null,
             quantity,
-            stockQty: product.stockQty,
-            reservedStockQty: product.reservedStockQty,
+            stockQty: product.stockQty ?? 50,
+            reservedStockQty: product.reservedStockQty ?? 0,
+            variantId: product.variantId,
+            variantName: product.variantName,
           },
         ];
       }
@@ -84,7 +156,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const removeFromCart = (productId: string) => {
-    setCart((prevCart) => prevCart.filter((item) => item.id !== productId));
+    setCart((prevCart) => prevCart.filter((item) => item.id !== productId && item.variantId !== productId));
   };
 
   const updateQuantity = (productId: string, quantity: number) => {
@@ -95,10 +167,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setCart((prevCart) =>
       prevCart.map((item) => {
-        if (item.id === productId) {
+        if (item.id === productId || item.variantId === productId) {
           const availableStock = item.stockQty - item.reservedStockQty;
           if (quantity > availableStock) {
-            alert(`Sorry, only ${availableStock} units are available in stock.`);
             return item;
           }
           return { ...item, quantity };
@@ -110,6 +181,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const clearCart = () => {
     setCart([]);
+    localStorage.removeItem("cart_reservation_end");
+    setReservationSeconds(RESERVATION_DURATION);
+    setIsReservationExpired(false);
   };
 
   const cartCount = cart.reduce((count, item) => count + item.quantity, 0);
@@ -118,6 +192,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const itemPrice = item.discountPrice !== null ? item.discountPrice : item.price;
     return subtotal + itemPrice * item.quantity;
   }, 0);
+
+  const minutes = Math.floor(reservationSeconds / 60);
+  const seconds = reservationSeconds % 60;
+  const formattedReservationTimer = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 
   return (
     <CartContext.Provider
@@ -129,6 +207,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         clearCart,
         cartCount,
         cartSubtotal,
+        reservationSeconds,
+        formattedReservationTimer,
+        isReservationExpired,
+        resetReservationTimer,
       }}
     >
       {children}

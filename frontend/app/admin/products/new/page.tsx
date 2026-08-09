@@ -21,13 +21,22 @@ import {
   Scale,
   Shirt,
   Box,
+  Eye,
+  ArrowRight,
+  ArrowLeft as ArrowLeftIcon,
+  Star,
+  Globe,
+  DollarSign,
+  AlertCircle,
+  HelpCircle,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import RichTextEditor from "@/components/RichTextEditor";
-import ProductVideoPlayer from "@/components/ProductVideoPlayer";
+import ProductVideoPlayer, { extractYouTubeId } from "@/components/ProductVideoPlayer";
 
 interface VariantFormItem {
   id?: string;
@@ -50,6 +59,7 @@ export default function NewProductPage() {
   const [submitting, setSubmitting] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [directImageUrl, setDirectImageUrl] = useState("");
 
   // Media
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
@@ -59,17 +69,19 @@ export default function NewProductPage() {
 
   // Universal Multi-Attribute Variants
   const [enableVariants, setEnableVariants] = useState(false);
-  const [variantTypePreset, setVariantTypePreset] = useState<"clothing" | "grocery" | "beauty" | "custom">("clothing");
   const [variants, setVariants] = useState<VariantFormItem[]>([]);
 
   // Promotional Badges
   const [promotionalBadges, setPromotionalBadges] = useState<string[]>([]);
   const [newBadgeInput, setNewBadgeInput] = useState("");
 
+  // Form State
   const [form, setForm] = useState({
     name: "",
+    slug: "",
     sku: "",
     barcode: "",
+    shortDescription: "",
     description: "",
     categoryId: "",
     brandId: "",
@@ -77,7 +89,7 @@ export default function NewProductPage() {
     discountPrice: "",
     weight: "",
     unit: "Piece",
-    stockQty: "20",
+    stockQty: "25",
     tags: "",
     isFeatured: false,
     isBestSeller: false,
@@ -90,14 +102,36 @@ export default function NewProductPage() {
 
   const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }));
 
+  // Helper to generate slug from name
+  const generateSlug = (text: string) => {
+    return text
+      .toLowerCase()
+      .trim()
+      .replace(/[\s\W-]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+  };
+
   useEffect(() => {
+    // Fetch active categories and brands from database
     Promise.all([api.get("/categories?includeInactive=true"), api.get("/brands")])
       .then(([catRes, brandRes]) => {
-        setCategories(catRes.data?.data?.categories || []);
+        const catList = catRes.data?.data?.categories || [];
+        setCategories(catList);
         setBrands(brandRes.data?.data?.brands || []);
       })
-      .catch(console.error);
+      .catch((err) => {
+        console.error("Error fetching categories/brands:", err);
+        toast.error("Failed to load categories from database");
+      });
   }, []);
+
+  // Calculate discount percentage
+  const regularPriceNum = parseFloat(form.price) || 0;
+  const discountPriceNum = parseFloat(form.discountPrice) || 0;
+  const discountPercent =
+    regularPriceNum > 0 && discountPriceNum > 0 && discountPriceNum < regularPriceNum
+      ? Math.round(((regularPriceNum - discountPriceNum) / regularPriceNum) * 100)
+      : 0;
 
   const handleAddBadge = (badge: string) => {
     const trimmed = badge.trim();
@@ -121,15 +155,39 @@ export default function NewProductPage() {
         const { data } = await api.post("/upload/image", fd, {
           headers: { "Content-Type": "multipart/form-data" },
         });
-        setUploadedImages((prev) => [...prev, data.data.url]);
-        if (!thumbnail) setThumbnail(data.data.url);
+        const url = data.data.url;
+        setUploadedImages((prev) => [...prev, url]);
+        if (!thumbnail) setThumbnail(url);
       }
       toast.success("Images uploaded successfully");
     } catch {
-      toast.error("Failed to upload image");
+      toast.error("Failed to upload image. You can also paste direct Image URLs.");
     } finally {
       setUploadingImage(false);
     }
+  };
+
+  const handleAddDirectImage = () => {
+    if (!directImageUrl.trim()) return;
+    setUploadedImages((prev) => [...prev, directImageUrl.trim()]);
+    if (!thumbnail) setThumbnail(directImageUrl.trim());
+    setDirectImageUrl("");
+    toast.success("Image URL added to gallery");
+  };
+
+  const moveImage = (index: number, direction: "left" | "right") => {
+    if (
+      (direction === "left" && index === 0) ||
+      (direction === "right" && index === uploadedImages.length - 1)
+    ) {
+      return;
+    }
+    const targetIndex = direction === "left" ? index - 1 : index + 1;
+    const updated = [...uploadedImages];
+    const temp = updated[index];
+    updated[index] = updated[targetIndex];
+    updated[targetIndex] = temp;
+    setUploadedImages(updated);
   };
 
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -146,7 +204,7 @@ export default function NewProductPage() {
       if (data.data.posterUrl) setVideoPosterUrl(data.data.posterUrl);
       toast.success("Product video uploaded successfully");
     } catch {
-      toast.error("Failed to upload video");
+      toast.error("Failed to upload video file. Please use a YouTube link or direct video URL.");
     } finally {
       setUploadingVideo(false);
     }
@@ -155,7 +213,7 @@ export default function NewProductPage() {
   // Variant Helpers
   const handleAddVariant = (customDefaults?: Partial<VariantFormItem>) => {
     const newIdx = variants.length + 1;
-    const baseSku = form.sku ? `${form.sku}-V${newIdx}` : `VAR-${Date.now()}-${newIdx}`;
+    const baseSku = form.sku ? `${form.sku}-V${newIdx}` : `VAR-${Date.now().toString().slice(-4)}-${newIdx}`;
     setVariants((prev) => [
       ...prev,
       {
@@ -173,7 +231,7 @@ export default function NewProductPage() {
     ]);
   };
 
-  // Quick Preset Generators for multiple categories
+  // Quick Presets
   const applyPresetVariants = (preset: "sizes" | "weights" | "volumes" | "colors" | "saree") => {
     if (preset === "sizes") {
       const sizes = ["S (Small)", "M (Medium)", "L (Large)", "XL (Extra Large)", "XXL"];
@@ -198,7 +256,7 @@ export default function NewProductPage() {
       colors.forEach((c) =>
         handleAddVariant({ name: c.name, colorName: c.name, colorCode: c.code })
       );
-      toast.success("Added 5 Color Swatch variants");
+      toast.success("Added Color Swatch variants");
     } else if (preset === "saree") {
       const sareeOptions = [
         { name: "12 হাত শাড়ি (With Blouse Piece)", size: "12 Hat" },
@@ -222,26 +280,57 @@ export default function NewProductPage() {
     });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.name || !form.price || !form.categoryId) {
-      toast.error("Please fill in required fields: Name, Price, and Category");
+  const handleSave = async (publish: boolean) => {
+    // Basic validation
+    if (!form.name.trim()) {
+      toast.error("Product title is required");
+      return;
+    }
+    if (!form.categoryId) {
+      toast.error("Please select a product category");
+      return;
+    }
+    if (!form.price || parseFloat(form.price) < 0) {
+      toast.error("Valid regular price is required");
+      return;
+    }
+    if (form.discountPrice && parseFloat(form.discountPrice) >= parseFloat(form.price)) {
+      toast.error("Discount price must be less than regular price");
+      return;
+    }
+    if (uploadedImages.length === 0) {
+      toast.error("Please add at least one product image");
       return;
     }
 
     setSubmitting(true);
     try {
       const payload = {
-        ...form,
+        name: form.name.trim(),
+        slug: form.slug.trim() || undefined,
+        sku: form.sku.trim() || `PROD-${Date.now().toString().slice(-6)}`,
+        barcode: form.barcode.trim() || null,
+        description: form.description.trim() || form.name,
+        categoryId: form.categoryId,
+        brandId: form.brandId || null,
         price: parseFloat(form.price),
         discountPrice: form.discountPrice ? parseFloat(form.discountPrice) : null,
-        stockQty: parseInt(form.stockQty || "0"),
         weight: form.weight ? parseFloat(form.weight) : null,
+        unit: form.unit || "Piece",
+        stockQty: parseInt(form.stockQty || "0", 10),
+        tags: form.tags.trim() || null,
+        isFeatured: form.isFeatured,
+        isBestSeller: form.isBestSeller,
+        isFlashSale: form.isFlashSale,
+        isActive: publish,
+        customBadge: form.customBadge.trim() || null,
+        promotionalBadges,
+        seoTitle: form.seoTitle.trim() || form.name,
+        seoDescription: form.seoDescription.trim() || form.shortDescription || null,
         images: uploadedImages,
         thumbnail: thumbnail || uploadedImages[0] || "",
-        videoUrl: videoUrl || null,
-        videoPosterUrl: videoPosterUrl || null,
-        promotionalBadges,
+        videoUrl: videoUrl.trim() || null,
+        videoPosterUrl: videoPosterUrl.trim() || null,
         variants: enableVariants
           ? variants.map((v, i) => ({
               name: v.name,
@@ -252,59 +341,85 @@ export default function NewProductPage() {
               sku: v.sku || `${form.sku || "PROD"}-V${i + 1}`,
               price: v.price ? parseFloat(v.price) : null,
               discountPrice: v.discountPrice ? parseFloat(v.discountPrice) : null,
-              stockQty: parseInt(v.stockQty || "0"),
+              stockQty: parseInt(v.stockQty || "0", 10),
               isActive: v.isActive,
             }))
           : [],
       };
 
       await api.post("/products", payload);
-      toast.success("Product created successfully with all variants & media!");
+      toast.success(
+        publish ? "Product published successfully to catalog!" : "Product saved as draft."
+      );
       router.push("/admin/products");
     } catch (err: any) {
+      console.error("Create product error:", err);
       toast.error(err.response?.data?.message || "Failed to create product");
     } finally {
       setSubmitting(false);
     }
   };
 
+  const isYouTube = Boolean(extractYouTubeId(videoUrl));
+
   return (
     <div className="p-4 sm:p-8 max-w-5xl mx-auto space-y-6">
       {/* Header Bar */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-3xl border border-slate-200 shadow-xs">
         <div className="flex items-center gap-3">
           <Button
             type="button"
             variant="ghost"
             size="sm"
             onClick={() => router.back()}
-            className="rounded-xl"
+            className="rounded-xl hover:bg-slate-100"
           >
             <ArrowLeft className="w-4 h-4 mr-1" /> Back
           </Button>
           <div>
             <h1 className="text-xl sm:text-2xl font-black text-slate-900">Add New Product</h1>
             <p className="text-xs text-slate-500">
-              Create product with multi-category variants, video showcase, and stock inventory.
+              Create product with images, YouTube video showcase, rich description, and variants.
             </p>
           </div>
         </div>
 
-        <Button
-          type="button"
-          onClick={handleSubmit}
-          disabled={submitting}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold px-6 shadow-md"
-        >
-          {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Check className="w-4 h-4 mr-1" />}
-          Publish Product
-        </Button>
+        <div className="flex items-center gap-2.5">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={submitting}
+            onClick={() => handleSave(false)}
+            className="rounded-xl font-bold text-xs h-10 px-4 border-slate-300 hover:bg-slate-50"
+          >
+            Save Draft
+          </Button>
+
+          <Button
+            type="button"
+            onClick={() => handleSave(true)}
+            disabled={submitting}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs h-10 px-5 shadow-sm"
+          >
+            {submitting ? (
+              <Loader2 className="w-4 h-4 animate-spin mr-1.5" />
+            ) : (
+              <Check className="w-4 h-4 mr-1.5" />
+            )}
+            Publish Product
+          </Button>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* CARD 1: Basic Information */}
+      <div className="space-y-6">
+        {/* SECTION A: Basic Product Information */}
         <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-7 shadow-xs space-y-4">
-          <h2 className="text-sm font-black uppercase text-slate-500 tracking-wider">Basic Information</h2>
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+            <Tag className="w-4 h-4 text-emerald-600" />
+            <h2 className="text-sm font-black uppercase text-slate-800 tracking-wider">
+              Section A: Basic Product Information
+            </h2>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5 md:col-span-2">
@@ -313,13 +428,17 @@ export default function NewProductPage() {
               </Label>
               <Input
                 required
-                placeholder="e.g. Premium Handloom Cotton Saree / Pure Mustard Oil 1L"
+                placeholder="e.g. ঢাকাই জামদানি শাড়ি / পিওর কটন থ্রি-পিস / ব্লুটুথ ইয়ারবাড"
                 value={form.name}
                 onChange={(e) => {
-                  set("name", e.target.value);
+                  const val = e.target.value;
+                  set("name", val);
                   if (!form.sku) {
-                    const generated = e.target.value.slice(0, 3).toUpperCase() + "-" + Math.floor(100 + Math.random() * 900);
+                    const generated = "KNE-" + Math.floor(1000 + Math.random() * 9000);
                     set("sku", generated);
+                  }
+                  if (!form.slug) {
+                    set("slug", generateSlug(val));
                   }
                 }}
                 className="rounded-xl text-xs h-11 font-bold"
@@ -336,10 +455,10 @@ export default function NewProductPage() {
                 onChange={(e) => set("categoryId", e.target.value)}
                 className="w-full h-11 px-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
-                <option value="">Select Category</option>
+                <option value="">Select Category (From Real Database)</option>
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.parentId ? `└── ${c.name}` : c.name}
+                    {c.name} ({c.slug})
                   </option>
                 ))}
               </select>
@@ -352,7 +471,7 @@ export default function NewProductPage() {
                 onChange={(e) => set("brandId", e.target.value)}
                 className="w-full h-11 px-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
-                <option value="">No Brand</option>
+                <option value="">No Brand / Generic</option>
                 {brands.map((b) => (
                   <option key={b.id} value={b.id}>
                     {b.name}
@@ -375,20 +494,280 @@ export default function NewProductPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-bold text-slate-800">Barcode (Optional)</Label>
+              <Label className="text-xs font-bold text-slate-800">Product Tags / Keywords</Label>
               <Input
-                placeholder="Barcode number"
-                value={form.barcode}
-                onChange={(e) => set("barcode", e.target.value)}
+                placeholder="e.g. saree, bridal, gift, trend, organic (comma separated)"
+                value={form.tags}
+                onChange={(e) => set("tags", e.target.value)}
+                className="rounded-xl text-xs h-11"
+              />
+            </div>
+
+            <div className="space-y-1.5 md:col-span-2">
+              <Label className="text-xs font-bold text-slate-800">Short Summary / Highlights</Label>
+              <Input
+                placeholder="e.g. ১০০% খাঁটি উপাদান, প্রিমিয়াম কোয়ালিটি এবং সারা দেশে ক্যাশ অন হোম ডেলিভারি।"
+                value={form.shortDescription}
+                onChange={(e) => set("shortDescription", e.target.value)}
                 className="rounded-xl text-xs h-11"
               />
             </div>
           </div>
+
+          {/* Badges & Toggles */}
+          <div className="pt-2 flex flex-wrap items-center gap-6 border-t border-slate-100">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Switch
+                checked={form.isFeatured}
+                onCheckedChange={(c) => set("isFeatured", c)}
+              />
+              <span className="text-xs font-bold text-slate-800">Featured on Homepage</span>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Switch
+                checked={form.isBestSeller}
+                onCheckedChange={(c) => set("isBestSeller", c)}
+              />
+              <span className="text-xs font-bold text-slate-800">Best Seller Badge</span>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Switch
+                checked={form.isFlashSale}
+                onCheckedChange={(c) => set("isFlashSale", c)}
+              />
+              <span className="text-xs font-bold text-slate-800">Flash Sale Badge</span>
+            </label>
+          </div>
         </div>
 
-        {/* CARD 2: Pricing & Stock */}
+        {/* SECTION B: Product Image Upload */}
         <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-7 shadow-xs space-y-4">
-          <h2 className="text-sm font-black uppercase text-slate-500 tracking-wider">Pricing & Stock</h2>
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center gap-2">
+              <ImageIcon className="w-4 h-4 text-emerald-600" />
+              <h2 className="text-sm font-black uppercase text-slate-800 tracking-wider">
+                Section B: Product Image Gallery
+              </h2>
+            </div>
+            <span className="text-[11px] text-slate-500 font-bold">
+              {uploadedImages.length} Image(s) Added
+            </span>
+          </div>
+
+          {/* Upload and URL input */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label className="flex items-center justify-center gap-2 p-4 rounded-2xl border-2 border-dashed border-emerald-300 hover:border-emerald-500 bg-emerald-50/40 hover:bg-emerald-50 text-emerald-800 font-bold text-xs cursor-pointer transition-all">
+              {uploadingImage ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Upload className="w-4 h-4" />
+              )}
+              <span>Upload Images From Device</span>
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+            </label>
+
+            <div className="flex gap-2">
+              <Input
+                placeholder="Or paste direct image URL (https://...)"
+                value={directImageUrl}
+                onChange={(e) => setDirectImageUrl(e.target.value)}
+                className="rounded-2xl text-xs h-12"
+              />
+              <Button
+                type="button"
+                onClick={handleAddDirectImage}
+                className="rounded-2xl h-12 px-4 bg-slate-900 hover:bg-slate-800 font-bold text-xs shrink-0"
+              >
+                Add URL
+              </Button>
+            </div>
+          </div>
+
+          {/* Image Previews with Primary Selector and Reordering */}
+          {uploadedImages.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 pt-2">
+              {uploadedImages.map((img, idx) => {
+                const isPrimary = thumbnail === img || (idx === 0 && !thumbnail);
+                return (
+                  <div
+                    key={idx}
+                    className={`relative rounded-2xl border-2 overflow-hidden bg-slate-100 aspect-square flex flex-col justify-between p-1.5 transition-all ${
+                      isPrimary ? "border-emerald-600 ring-2 ring-emerald-600/30" : "border-slate-200"
+                    }`}
+                  >
+                    <img
+                      src={img}
+                      alt={`Product preview ${idx + 1}`}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+
+                    {/* Top controls */}
+                    <div className="relative z-10 flex items-center justify-between">
+                      {isPrimary && (
+                        <span className="bg-emerald-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm">
+                          PRIMARY
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = uploadedImages.filter((_, i) => i !== idx);
+                          setUploadedImages(updated);
+                          if (thumbnail === img) setThumbnail(updated[0] || "");
+                        }}
+                        className="ml-auto w-6 h-6 rounded-full bg-black/70 hover:bg-rose-600 text-white flex items-center justify-center transition-colors cursor-pointer"
+                        title="Remove image"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {/* Bottom controls */}
+                    <div className="relative z-10 flex items-center justify-between bg-black/60 backdrop-blur-xs p-1 rounded-xl text-white">
+                      <button
+                        type="button"
+                        disabled={idx === 0}
+                        onClick={() => moveImage(idx, "left")}
+                        className="p-1 hover:text-emerald-400 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                        title="Move left"
+                      >
+                        <ArrowLeftIcon className="w-3.5 h-3.5" />
+                      </button>
+
+                      {!isPrimary && (
+                        <button
+                          type="button"
+                          onClick={() => setThumbnail(img)}
+                          className="text-[9px] font-bold text-slate-200 hover:text-white px-1 cursor-pointer"
+                        >
+                          Set Primary
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        disabled={idx === uploadedImages.length - 1}
+                        onClick={() => moveImage(idx, "right")}
+                        className="p-1 hover:text-emerald-400 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                        title="Move right"
+                      >
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="py-8 text-center border border-dashed border-slate-200 rounded-2xl text-slate-400 text-xs">
+              No images added yet. Please upload or paste at least 1 product image.
+            </div>
+          )}
+        </div>
+
+        {/* SECTION C: Product Video */}
+        <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-7 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center gap-2">
+              <Film className="w-4 h-4 text-emerald-600" />
+              <h2 className="text-sm font-black uppercase text-slate-800 tracking-wider">
+                Section C: Product Video Showcase (YouTube & MP4)
+              </h2>
+            </div>
+            {videoUrl && (
+              <button
+                type="button"
+                onClick={() => setVideoUrl("")}
+                className="text-xs font-bold text-rose-600 hover:underline cursor-pointer"
+              >
+                Remove Video
+              </button>
+            )}
+          </div>
+
+          <div className="space-y-3">
+            <Label className="text-xs font-bold text-slate-800">
+              YouTube Video URL or Direct MP4 Link
+            </Label>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Input
+                placeholder="e.g. https://www.youtube.com/watch?v=XXXXXXXX OR https://youtu.be/XXXXXXXX"
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+                className="rounded-xl text-xs h-11 flex-1 font-mono"
+              />
+              <label className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs cursor-pointer transition-colors shrink-0">
+                {uploadingVideo ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Upload className="w-4 h-4" />
+                )}
+                <span>Upload MP4</span>
+                <input
+                  type="file"
+                  accept="video/*"
+                  onChange={handleVideoUpload}
+                  className="hidden"
+                />
+              </label>
+            </div>
+
+            {/* Video Live Preview inside Admin */}
+            {videoUrl && (
+              <div className="mt-3 p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                    <Eye className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Live Video Preview (Customer View):</span>
+                  </p>
+                  {isYouTube && (
+                    <span className="text-[10px] bg-red-100 text-red-700 font-bold px-2 py-0.5 rounded-full">
+                      YouTube Detected
+                    </span>
+                  )}
+                </div>
+                <div className="max-w-md mx-auto">
+                  <ProductVideoPlayer videoUrl={videoUrl} posterUrl={videoPosterUrl || thumbnail} />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* SECTION D: Rich Text Product Description */}
+        <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-7 shadow-xs space-y-4">
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+            <FileText className="w-4 h-4 text-emerald-600" />
+            <h2 className="text-sm font-black uppercase text-slate-800 tracking-wider">
+              Section D: Full Product Description (Rich Text Editor)
+            </h2>
+          </div>
+
+          <div className="space-y-2">
+            <RichTextEditor
+              value={form.description}
+              onChange={(html) => set("description", html)}
+              placeholder="Write full product specifications, fabric details, size chart, care instructions, and warranty terms..."
+            />
+          </div>
+        </div>
+
+        {/* SECTION E: Price & Inventory */}
+        <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-7 shadow-xs space-y-4">
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+            <DollarSign className="w-4 h-4 text-emerald-600" />
+            <h2 className="text-sm font-black uppercase text-slate-800 tracking-wider">
+              Section E: Pricing & Inventory
+            </h2>
+          </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="space-y-1.5">
@@ -408,12 +787,19 @@ export default function NewProductPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-bold text-slate-800">Discount Price (৳)</Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-bold text-slate-800">Discount Price (৳)</Label>
+                {discountPercent > 0 && (
+                  <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">
+                    {discountPercent}% OFF
+                  </span>
+                )}
+              </div>
               <Input
                 type="number"
                 min="0"
                 step="any"
-                placeholder="1950"
+                placeholder="1999"
                 value={form.discountPrice}
                 onChange={(e) => set("discountPrice", e.target.value)}
                 className="rounded-xl text-xs h-11 font-bold text-emerald-700"
@@ -421,20 +807,23 @@ export default function NewProductPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-bold text-slate-800">Base Stock Qty</Label>
+              <Label className="text-xs font-bold text-slate-800">
+                Stock Quantity <span className="text-rose-500">*</span>
+              </Label>
               <Input
                 type="number"
                 min="0"
+                required
                 value={form.stockQty}
                 onChange={(e) => set("stockQty", e.target.value)}
-                className="rounded-xl text-xs h-11"
+                className="rounded-xl text-xs h-11 font-bold"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-bold text-slate-800">Unit</Label>
+              <Label className="text-xs font-bold text-slate-800">Unit Type</Label>
               <Input
-                placeholder="Piece, KG, Litre, Box"
+                placeholder="Piece, KG, Litre, Set"
                 value={form.unit}
                 onChange={(e) => set("unit", e.target.value)}
                 className="rounded-xl text-xs h-11"
@@ -443,130 +832,17 @@ export default function NewProductPage() {
           </div>
         </div>
 
-        {/* CARD 3: Media (Images & Product Video) */}
-        <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-7 shadow-xs space-y-5">
-          <h2 className="text-sm font-black uppercase text-slate-500 tracking-wider flex items-center gap-1.5">
-            <Film className="w-4 h-4 text-emerald-600" />
-            <span>Product Media & Video Showcase</span>
-          </h2>
-
-          {/* Product Video Upload */}
-          <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-bold text-slate-900">Product Video Upload</p>
-                <p className="text-[11px] text-slate-500">
-                  Upload MP4/WebM video to showcase your product prominently on the storefront.
-                </p>
-              </div>
-              {videoUrl && (
-                <button
-                  type="button"
-                  onClick={() => setVideoUrl("")}
-                  className="text-xs font-bold text-rose-600 hover:underline"
-                >
-                  Remove Video
-                </button>
-              )}
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3 items-center">
-              <label className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs cursor-pointer shadow-sm transition-colors">
-                {uploadingVideo ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Film className="w-4 h-4" />
-                )}
-                <span>{videoUrl ? "Replace Video" : "Upload Video File"}</span>
-                <input
-                  type="file"
-                  accept="video/*"
-                  onChange={handleVideoUpload}
-                  className="hidden"
-                />
-              </label>
-
-              <div className="flex-1 w-full">
-                <Input
-                  placeholder="Or paste Direct Video URL (Cloudinary / CDN MP4)"
-                  value={videoUrl}
-                  onChange={(e) => setVideoUrl(e.target.value)}
-                  className="rounded-xl text-xs h-10 bg-white"
-                />
-              </div>
-            </div>
-
-            {/* Video Preview */}
-            {videoUrl && (
-              <div className="pt-2 max-w-md">
-                <p className="text-[11px] font-bold text-slate-600 mb-1.5">Video Player Preview:</p>
-                <ProductVideoPlayer videoUrl={videoUrl} />
-              </div>
-            )}
-          </div>
-
-          {/* Images Upload */}
-          <div className="space-y-3">
-            <Label className="text-xs font-bold text-slate-800">Product Images</Label>
-            <div className="flex flex-wrap items-center gap-3">
-              <label className="w-24 h-24 rounded-2xl border-2 border-dashed border-slate-300 hover:border-emerald-500 bg-slate-50 flex flex-col items-center justify-center text-slate-500 hover:text-emerald-600 cursor-pointer transition-colors shrink-0">
-                {uploadingImage ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <Upload className="w-5 h-5" />
-                )}
-                <span className="text-[10px] font-bold mt-1">Upload</span>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                />
-              </label>
-
-              {uploadedImages.map((img, idx) => (
-                <div
-                  key={idx}
-                  className={`relative w-24 h-24 rounded-2xl border overflow-hidden shrink-0 group ${
-                    thumbnail === img ? "ring-2 ring-emerald-600" : "border-slate-200"
-                  }`}
-                >
-                  <img src={img} alt="Product image preview" className="w-full h-full object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setUploadedImages((prev) => prev.filter((_, i) => i !== idx));
-                      if (thumbnail === img) setThumbnail(uploadedImages[0] || "");
-                    }}
-                    className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-rose-600 transition-colors"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setThumbnail(img)}
-                    className="absolute bottom-1 left-1 bg-black/70 text-white text-[9px] font-bold px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    {thumbnail === img ? "Thumbnail" : "Set Cover"}
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* CARD 4: Universal Multi-Attribute Product Variants Management */}
+        {/* SECTION F: Product Variants */}
         <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-7 shadow-xs space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2">
-              <Layers className="w-5 h-5 text-purple-600" />
+              <Layers className="w-4 h-4 text-purple-600" />
               <div>
                 <h2 className="text-sm font-black uppercase text-slate-800 tracking-wider">
-                  Product Variants & Multiple Attributes
+                  Section F: Product Variants & Attributes
                 </h2>
                 <p className="text-[11px] text-slate-500">
-                  Manage multiple variant types: Colors, Sizes (S/M/L/XL), Weights (500g/1kg), Volumes (1L/2L), or Custom options with dedicated stock & prices.
+                  Size, Color swatches, Fabric, or Weight variations with dedicated price & stock.
                 </p>
               </div>
             </div>
@@ -583,232 +859,191 @@ export default function NewProductPage() {
           </div>
 
           {enableVariants && (
-            <div className="space-y-5 pt-2">
-              {/* Quick Preset Generator Buttons */}
-              <div className="p-3.5 bg-purple-50/60 border border-purple-200/80 rounded-2xl space-y-2">
+            <div className="space-y-4 pt-1">
+              {/* Presets */}
+              <div className="p-3.5 bg-purple-50/60 border border-purple-200 rounded-2xl space-y-2">
                 <p className="text-xs font-extrabold text-purple-900 flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-                  <span>1-Click Preset Generator for Multiple Categories:</span>
+                  <span>1-Click Preset Generators:</span>
                 </p>
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
+                    onClick={() => applyPresetVariants("saree")}
+                    className="text-xs font-bold bg-white hover:bg-purple-100 border border-purple-200 text-purple-800 px-3 py-1.5 rounded-xl cursor-pointer"
+                  >
+                    + Saree / Three-Piece
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => applyPresetVariants("sizes")}
-                    className="inline-flex items-center gap-1 text-xs font-bold bg-white hover:bg-purple-100/70 border border-purple-200 text-purple-800 px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
+                    className="text-xs font-bold bg-white hover:bg-purple-100 border border-purple-200 text-purple-800 px-3 py-1.5 rounded-xl cursor-pointer"
                   >
-                    <Shirt className="w-3.5 h-3.5" /> + Fashion Sizes (S, M, L, XL, XXL)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => applyPresetVariants("weights")}
-                    className="inline-flex items-center gap-1 text-xs font-bold bg-white hover:bg-purple-100/70 border border-purple-200 text-purple-800 px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
-                  >
-                    <Scale className="w-3.5 h-3.5" /> + Weights (250g, 500g, 1kg, 2kg, 5kg)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => applyPresetVariants("volumes")}
-                    className="inline-flex items-center gap-1 text-xs font-bold bg-white hover:bg-purple-100/70 border border-purple-200 text-purple-800 px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
-                  >
-                    <Box className="w-3.5 h-3.5" /> + Liquid Volumes (500ml, 1L, 2L, 5L)
+                    <Shirt className="w-3.5 h-3.5 inline mr-1" /> + Sizes (S, M, L, XL, XXL)
                   </button>
                   <button
                     type="button"
                     onClick={() => applyPresetVariants("colors")}
-                    className="inline-flex items-center gap-1 text-xs font-bold bg-white hover:bg-purple-100/70 border border-purple-200 text-purple-800 px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
+                    className="text-xs font-bold bg-white hover:bg-purple-100 border border-purple-200 text-purple-800 px-3 py-1.5 rounded-xl cursor-pointer"
                   >
-                    <Palette className="w-3.5 h-3.5" /> + Color Swatches (Red, Blue, Green, Maroon, Black)
+                    <Palette className="w-3.5 h-3.5 inline mr-1" /> + Color Swatches
                   </button>
                   <button
                     type="button"
-                    onClick={() => applyPresetVariants("saree")}
-                    className="inline-flex items-center gap-1 text-xs font-bold bg-white hover:bg-purple-100/70 border border-purple-200 text-purple-800 px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
+                    onClick={() => applyPresetVariants("weights")}
+                    className="text-xs font-bold bg-white hover:bg-purple-100 border border-purple-200 text-purple-800 px-3 py-1.5 rounded-xl cursor-pointer"
                   >
-                    <Layers className="w-3.5 h-3.5" /> + Saree & Three Piece Options (12 হাত / Unstitched)
+                    <Scale className="w-3.5 h-3.5 inline mr-1" /> + Weights (250g, 500g, 1kg)
                   </button>
                 </div>
               </div>
 
-              {/* Variants Rows List */}
+              {/* Variant Rows */}
               <div className="space-y-3">
                 {variants.map((v, idx) => (
                   <div
                     key={idx}
-                    className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3"
+                    className="p-4 bg-slate-50 border border-slate-200 rounded-2xl grid grid-cols-1 sm:grid-cols-6 gap-3 items-end"
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-black text-slate-800 flex items-center gap-1.5">
-                        <span className="w-5 h-5 rounded-full bg-purple-600 text-white flex items-center justify-center text-[10px]">
-                          {idx + 1}
-                        </span>
-                        <span>{v.name || `Variant #${idx + 1}`}</span>
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => removeVariant(idx)}
-                        className="text-rose-600 hover:text-rose-700 text-xs font-bold flex items-center gap-1 cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" /> Remove
-                      </button>
+                    <div className="sm:col-span-2 space-y-1">
+                      <Label className="text-[11px] font-bold text-slate-700">Variant Name</Label>
+                      <Input
+                        value={v.name}
+                        placeholder="Red - XL / 500g"
+                        onChange={(e) => updateVariant(idx, "name", e.target.value)}
+                        className="rounded-xl text-xs h-9 bg-white"
+                      />
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-                      {/* Variant Name */}
-                      <div className="space-y-1 sm:col-span-2">
-                        <Label className="text-[11px] font-bold text-slate-700">
-                          Variant Name / Option Title
-                        </Label>
-                        <Input
-                          placeholder="e.g. 1 Litre Jar / Crimson Red - XL"
-                          value={v.name}
-                          onChange={(e) => updateVariant(idx, "name", e.target.value)}
-                          className="h-9 text-xs rounded-xl bg-white font-semibold"
-                        />
-                      </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px] font-bold text-slate-700">Size / Weight</Label>
+                      <Input
+                        value={v.size}
+                        placeholder="XL / 1kg"
+                        onChange={(e) => updateVariant(idx, "size", e.target.value)}
+                        className="rounded-xl text-xs h-9 bg-white"
+                      />
+                    </div>
 
-                      {/* Size / Weight / Volume Tag */}
-                      <div className="space-y-1">
-                        <Label className="text-[11px] font-bold text-slate-700">
-                          Size / Weight / Vol
-                        </Label>
-                        <Input
-                          placeholder="e.g. XL, 1L, 500g"
-                          value={v.size}
-                          onChange={(e) => updateVariant(idx, "size", e.target.value)}
-                          className="h-9 text-xs rounded-xl bg-white font-bold"
-                        />
-                      </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px] font-bold text-slate-700">Price (৳)</Label>
+                      <Input
+                        type="number"
+                        value={v.price}
+                        placeholder={form.price || "Price"}
+                        onChange={(e) => updateVariant(idx, "price", e.target.value)}
+                        className="rounded-xl text-xs h-9 bg-white font-bold"
+                      />
+                    </div>
 
-                      {/* Color Picker (Optional) */}
-                      <div className="space-y-1">
-                        <Label className="text-[11px] font-bold text-slate-700">Color Dot (Hex)</Label>
-                        <div className="flex items-center gap-1.5">
-                          <input
-                            type="color"
-                            value={v.colorCode || "#DC2626"}
-                            onChange={(e) => updateVariant(idx, "colorCode", e.target.value)}
-                            className="w-8 h-8 rounded-lg border cursor-pointer p-0.5 shrink-0"
-                          />
-                          <Input
-                            placeholder="#HEX"
-                            value={v.colorCode || ""}
-                            onChange={(e) => updateVariant(idx, "colorCode", e.target.value)}
-                            className="h-9 text-[11px] rounded-xl bg-white font-mono"
-                          />
-                        </div>
-                      </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px] font-bold text-slate-700">Stock Qty</Label>
+                      <Input
+                        type="number"
+                        value={v.stockQty}
+                        placeholder="10"
+                        onChange={(e) => updateVariant(idx, "stockQty", e.target.value)}
+                        className="rounded-xl text-xs h-9 bg-white font-bold"
+                      />
+                    </div>
 
-                      {/* Stock Quantity */}
-                      <div className="space-y-1">
-                        <Label className="text-[11px] font-bold text-slate-700">Stock Qty</Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          value={v.stockQty}
-                          onChange={(e) => updateVariant(idx, "stockQty", e.target.value)}
-                          className="h-9 text-xs rounded-xl bg-white font-bold"
-                        />
-                      </div>
-
-                      {/* Variant Price (৳) */}
-                      <div className="space-y-1">
-                        <Label className="text-[11px] font-bold text-slate-700">Price (৳)</Label>
-                        <Input
-                          type="number"
-                          placeholder={form.price || "Price"}
-                          value={v.price}
-                          onChange={(e) => updateVariant(idx, "price", e.target.value)}
-                          className="h-9 text-xs rounded-xl bg-white font-bold text-emerald-700"
-                        />
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeVariant(idx)}
+                        className="text-rose-600 hover:bg-rose-50 rounded-xl h-9 px-2.5 cursor-pointer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
                 ))}
 
-                <div className="flex flex-wrap items-center gap-2 pt-1">
-                  <Button
-                    type="button"
-                    onClick={() => handleAddVariant()}
-                    variant="outline"
-                    size="sm"
-                    className="rounded-xl text-xs font-bold border-purple-300 text-purple-800 hover:bg-purple-50"
-                  >
-                    <Plus className="w-3.5 h-3.5 mr-1" /> Add Custom Variant Option
-                  </Button>
-                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleAddVariant()}
+                  className="rounded-xl font-bold text-xs h-10 border-slate-300 hover:bg-slate-50"
+                >
+                  <Plus className="w-4 h-4 mr-1" /> Add Another Variant
+                </Button>
               </div>
             </div>
           )}
         </div>
 
-        {/* CARD 5: Promotional Badges */}
+        {/* SECTION G: SEO & URL Configuration */}
         <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-7 shadow-xs space-y-4">
-          <h2 className="text-sm font-black uppercase text-slate-500 tracking-wider flex items-center gap-1.5">
-            <Tag className="w-4 h-4 text-emerald-600" />
-            <span>Promotional Badges & Flags</span>
-          </h2>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <label className="flex items-center gap-2 text-xs font-bold text-slate-800 cursor-pointer">
-              <Switch checked={form.isFeatured} onCheckedChange={(c) => set("isFeatured", c)} />
-              <span>Featured Product</span>
-            </label>
-            <label className="flex items-center gap-2 text-xs font-bold text-slate-800 cursor-pointer">
-              <Switch checked={form.isBestSeller} onCheckedChange={(c) => set("isBestSeller", c)} />
-              <span>Best Seller</span>
-            </label>
-            <label className="flex items-center gap-2 text-xs font-bold text-slate-800 cursor-pointer">
-              <Switch checked={form.isFlashSale} onCheckedChange={(c) => set("isFlashSale", c)} />
-              <span>Flash Sale Deal</span>
-            </label>
-            <label className="flex items-center gap-2 text-xs font-bold text-slate-800 cursor-pointer">
-              <Switch checked={form.isActive} onCheckedChange={(c) => set("isActive", c)} />
-              <span>Published (Active)</span>
-            </label>
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+            <Globe className="w-4 h-4 text-emerald-600" />
+            <h2 className="text-sm font-black uppercase text-slate-800 tracking-wider">
+              Section G: SEO & URL Slug
+            </h2>
           </div>
 
-          <div className="space-y-1.5 pt-2">
-            <Label className="text-xs font-bold text-slate-800">Custom Badge Text (e.g. 🔥 Hot Deal, 100% Pure)</Label>
-            <Input
-              placeholder="e.g. ⭐ Best Value, 100% Organic"
-              value={form.customBadge}
-              onChange={(e) => set("customBadge", e.target.value)}
-              className="rounded-xl text-xs h-11"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5 md:col-span-2">
+              <Label className="text-xs font-bold text-slate-800">Custom URL Slug</Label>
+              <Input
+                placeholder="product-url-slug"
+                value={form.slug}
+                onChange={(e) => set("slug", e.target.value)}
+                className="rounded-xl text-xs h-11 font-mono text-slate-600"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-slate-800">SEO Meta Title</Label>
+              <Input
+                placeholder="Meta title for Google Search"
+                value={form.seoTitle}
+                onChange={(e) => set("seoTitle", e.target.value)}
+                className="rounded-xl text-xs h-11"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-slate-800">SEO Meta Description</Label>
+              <Input
+                placeholder="Short meta description for search engines"
+                value={form.seoDescription}
+                onChange={(e) => set("seoDescription", e.target.value)}
+                className="rounded-xl text-xs h-11"
+              />
+            </div>
           </div>
         </div>
 
-        {/* CARD 6: Rich Text Description */}
-        <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-7 shadow-xs space-y-3">
-          <h2 className="text-sm font-black uppercase text-slate-500 tracking-wider">
-            Rich Text Description & Product Details
-          </h2>
-          <RichTextEditor
-            content={form.description}
-            onChange={(html) => set("description", html)}
-          />
-        </div>
-
-        {/* Submit Bottom Bar */}
-        <div className="flex justify-end gap-3 pt-4">
+        {/* Bottom Actions */}
+        <div className="flex items-center justify-end gap-3 pt-2">
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.back()}
-            className="rounded-xl"
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
             disabled={submitting}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold px-8 shadow-md"
+            onClick={() => handleSave(false)}
+            className="rounded-xl font-bold text-xs h-11 px-5 border-slate-300 hover:bg-slate-50"
           >
-            {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Check className="w-4 h-4 mr-1" />}
+            Save Draft
+          </Button>
+
+          <Button
+            type="button"
+            onClick={() => handleSave(true)}
+            disabled={submitting}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs h-11 px-7 shadow-md"
+          >
+            {submitting ? (
+              <Loader2 className="w-4 h-4 animate-spin mr-1.5" />
+            ) : (
+              <Check className="w-4 h-4 mr-1.5" />
+            )}
             Publish Product
           </Button>
         </div>
-      </form>
+      </div>
     </div>
   );
 }
