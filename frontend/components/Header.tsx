@@ -22,13 +22,23 @@ import {
   Instagram,
   Youtube,
   LogOut,
+  Clock,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export const Header: React.FC = () => {
   const router = useRouter();
   const { user, logout, isAuthenticated } = useAuth();
-  const { cart, removeFromCart, updateQuantity, cartCount, cartSubtotal } = useCart();
+  const {
+    cart,
+    removeFromCart,
+    updateQuantity,
+    cartCount,
+    cartSubtotal,
+    formattedReservationTimer,
+    isReservationExpired,
+    resetReservationTimer,
+  } = useCart();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [expandedCats, setExpandedCats] = useState<Record<string, boolean>>({});
@@ -434,6 +444,37 @@ export const Header: React.FC = () => {
               </div>
 
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                {cart.length > 0 && (
+                  <div
+                    className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl border text-xs font-bold transition-all ${
+                      isReservationExpired
+                        ? "bg-rose-50 border-rose-200 text-rose-800"
+                        : "bg-emerald-50 border-emerald-200 text-emerald-900"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Clock
+                        className={`w-4 h-4 ${
+                          isReservationExpired ? "text-rose-600 animate-pulse" : "text-emerald-700"
+                        }`}
+                      />
+                      <span>
+                        {isReservationExpired
+                          ? "কার্ট রিজার্ভেশনের সময় শেষ!"
+                          : `আপনার কার্ট সংরক্ষিত আছে: ${formattedReservationTimer}`}
+                      </span>
+                    </div>
+                    {isReservationExpired && (
+                      <button
+                        onClick={resetReservationTimer}
+                        className="text-[11px] font-bold text-rose-700 hover:underline cursor-pointer"
+                      >
+                        রিনিউ করুন
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 {cart.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-center space-y-3">
                     <ShoppingBag className="h-10 w-10 text-muted-foreground/60" />
