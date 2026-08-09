@@ -54,11 +54,16 @@ export default function CategoryClientView({
 
     // Subcategory filtering
     if (activeSubcat) {
+      const selectedSub = subcategories.find(
+        (s: any) => s.slug === activeSubcat || s.id === activeSubcat
+      );
       list = list.filter(
         (p) =>
           p.categoryId === activeSubcat ||
+          (selectedSub && p.categoryId === selectedSub.id) ||
           p.category?.slug === activeSubcat ||
           p.category?.id === activeSubcat ||
+          (selectedSub && p.category?.name === selectedSub.name) ||
           (p.tags && p.tags.toLowerCase().includes(activeSubcat.toLowerCase())) ||
           (p.slug && p.slug.toLowerCase().includes(activeSubcat.toLowerCase()))
       );
@@ -229,6 +234,14 @@ export default function CategoryClientView({
             {/* Subcategory Cards */}
             {subcategories.map((sub: any) => {
               const isSelected = activeSubcat === sub.slug || activeSubcat === sub.id;
+              const subCount = initialProducts.filter(
+                (p: any) =>
+                  p.categoryId === sub.id ||
+                  p.categoryId === sub.slug ||
+                  p.category?.slug === sub.slug ||
+                  p.category?.id === sub.id ||
+                  (p.tags && p.tags.toLowerCase().includes(sub.name.toLowerCase()))
+              ).length;
               const subImage =
                 sub.imageUrl ||
                 category?.imageUrl ||
@@ -259,7 +272,7 @@ export default function CategoryClientView({
                       isSelected ? "text-emerald-100" : "text-slate-400"
                     }`}
                   >
-                    সাব-ক্যাটাগরি
+                    {subCount > 0 ? `${subCount} টি পণ্য` : "সাব-ক্যাটাগরি"}
                   </span>
                 </button>
               );
