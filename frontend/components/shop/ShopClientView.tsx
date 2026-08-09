@@ -53,20 +53,39 @@ export default function ShopClientView({
     let list = [...initialProducts];
 
     if (selectedSubcategory) {
+      const selectedSub = categories
+        .flatMap((c) => c.childCategories || [])
+        .find((s: any) => s.slug === selectedSubcategory || s.id === selectedSubcategory);
+
       list = list.filter(
         (p) =>
           p.categoryId === selectedSubcategory ||
+          (selectedSub && p.categoryId === selectedSub.id) ||
           p.category?.slug === selectedSubcategory ||
           p.category?.id === selectedSubcategory ||
-          (p.tags && p.tags.toLowerCase().includes(selectedSubcategory.toLowerCase()))
+          (selectedSub && p.category?.name === selectedSub.name) ||
+          (p.tags && p.tags.toLowerCase().includes(selectedSubcategory.toLowerCase())) ||
+          (p.slug && p.slug.toLowerCase().includes(selectedSubcategory.toLowerCase()))
       );
     } else if (selectedCategory) {
+      const parentCat = categories.find(
+        (c) => c.slug === selectedCategory || c.id === selectedCategory
+      );
+      const childIds = (parentCat?.childCategories || []).map((ch: any) => ch.id);
+      const childSlugs = (parentCat?.childCategories || []).map((ch: any) => ch.slug);
+
       list = list.filter(
         (p) =>
           p.categoryId === selectedCategory ||
+          (parentCat && p.categoryId === parentCat.id) ||
           p.category?.slug === selectedCategory ||
           p.category?.id === selectedCategory ||
-          p.category?.parentId === selectedCategory
+          childIds.includes(p.categoryId) ||
+          childIds.includes(p.category?.id) ||
+          childSlugs.includes(p.category?.slug) ||
+          p.category?.parentId === (parentCat?.id || selectedCategory) ||
+          (p.tags && parentCat && p.tags.toLowerCase().includes(parentCat.name.toLowerCase())) ||
+          (p.tags && parentCat && p.tags.toLowerCase().includes(parentCat.slug.toLowerCase()))
       );
     }
 

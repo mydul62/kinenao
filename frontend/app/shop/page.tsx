@@ -41,7 +41,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
       categoryId: sub || category || "",
       sortBy: sort || "newest",
       page: page || 1,
-      limit: 40,
+      limit: 250,
     }),
   ]);
 
