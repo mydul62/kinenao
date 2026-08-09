@@ -21,7 +21,7 @@ interface ColorVariantSelectorProps {
   variants: VariantItem[];
   selectedVariant: VariantItem | null;
   onSelectVariant: (variant: VariantItem) => void;
-  basePrice: number;
+  basePrice?: number;
   className?: string;
 }
 
@@ -29,23 +29,19 @@ export default function ColorVariantSelector({
   variants,
   selectedVariant,
   onSelectVariant,
-  basePrice,
+  basePrice = 0,
   className = "",
 }: ColorVariantSelectorProps) {
   if (!variants || variants.length === 0) return null;
 
-  // Determine if variants contain colors, sizes, weights, or general options
-  const hasColors = variants.some((v) => Boolean(v.colorCode || v.colorName));
-  const hasSizes = variants.some((v) => Boolean(v.size));
-
   return (
-    <div className={`space-y-3.5 ${className}`}>
+    <div className={`space-y-3 ${className}`}>
       {/* Header with Active Selection & Stock Status */}
       <div className="flex items-center justify-between">
         <label className="text-xs sm:text-sm font-extrabold text-slate-900 flex items-center gap-2">
-          <span>সিলেক্ট করুন (Variant / Option):</span>
+          <span>সিলেক্ট করুন (অপশন / কালার):</span>
           {selectedVariant && (
-            <span className="text-purple-800 font-black bg-purple-50 px-2.5 py-0.5 rounded-lg border border-purple-200/80 text-xs">
+            <span className="text-emerald-800 font-black bg-emerald-50 px-2.5 py-0.5 rounded-lg border border-emerald-200/80 text-xs">
               {selectedVariant.name || selectedVariant.colorName || selectedVariant.size}
             </span>
           )}
@@ -66,8 +62,8 @@ export default function ColorVariantSelector({
         )}
       </div>
 
-      {/* Responsive Grid of Variant Options (Color Swatches, Size Pills, Weight / Volume Options) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+      {/* Responsive Grid of Variant Options */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
         {variants.map((v, idx) => {
           const isSelected = selectedVariant?.id
             ? selectedVariant.id === v.id
@@ -90,13 +86,13 @@ export default function ColorVariantSelector({
               onClick={() => onSelectVariant(v)}
               className={`relative flex items-center gap-2.5 p-2.5 rounded-2xl border text-left transition-all duration-200 cursor-pointer ${
                 isSelected
-                  ? "border-purple-600 bg-purple-50/70 ring-2 ring-purple-500/30 shadow-xs scale-[1.02]"
+                  ? "border-emerald-600 bg-emerald-50/80 ring-2 ring-emerald-500/30 shadow-xs scale-[1.02]"
                   : isOutOfStock
                   ? "border-slate-200 bg-slate-100/70 opacity-60 cursor-not-allowed"
-                  : "border-slate-200 hover:border-purple-300 bg-white hover:bg-slate-50 shadow-2xs"
+                  : "border-slate-200 hover:border-emerald-300 bg-white hover:bg-slate-50 shadow-2xs"
               }`}
             >
-              {/* If variant has color swatch, render color circle */}
+              {/* Color Swatch Circle */}
               {hasColorDot ? (
                 <div
                   className="w-6 h-6 rounded-full border border-black/10 shrink-0 shadow-inner flex items-center justify-center"
@@ -118,11 +114,11 @@ export default function ColorVariantSelector({
                   )}
                 </div>
               ) : (
-                /* Non-color badge (e.g. Size/Weight icon pill) */
+                /* Size/Weight Pill Icon */
                 <div
                   className={`w-6 h-6 rounded-lg shrink-0 flex items-center justify-center text-[10px] font-black uppercase ${
                     isSelected
-                      ? "bg-purple-600 text-white"
+                      ? "bg-emerald-600 text-white"
                       : "bg-slate-100 text-slate-700"
                   }`}
                 >
@@ -136,14 +132,9 @@ export default function ColorVariantSelector({
                   {v.name || v.colorName || v.size}
                 </p>
                 <div className="flex items-center gap-1 mt-0.5">
-                  <span className="text-[11px] font-extrabold text-purple-700">
+                  <span className="text-[11px] font-black text-emerald-700">
                     ৳{variantEffectivePrice}
                   </span>
-                  {v.size && !v.name?.includes(v.size) && (
-                    <span className="text-[10px] text-slate-500 font-medium truncate">
-                      ({v.size})
-                    </span>
-                  )}
                   {isOutOfStock && (
                     <span className="text-[9px] font-bold text-rose-600 uppercase bg-rose-50 px-1 rounded ml-auto">
                       Out
