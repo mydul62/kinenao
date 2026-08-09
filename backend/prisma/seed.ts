@@ -16,7 +16,7 @@ const prisma = new PrismaClient({ adapter });
 
 async function main() {
   console.log("==========================================================");
-  console.log("STARTING COMPLETE DATABASE RESET & 11-CATEGORY SEEDING");
+  console.log("STARTING COMPLETE DATABASE RESET & SUB-CATEGORY SEEDING");
   console.log("==========================================================");
 
   // 1. Clear existing transactional & catalog records safely
@@ -78,7 +78,7 @@ async function main() {
     },
   });
 
-  const customerUser = await prisma.user.create({
+  await prisma.user.create({
     data: {
       email: "customer@kinenao.com",
       password: customerPassword,
@@ -105,7 +105,7 @@ async function main() {
 
   // 3. Create Delivery Zones
   console.log("3. Creating Delivery Zones...");
-  const insideDhaka = await prisma.deliveryZone.create({
+  await prisma.deliveryZone.create({
     data: {
       zoneName: "Inside Dhaka (ঢাকা সিটির ভিতরে)",
       charge: 60,
@@ -145,9 +145,8 @@ async function main() {
     data: {
       name: "bKash Personal (বিকাশ পার্সোনাল)",
       accountNumber: "01700000000",
-      accountName: "KineNao Merchant",
       accountType: "bKash",
-      instructions: "বিকাশ অ্যাপ অথবা *247# ডায়াল করে 'Send Money' অপশন সিলেক্ট করে উল্লেখিত নম্বরে টাকা পাঠিয়ে Transaction ID দিন।",
+      instructions: "বিকাশ সেন্ড মানি করে ট্রানজেকশন আইডি (TrxID) দিয়ে কনফার্ম করুন।",
       isActive: true,
     },
   });
@@ -156,9 +155,8 @@ async function main() {
     data: {
       name: "Nagad Personal (নগদ পার্সোনাল)",
       accountNumber: "01800000000",
-      accountName: "KineNao Merchant",
       accountType: "Nagad",
-      instructions: "নগদ অ্যাপ অথবা *167# ডায়াল করে 'Send Money' করে Transaction ID লিখুন।",
+      instructions: "নগদ সেন্ড মানি করে ট্রানজেকশন আইডি দিয়ে অর্ডার কনফার্ম করুন।",
       isActive: true,
     },
   });
@@ -258,14 +256,14 @@ async function main() {
         isActive: true,
       },
       {
-        question: "ডেলিভারি পেতে কতদিন সময় লাগবে?",
-        answer: "ঢাকা সিটির মধ্যে ২৪ থেকে ৪৮ ঘণ্টার মধ্যে এবং ঢাকার বাইরে সারা দেশে ২ থেকে ৪ কার্যদিবসের মধ্যে ডেলিভারি সম্পন্ন হয়।",
+        question: "ডেলিভারি চার্জ কত এবং কত দিনে ডেলিভারি পাব?",
+        answer: "ঢাকা সিটির ভেতরে ডেলিভারি চার্জ ৬০ টাকা (২৪-৪৮ ঘন্টা) এবং ঢাকার বাইরে ১২০ টাকা (২-৩ কার্যদিবস)।",
         sortOrder: 2,
         isActive: true,
       },
       {
-        question: "পণ্য হাতে পেয়ে চেক করার সুযোগ আছে কি?",
-        answer: "হ্যাঁ, ডেলিভারিম্যানের সামনে পণ্য চেক করে দেখার সুযোগ রয়েছে। কোনো সমস্যা থাকলে ডেলিভারিম্যানের কাছেই ফেরত দিতে পারবেন।",
+        question: "পণ্য হাতে পেয়ে কি চেক করা যাবে?",
+        answer: "হ্যাঁ, ডেলিভারি ম্যানের সামনে প্যাকেট খুলে পণ্য দেখে ১০০% সন্তুষ্ট হয়ে মূল্য পরিশোধ করবেন।",
         sortOrder: 3,
         isActive: true,
       },
@@ -308,103 +306,109 @@ async function main() {
     ],
   });
 
-  // 7. CREATE EXACTLY 11 SPECIFIED CATEGORIES
-  console.log("7. Creating EXACTLY 11 Categories...");
+  // Brands
+  const createdBrands: Record<string, string> = {};
+  for (const b of [{"name":"Kinenao Luxe","slug":"kinenao-luxe"},{"name":"Heritage Craft","slug":"heritage-craft"},{"name":"Pure Nature","slug":"pure-nature"}]) {
+    const brand = await prisma.brand.create({
+      data: { name: b.name, slug: b.slug, isActive: true },
+    });
+    createdBrands[b.slug] = brand.id;
+  }
 
-  const categoryDefinitions = [
-    {
-      name: "শাড়ি",
-      slug: "sari",
-      imageUrl: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=600&auto=format&fit=crop",
-      description: "ঐতিহ্যবাহী ঢাকাই জামদানি, মিরপুর কাতান, বেনারসি, রাজশাহী সিল্ক ও কটন শাড়ির এক্সক্লুসিভ কালেকশন।",
-      sortOrder: 1,
-      isFeatured: true,
-    },
-    {
-      name: "থ্রি-পিস",
-      slug: "three-piece",
-      imageUrl: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=600&auto=format&fit=crop",
-      description: "এমব্রয়ডারি, পিওর কটন, পাকিস্তানি লন, জর্জেট ও গর্জিয়াস পার্টি থ্রি-পিসের সমাহার।",
-      sortOrder: 2,
-      isFeatured: true,
-    },
-    {
-      name: "বাচ্চাদের পোশাক ও খেলনা",
-      slug: "kids",
-      imageUrl: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=600&auto=format&fit=crop",
-      description: "নবজাতক ও শিশুদের নরম আরামদায়ক পোশাক, বেবি ফ্রক, রম্পার এবং শিক্ষণীয় ও বিনোদনমূলক খেলনা।",
-      sortOrder: 3,
-      isFeatured: true,
-    },
-    {
-      name: "ব্যাগ ও পাম্প",
-      slug: "bag-and-pump",
-      imageUrl: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=600&auto=format&fit=crop",
-      description: "লেডিস প্রিমিয়াম হ্যান্ডব্যাগ, শোল্ডার ব্যাগ, ফ্যাশনেবল ক্লাচ, ওয়ালেট ও আরামদায়ক হিল পাম্প জুতা।",
-      sortOrder: 4,
-      isFeatured: true,
-    },
-    {
-      name: "প্রেম/কাপল আইটেম",
-      slug: "couple-items",
-      imageUrl: "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=600&auto=format&fit=crop",
-      description: "কাপল ম্যাচিং ড্রেস, রোমান্টিক সিরামিক মগ সেট, কাপল ব্রেসলেট, ফটো ফ্রেম ও স্পেশাল গিফট আইটেম।",
-      sortOrder: 5,
-      isFeatured: true,
-    },
-    {
-      name: "জুয়েলারি ও এক্সেসরিজ",
-      slug: "jewelry-and-accessories",
-      imageUrl: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=600&auto=format&fit=crop",
-      description: "কুন্দন নেকলেস সেট, ঐতিহ্যবাহী ঝুমকা, প্রিমিয়াম চুড়ি সেট, ফিঙ্গার রিং ও ফ্যাশন এক্সেসরিজ।",
-      sortOrder: 6,
-      isFeatured: true,
-    },
-    {
-      name: "ঘড়ি ও ব্যাগেল",
-      slug: "watch-and-bagel",
-      imageUrl: "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=600&auto=format&fit=crop",
-      description: "নারী ও পুরুষের লাক্সারি কোয়ার্টজ ঘড়ি, মেটাল চেইন ওয়াচ, স্মার্ট ঘড়ি ও ট্রেন্ডি ফ্যাশন ব্যাগেল।",
-      sortOrder: 7,
-      isFeatured: true,
-    },
-    {
-      name: "ইলেকট্রনিক্স ও গ্যাজেট",
-      slug: "electronics-and-gadgets",
-      imageUrl: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=600&auto=format&fit=crop",
-      description: "ওয়্যারলেস ব্লুটুথ ইয়ারবাড, হেডফোন, ফাস্ট চার্জিং পাওয়ার ব্যাংক, স্পিকার ও স্মার্ট এক্সেসরিজ।",
-      sortOrder: 8,
-      isFeatured: true,
-    },
-    {
-      name: "হোম ডেকোর",
-      slug: "home-decor",
-      imageUrl: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=600&auto=format&fit=crop",
-      description: "দেয়াল ঘড়ি, আধুনিক ফুলদানি, টেবিল ল্যাম্প, ক্যালিগ্রাফি ওয়াল আর্ট, কুশন কভার ও আকর্ষণীয় শোপিস।",
-      sortOrder: 9,
-      isFeatured: true,
-    },
-    {
-      name: "অর্গানিক পণ্য",
-      slug: "organic-products",
-      imageUrl: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=600&auto=format&fit=crop",
-      description: "১০০% প্রাকৃতিক সুন্দরবনের মধু, খাঁটি সরিষার তেল, নারিকেল তেল, খেজুরের গুড় ও পুষ্টিকর ড্রাই ফ্রুটস।",
-      sortOrder: 10,
-      isFeatured: true,
-    },
-    {
-      name: "কিচেন আইটেম",
-      slug: "kitchen-items",
-      imageUrl: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=600&auto=format&fit=crop",
-      description: "নন-স্টিক ফ্রাইপ্যান, স্টেইনলেস স্টিল কুকিং পট সেট, শেফ নাইফ, কাটিং বোর্ড ও কিচেন অর্গানাইজার।",
-      sortOrder: 11,
-      isFeatured: true,
-    },
-  ];
-
+  // 7. CREATE 11 MAIN PARENT CATEGORIES
+  console.log("7. Creating 11 Main Parent Categories...");
   const createdCategories: Record<string, string> = {};
 
-  for (const cat of categoryDefinitions) {
+  for (const cat of [
+  {
+    "name": "শাড়ি",
+    "slug": "sari",
+    "imageUrl": "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=600&auto=format&fit=crop",
+    "description": "ঐতিহ্যবাহী ঢাকাই জামদানি, মিরপুর কাতান, বেনারসি, রাজশাহী সিল্ক ও কটন শাড়ির এক্সক্লুসিভ কালেকশন।",
+    "sortOrder": 1,
+    "isFeatured": true
+  },
+  {
+    "name": "থ্রি-পিস",
+    "slug": "three-piece",
+    "imageUrl": "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=600&auto=format&fit=crop",
+    "description": "এমব্রয়ডারি, পিওর কটন, পাকিস্তানি লন, জর্জেট ও গর্জিয়াস পার্টি থ্রি-পিসের সমাহার।",
+    "sortOrder": 2,
+    "isFeatured": true
+  },
+  {
+    "name": "বাচ্চাদের পোশাক ও খেলনা",
+    "slug": "kids",
+    "imageUrl": "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=600&auto=format&fit=crop",
+    "description": "নবজাতক ও শিশুদের নরম আরামদায়ক পোশাক, বেবি ফ্রক, রম্পার এবং শিক্ষণীয় ও বিনোদনমূলক খেলনা।",
+    "sortOrder": 3,
+    "isFeatured": true
+  },
+  {
+    "name": "ব্যাগ ও পাম্প",
+    "slug": "bag-and-pump",
+    "imageUrl": "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=600&auto=format&fit=crop",
+    "description": "লেডিস প্রিমিয়াম হ্যান্ডব্যাগ, শোল্ডার ব্যাগ, ফ্যাশনেবল ক্লাচ, ওয়ালেট ও আরামদায়ক হিল পাম্প জুতা।",
+    "sortOrder": 4,
+    "isFeatured": true
+  },
+  {
+    "name": "প্রেম/কাপল আইটেম",
+    "slug": "couple-items",
+    "imageUrl": "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=600&auto=format&fit=crop",
+    "description": "কাপল ম্যাচিং ড্রেস, রোমান্টিক সিরামিক মগ সেট, কাপল ব্রেসলেট, ফটো ফ্রেম ও স্পেশাল গিফট আইটেম।",
+    "sortOrder": 5,
+    "isFeatured": true
+  },
+  {
+    "name": "জুয়েলারি ও এক্সেসরিজ",
+    "slug": "jewelry-and-accessories",
+    "imageUrl": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=600&auto=format&fit=crop",
+    "description": "কুন্দন নেকলেস সেট, ঐতিহ্যবাহী ঝুমকা, প্রিমিয়াম চুড়ি সেট, ফিঙ্গার রিং ও ফ্যাশন এক্সেসরিজ।",
+    "sortOrder": 6,
+    "isFeatured": true
+  },
+  {
+    "name": "ঘড়ি ও ব্যাগেল",
+    "slug": "watch-and-bagel",
+    "imageUrl": "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=600&auto=format&fit=crop",
+    "description": "নারী ও পুরুষের লাক্সারি কোয়ার্টজ ঘড়ি, মেটাল চেইন ওয়াচ, স্মার্ট ঘড়ি ও ট্রেন্ডি ফ্যাশন ব্যাগেল।",
+    "sortOrder": 7,
+    "isFeatured": true
+  },
+  {
+    "name": "ইলেকট্রনিক্স ও গ্যাজেট",
+    "slug": "electronics-and-gadgets",
+    "imageUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=600&auto=format&fit=crop",
+    "description": "ওয়্যারলেস ব্লুটুথ ইয়ারবাড, হেডফোন, ফাস্ট চার্জিং পাওয়ার ব্যাংক, স্পিকার ও স্মার্ট এক্সেসরিজ।",
+    "sortOrder": 8,
+    "isFeatured": true
+  },
+  {
+    "name": "হোম ডেকোর",
+    "slug": "home-decor",
+    "imageUrl": "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=600&auto=format&fit=crop",
+    "description": "দেয়াল ঘড়ি, আধুনিক ফুলদানি, টেবিল ল্যাম্প, ক্যালিগ্রাফি ওয়াল আর্ট, কুশন কভার ও আকর্ষণীয় শোপিস।",
+    "sortOrder": 9,
+    "isFeatured": true
+  },
+  {
+    "name": "অর্গানিক পণ্য",
+    "slug": "organic-products",
+    "imageUrl": "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=600&auto=format&fit=crop",
+    "description": "১০০% প্রাকৃতিক সুন্দরবনের মধু, খাঁটি সরিষার তেল, নারিকেল তেল, খেজুরের গুড় ও পুষ্টিকর ড্রাই ফ্রুটস।",
+    "sortOrder": 10,
+    "isFeatured": true
+  },
+  {
+    "name": "কিচেন আইটেম",
+    "slug": "kitchen-items",
+    "imageUrl": "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=600&auto=format&fit=crop",
+    "description": "নন-স্টিক ফ্রাইপ্যান, স্টেইনলেস স্টিল কুকিং পট সেট, শেফ নাইফ, কাটিং বোর্ড ও কিচেন অর্গানাইজার।",
+    "sortOrder": 11,
+    "isFeatured": true
+  }
+]) {
     const created = await prisma.category.create({
       data: cat,
     });
@@ -413,78 +417,288 @@ async function main() {
 
   console.log("11 Parent Categories created successfully.");
 
-  // Create Subcategories with parentId
-  const subcategoryDefinitions = [
-    // 1. শাড়ি (sari)
-    { name: "জামদানি শাড়ি", slug: "jamdani-sari", parentSlug: "sari", imageUrl: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=400" },
-    { name: "কাতান ও বেনারসি", slug: "katan-banarasi-sari", parentSlug: "sari", imageUrl: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=400" },
-    { name: "সিল্ক ও মসলিন শাড়ি", slug: "silk-muslin-sari", parentSlug: "sari", imageUrl: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=400" },
-    { name: "সুতি ও হ্যান্ডলুম", slug: "cotton-handloom-sari", parentSlug: "sari", imageUrl: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=400" },
-    { name: "পার্টি ও জর্জেট", slug: "party-georgette-sari", parentSlug: "sari", imageUrl: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=400" },
+  // 8. CREATE 46 SUBCATEGORIES (with parentId)
+  console.log("8. Creating 46 Subcategories...");
+  const subcategoryList = [
+  {
+    "name": "জামদানি শাড়ি",
+    "slug": "jamdani-sari",
+    "parentSlug": "sari",
+    "imageUrl": "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800"
+  },
+  {
+    "name": "কাতান ও বেনারসি",
+    "slug": "katan-banarasi-sari",
+    "parentSlug": "sari",
+    "imageUrl": "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=800"
+  },
+  {
+    "name": "সিল্ক ও মসলিন শাড়ি",
+    "slug": "silk-muslin-sari",
+    "parentSlug": "sari",
+    "imageUrl": "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800"
+  },
+  {
+    "name": "সুতি ও হ্যান্ডলুম",
+    "slug": "cotton-handloom-sari",
+    "parentSlug": "sari",
+    "imageUrl": "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800"
+  },
+  {
+    "name": "পার্টি ও জর্জেট",
+    "slug": "party-georgette-sari",
+    "parentSlug": "sari",
+    "imageUrl": "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800"
+  },
+  {
+    "name": "পিওর কটন থ্রি-পিস",
+    "slug": "cotton-three-piece",
+    "parentSlug": "three-piece",
+    "imageUrl": "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800"
+  },
+  {
+    "name": "এমব্রয়ডারি থ্রি-পিস",
+    "slug": "embroidered-three-piece",
+    "parentSlug": "three-piece",
+    "imageUrl": "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800"
+  },
+  {
+    "name": "পাকিস্তানি ডিজিটাল লন",
+    "slug": "pakistani-lawn",
+    "parentSlug": "three-piece",
+    "imageUrl": "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800"
+  },
+  {
+    "name": "গর্জিয়াস পার্টি ওয়্যার",
+    "slug": "party-three-piece",
+    "parentSlug": "three-piece",
+    "imageUrl": "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800"
+  },
+  {
+    "name": "কুর্তি ও টিউনিক",
+    "slug": "kurti-tunic",
+    "parentSlug": "three-piece",
+    "imageUrl": "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800"
+  },
+  {
+    "name": "বেবি বয় ড্রেস",
+    "slug": "baby-boy-clothing",
+    "parentSlug": "kids",
+    "imageUrl": "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800"
+  },
+  {
+    "name": "বেবি গার্ল ফ্রক ও ড্রেস",
+    "slug": "baby-girl-frocks",
+    "parentSlug": "kids",
+    "imageUrl": "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800"
+  },
+  {
+    "name": "নিউবর্ন বেবি কেয়ার",
+    "slug": "newborn-baby-care",
+    "parentSlug": "kids",
+    "imageUrl": "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800"
+  },
+  {
+    "name": "শিক্ষণীয় ও বিনোদন খেলনা",
+    "slug": "educational-toys",
+    "parentSlug": "kids",
+    "imageUrl": "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800"
+  },
+  {
+    "name": "লেডিস হ্যান্ডব্যাগ",
+    "slug": "ladies-handbags",
+    "parentSlug": "bag-and-pump",
+    "imageUrl": "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800"
+  },
+  {
+    "name": "পার্টি ক্লাচ ও পার্স",
+    "slug": "party-clutches",
+    "parentSlug": "bag-and-pump",
+    "imageUrl": "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800"
+  },
+  {
+    "name": "হিল ও পাম্প শু",
+    "slug": "pump-shoes-heels",
+    "parentSlug": "bag-and-pump",
+    "imageUrl": "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?q=80&w=800"
+  },
+  {
+    "name": "লেডিস ওয়ালেট ও ব্যাকপ্যাক",
+    "slug": "ladies-wallets",
+    "parentSlug": "bag-and-pump",
+    "imageUrl": "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800"
+  },
+  {
+    "name": "কাপল ম্যাচিং ড্রেস",
+    "slug": "couple-matching-dress",
+    "parentSlug": "couple-items",
+    "imageUrl": "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=800"
+  },
+  {
+    "name": "রোমান্টিক মগ ও ফ্রেম",
+    "slug": "couple-mugs-frames",
+    "parentSlug": "couple-items",
+    "imageUrl": "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=800"
+  },
+  {
+    "name": "কাপল ওয়াচ ও ব্রেসলেট",
+    "slug": "couple-watch-bracelets",
+    "parentSlug": "couple-items",
+    "imageUrl": "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=800"
+  },
+  {
+    "name": "কাপল কম্বো গিফট বক্স",
+    "slug": "couple-gift-box",
+    "parentSlug": "couple-items",
+    "imageUrl": "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=800"
+  },
+  {
+    "name": "কুন্দন ও ব্রাইডাল সেট",
+    "slug": "kundan-bridal-sets",
+    "parentSlug": "jewelry-and-accessories",
+    "imageUrl": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800"
+  },
+  {
+    "name": "ঐতিহ্যবাহী ঝুমকা ও দুল",
+    "slug": "traditional-jhumkas",
+    "parentSlug": "jewelry-and-accessories",
+    "imageUrl": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800"
+  },
+  {
+    "name": "প্রিমিয়াম চুড়ি ও বালা",
+    "slug": "bangles-bracelets",
+    "parentSlug": "jewelry-and-accessories",
+    "imageUrl": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800"
+  },
+  {
+    "name": "ফিঙ্গার রিং ও নূপুর",
+    "slug": "rings-accessories",
+    "parentSlug": "jewelry-and-accessories",
+    "imageUrl": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800"
+  },
+  {
+    "name": "লেডিস লাক্সারি ঘড়ি",
+    "slug": "ladies-luxury-watches",
+    "parentSlug": "watch-and-bagel",
+    "imageUrl": "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800"
+  },
+  {
+    "name": "জেন্টস মেটাল ও লেদার ঘড়ি",
+    "slug": "gents-chronograph-watches",
+    "parentSlug": "watch-and-bagel",
+    "imageUrl": "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800"
+  },
+  {
+    "name": "স্মার্ট ওয়াচ ও ফিটনেস ব্যান্ড",
+    "slug": "smart-watches-band",
+    "parentSlug": "watch-and-bagel",
+    "imageUrl": "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800"
+  },
+  {
+    "name": "ফ্যাশন ব্যাগেল ও চেইন",
+    "slug": "fashion-bagel-chain",
+    "parentSlug": "watch-and-bagel",
+    "imageUrl": "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800"
+  },
+  {
+    "name": "ওয়্যারলেস ব্লুটুথ ইয়ারবাড",
+    "slug": "bluetooth-earbuds",
+    "parentSlug": "electronics-and-gadgets",
+    "imageUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800"
+  },
+  {
+    "name": "স্মার্ট গ্যাজেট ও অ্যাক্সেসরিজ",
+    "slug": "smart-gadgets",
+    "parentSlug": "electronics-and-gadgets",
+    "imageUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800"
+  },
+  {
+    "name": "পোর্টেবল ব্লুটুথ স্পিকার",
+    "slug": "bluetooth-speakers",
+    "parentSlug": "electronics-and-gadgets",
+    "imageUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800"
+  },
+  {
+    "name": "ফাস্ট চার্জার ও পাওয়ার ব্যাংক",
+    "slug": "powerbanks-chargers",
+    "parentSlug": "electronics-and-gadgets",
+    "imageUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800"
+  },
+  {
+    "name": "দেয়াল ঘড়ি ও আর্ট ফ্রেম",
+    "slug": "wall-clocks-art",
+    "parentSlug": "home-decor",
+    "imageUrl": "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800"
+  },
+  {
+    "name": "টেবিল ল্যাম্প ও লাইটিং",
+    "slug": "table-lamps-decor",
+    "parentSlug": "home-decor",
+    "imageUrl": "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800"
+  },
+  {
+    "name": "সিরামিক ও মেটাল ফুলদানি",
+    "slug": "flower-vases",
+    "parentSlug": "home-decor",
+    "imageUrl": "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800"
+  },
+  {
+    "name": "কুশন কভার ও রাগস",
+    "slug": "cushions-rugs",
+    "parentSlug": "home-decor",
+    "imageUrl": "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800"
+  },
+  {
+    "name": "সুন্দরবনের মধু ও ঘি",
+    "slug": "pure-honey-ghee",
+    "parentSlug": "organic-products",
+    "imageUrl": "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=800"
+  },
+  {
+    "name": "সরিষা ও নারিকেল তেল",
+    "slug": "cold-pressed-mustard-oil",
+    "parentSlug": "organic-products",
+    "imageUrl": "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=800"
+  },
+  {
+    "name": "ড্রাই ফ্রুটস ও বাদাম",
+    "slug": "dry-fruits-nuts",
+    "parentSlug": "organic-products",
+    "imageUrl": "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=800"
+  },
+  {
+    "name": "অর্গানিক চা ও মসলা",
+    "slug": "organic-tea-spices",
+    "parentSlug": "organic-products",
+    "imageUrl": "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=800"
+  },
+  {
+    "name": "নন-স্টিক কুকওয়্যার সেট",
+    "slug": "nonstick-cookware",
+    "parentSlug": "kitchen-items",
+    "imageUrl": "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=800"
+  },
+  {
+    "name": "শেফ নাইফ ও কাটিং বোর্ড",
+    "slug": "chef-knives-boards",
+    "parentSlug": "kitchen-items",
+    "imageUrl": "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=800"
+  },
+  {
+    "name": "স্পাইস ও কিচেন অর্গানাইজার",
+    "slug": "kitchen-organizers",
+    "parentSlug": "kitchen-items",
+    "imageUrl": "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=800"
+  },
+  {
+    "name": "ইলেকট্রিক চপার ও ব্লেন্ডার",
+    "slug": "choppers-blenders",
+    "parentSlug": "kitchen-items",
+    "imageUrl": "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=800"
+  }
+];
 
-    // 2. থ্রি-পিস (three-piece)
-    { name: "পিওর কটন থ্রি-পিস", slug: "cotton-three-piece", parentSlug: "three-piece", imageUrl: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=400" },
-    { name: "এমব্রয়ডারি থ্রি-পিস", slug: "embroidered-three-piece", parentSlug: "three-piece", imageUrl: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=400" },
-    { name: "পাকিস্তানি ডিজিটাল লন", slug: "pakistani-lawn", parentSlug: "three-piece", imageUrl: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=400" },
-    { name: "গর্জিয়াস পার্টি ওয়্যার", slug: "party-three-piece", parentSlug: "three-piece", imageUrl: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=400" },
-    { name: "কুর্তি ও টিউনিক", slug: "kurti-tunic", parentSlug: "three-piece", imageUrl: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=400" },
-
-    // 3. বাচ্চাদের পোশাক ও খেলনা (kids)
-    { name: "বেবি বয় ড্রেস", slug: "baby-boy-clothing", parentSlug: "kids", imageUrl: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=400" },
-    { name: "বেবি গার্ল ফ্রক ও ড্রেস", slug: "baby-girl-frocks", parentSlug: "kids", imageUrl: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=400" },
-    { name: "নিউবর্ন বেবি কেয়ার", slug: "newborn-baby-care", parentSlug: "kids", imageUrl: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=400" },
-    { name: "শিক্ষণীয় ও বিনোদন খেলনা", slug: "educational-toys", parentSlug: "kids", imageUrl: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=400" },
-
-    // 4. ব্যাগ ও পাম্প (bag-and-pump)
-    { name: "লেডিস হ্যান্ডব্যাগ", slug: "ladies-handbags", parentSlug: "bag-and-pump", imageUrl: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=400" },
-    { name: "পার্টি ক্লাচ ও পার্স", slug: "party-clutches", parentSlug: "bag-and-pump", imageUrl: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=400" },
-    { name: "হিল ও পাম্প শু", slug: "pump-shoes-heels", parentSlug: "bag-and-pump", imageUrl: "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?q=80&w=400" },
-    { name: "লেডিস ওয়ালেট ও ব্যাকপ্যাক", slug: "ladies-wallets", parentSlug: "bag-and-pump", imageUrl: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=400" },
-
-    // 5. প্রেম/কাপল আইটেম (couple-items)
-    { name: "কাপল ম্যাচিং ড্রেস", slug: "couple-matching-dress", parentSlug: "couple-items", imageUrl: "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=400" },
-    { name: "রোমান্টিক মগ ও ফ্রেম", slug: "couple-mugs-frames", parentSlug: "couple-items", imageUrl: "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=400" },
-    { name: "কাপল ওয়াচ ও ব্রেসলেট", slug: "couple-watch-bracelets", parentSlug: "couple-items", imageUrl: "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=400" },
-    { name: "কাপল কম্বো গিফট বক্স", slug: "couple-gift-box", parentSlug: "couple-items", imageUrl: "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=400" },
-
-    // 6. জুয়েলারি ও এক্সেসরিজ (jewelry-and-accessories)
-    { name: "কুন্দন ও ব্রাইডাল সেট", slug: "kundan-bridal-sets", parentSlug: "jewelry-and-accessories", imageUrl: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=400" },
-    { name: "ঐতিহ্যবাহী ঝুমকা ও দুল", slug: "traditional-jhumkas", parentSlug: "jewelry-and-accessories", imageUrl: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=400" },
-    { name: "প্রিমিয়াম চুড়ি ও বালা", slug: "bangles-bracelets", parentSlug: "jewelry-and-accessories", imageUrl: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=400" },
-    { name: "ফিঙ্গার রিং ও নূপুর", slug: "rings-accessories", parentSlug: "jewelry-and-accessories", imageUrl: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=400" },
-
-    // 7. ঘড়ি ও ব্যাগেল (watch-and-bagel)
-    { name: "লেডিস লাক্সারি ঘড়ি", slug: "ladies-luxury-watches", parentSlug: "watch-and-bagel", imageUrl: "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=400" },
-    { name: "জেন্টস মেটাল ও লেদার ঘড়ি", slug: "gents-chronograph-watches", parentSlug: "watch-and-bagel", imageUrl: "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=400" },
-    { name: "স্মার্ট ওয়াচ ও ফিটনেস ব্যান্ড", slug: "smart-watches-band", parentSlug: "watch-and-bagel", imageUrl: "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=400" },
-    { name: "ফ্যাশন ব্যাগেল ও চেইন", slug: "fashion-bagel-chain", parentSlug: "watch-and-bagel", imageUrl: "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=400" },
-
-    // 8. ইলেকট্রনিক্স ও গ্যাজেট (electronics-and-gadgets)
-    { name: "ওয়্যারলেস ব্লুটুথ ইয়ারবাড", slug: "bluetooth-earbuds", parentSlug: "electronics-and-gadgets", imageUrl: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=400" },
-    { name: "স্মার্ট গ্যাজেট ও অ্যাক্সেসরিজ", slug: "smart-gadgets", parentSlug: "electronics-and-gadgets", imageUrl: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=400" },
-    { name: "পোর্টেবল ব্লুটুথ স্পিকার", slug: "bluetooth-speakers", parentSlug: "electronics-and-gadgets", imageUrl: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=400" },
-    { name: "ফাস্ট চার্জার ও পাওয়ার ব্যাংক", slug: "powerbanks-chargers", parentSlug: "electronics-and-gadgets", imageUrl: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=400" },
-
-    // 9. হোম ডেকোর (home-decor)
-    { name: "দেয়াল ঘড়ি ও আর্ট ফ্রেম", slug: "wall-clocks-art", parentSlug: "home-decor", imageUrl: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=400" },
-    { name: "টেবিল ল্যাম্প ও লাইটিং", slug: "table-lamps-decor", parentSlug: "home-decor", imageUrl: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=400" },
-    { name: "সিরামিক ও মেটাল ফুলদানি", slug: "flower-vases", parentSlug: "home-decor", imageUrl: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=400" },
-    { name: "কুশন কভার ও রাগস", slug: "cushions-rugs", parentSlug: "home-decor", imageUrl: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=400" },
-
-    // 10. অর্গানিক পণ্য (organic-products)
-    { name: "সুন্দরবনের মধু ও ঘি", slug: "pure-honey-ghee", parentSlug: "organic-products", imageUrl: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=400" },
-    { name: "সরিষা ও নারিকেল তেল", slug: "cold-pressed-mustard-oil", parentSlug: "organic-products", imageUrl: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=400" },
-    { name: "ড্রাই ফ্রুটস ও বাদাম", slug: "dry-fruits-nuts", parentSlug: "organic-products", imageUrl: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=400" },
-    { name: "অর্গানিক চা ও মসলা", slug: "organic-tea-spices", parentSlug: "organic-products", imageUrl: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=400" },
-
-    // 11. কিচেন আইটেম (kitchen-items)
-    { name: "নন-স্টিক কুকওয়্যার সেট", slug: "nonstick-cookware", parentSlug: "kitchen-items", imageUrl: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=400" },
-    { name: "শেফ নাইফ ও কাটিং বোর্ড", slug: "chef-knives-boards", parentSlug: "kitchen-items", imageUrl: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=400" },
-    { name: "স্পাইস ও কিচেন অর্গানাইজার", slug: "kitchen-organizers", parentSlug: "kitchen-items", imageUrl: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=400" },
-    { name: "ইলেকট্রিক চপার ও ব্লেন্ডার", slug: "choppers-blenders", parentSlug: "kitchen-items", imageUrl: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=400" },
-  ];
-
-  for (const sub of subcategoryDefinitions) {
+  for (const sub of subcategoryList) {
     const parentId = createdCategories[sub.parentSlug];
     if (parentId) {
       const createdSub = await prisma.category.create({
@@ -501,2069 +715,2251 @@ async function main() {
     }
   }
 
-  console.log("Subcategories created successfully.");
+  console.log("46 Subcategories created successfully.");
 
-  // 8. CREATE AT LEAST 10 REALISTIC PRODUCTS FOR EACH OF THE 11 CATEGORIES
-  console.log("8. Seeding Products (Minimum 10 products per category = 110+ products)...");
+  // 9. SEED AT LEAST 5 PRODUCTS FOR EVERY SUBCATEGORY (230+ products total)
+  console.log("9. Seeding minimum 5 products for EVERY subcategory (Total: 230+ products)...");
 
-  const productsData = [
-    // ----------------------------------------------------
-    // CATEGORY 1: শাড়ি (slug: sari) [10 Products]
-    // ----------------------------------------------------
-    {
-      name: "ঢাকাই প্রিমিয়াম জামদানি শাড়ি",
-      slug: "dhakai-premium-jamdani-saree",
-      sku: "SAR-JAM-001",
-      categoryId: createdCategories["sari"],
-      price: 3850,
-      discountPrice: 3450,
-      stockQty: 45,
-      soldQty: 18,
-      isFeatured: true,
-      isBestSeller: true,
-      promotionalBadges: ["👑 Best Seller", "🔥 Hot Deal"],
-      description: "খাঁটি সুতি সুতায় হাতে বোনা ঐতিহ্যবাহী ঢাকাই জামদানি শাড়ি। উজ্জ্বল আকর্ষণীয় পাড় ও আঁচল ডিজাইন, পার্টি বা উৎসবের জন্য একদম মানানসই। ১২ হাত শাড়ি সাথে রানিং ব্লাউজ পিস।",
-      images: [
-        "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop",
-        "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop",
-      tags: "jamdani,saree,traditional,dhakai,shari",
-    },
-    {
-      name: "মিরপুর রয়াল কাতান শাড়ি",
-      slug: "mirpur-royal-katan-saree",
-      sku: "SAR-KAT-002",
-      categoryId: createdCategories["sari"],
-      price: 4500,
-      discountPrice: 3950,
-      stockQty: 30,
-      soldQty: 12,
-      isFeatured: true,
-      promotionalBadges: ["⭐ Trending"],
-      description: "রয়েল লুক সমৃদ্ধ ভারী জরির কাজের মিরপুর কাতান শাড়ি। বিয়ে ও জমকালো অনুষ্ঠানের জন্য পারফেক্ট চয়েস। নরম এবং পড়তে অত্যন্ত আরামদায়ক।",
-      images: [
-        "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=800&auto=format&fit=crop",
-        "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=800&auto=format&fit=crop",
-      tags: "katan,saree,wedding,party,mirpur",
-    },
-    {
-      name: "বেনারসি ব্রাইডাল সিল্ক শাড়ি",
-      slug: "banarasi-bridal-silk-saree",
-      sku: "SAR-BAN-003",
-      categoryId: createdCategories["sari"],
-      price: 8200,
-      discountPrice: 7490,
-      stockQty: 20,
-      soldQty: 7,
-      isFeatured: true,
-      promotionalBadges: ["👑 Best Seller"],
-      description: "ব্রাইডাল কালেকশনের খাঁটি বেনারসি সিল্ক শাড়ি। পুরো জমিনে নিপুণ মিনা ও অ্যান্টিক জরির অলংকরণ। স্পেশাল ব্রাইডাল গিফট বক্স সহ।",
-      images: [
-        "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop",
-        "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop",
-      tags: "banarasi,bridal,silk,wedding,shari",
-    },
-    {
-      name: "সফট তসর সিল্ক শাড়ি",
-      slug: "soft-tussar-silk-saree",
-      sku: "SAR-TAS-004",
-      categoryId: createdCategories["sari"],
-      price: 3400,
-      discountPrice: 2950,
-      stockQty: 35,
-      soldQty: 15,
-      promotionalBadges: ["🆕 New Arrival"],
-      description: "হালকা ও মার্জিত সফট তসর সিল্ক শাড়ি। অফিস ও যেকোনো আনুষ্ঠানিক মিটিং বা ঘরোয়া পার্টিতে পড়ার জন্য চমৎকার।",
-      images: [
-        "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop",
-      tags: "tussar,silk,party,saree",
-    },
-    {
-      name: "রাজশাহী খাঁটি সিল্ক শাড়ি",
-      slug: "rajshahi-pure-silk-saree",
-      sku: "SAR-RAJ-005",
-      categoryId: createdCategories["sari"],
-      price: 5800,
-      discountPrice: 5200,
-      stockQty: 25,
-      soldQty: 10,
-      isFeatured: true,
-      promotionalBadges: ["⭐ Trending"],
-      description: "১০০% পিওর রাজশাহী রেশম সিল্ক শাড়ি। আকর্ষণীয় আঁচল ও সফট টেক্সচার যা আপনাকে দেবে অভিজাত লুক।",
-      images: [
-        "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop",
-      tags: "rajshahi,silk,reshom,saree",
-    },
-    {
-      name: "হাফ সিল্ক গ্লসি পার্টি শাড়ি",
-      slug: "half-silk-glossy-party-saree",
-      sku: "SAR-HLF-006",
-      categoryId: createdCategories["sari"],
-      price: 2200,
-      discountPrice: 1850,
-      stockQty: 50,
-      soldQty: 24,
-      isFlashSale: true,
-      promotionalBadges: ["🔥 Hot Deal"],
-      description: "গ্লসি টেক্সচারের হাফ সিল্ক পার্টি শাড়ি। আকর্ষণীয় কালার কম্বিনেশন এবং সাশ্রয়ী দামে প্রিমিয়াম লুক।",
-      images: [
-        "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=800&auto=format&fit=crop",
-      tags: "half-silk,party,glossy,saree",
-    },
-    {
-      name: "হ্যান্ড ব্লক প্রিন্ট কটন শাড়ি",
-      slug: "hand-block-print-cotton-saree",
-      sku: "SAR-BLK-007",
-      categoryId: createdCategories["sari"],
-      price: 1650,
-      discountPrice: 1350,
-      stockQty: 60,
-      soldQty: 32,
-      promotionalBadges: ["👑 Best Seller"],
-      description: "প্রাকৃতিক রঙে কাঠের ব্লকে তৈরি সুতি কটন শাড়ি। গরমের দিনে নিয়মিত ব্যবহারের জন্য ভীষণ আরামদায়ক।",
-      images: [
-        "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop",
-      tags: "block-print,cotton,daily,saree",
-    },
-    {
-      name: "টাঙ্গাইল তাঁতের সুতি শাড়ি",
-      slug: "tangail-taat-cotton-saree",
-      sku: "SAR-TNG-008",
-      categoryId: createdCategories["sari"],
-      price: 1850,
-      discountPrice: 1550,
-      stockQty: 40,
-      soldQty: 19,
-      promotionalBadges: ["⭐ Trending"],
-      description: "ঐতিহ্যবাহী টাঙ্গাইলের তাঁতের সুতি শাড়ি। সফট সুতা ও নিপুণ পাড়ের ডিজাইন। ১০০% সুতি ও দীর্ঘস্থায়ী।",
-      images: [
-        "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop",
-      tags: "tangail,taat,cotton,saree",
-    },
-    {
-      name: "ঢাকাই মসলিন জামদানি শাড়ি",
-      slug: "dhakai-muslin-jamdani-saree",
-      sku: "SAR-MUS-009",
-      categoryId: createdCategories["sari"],
-      price: 7500,
-      discountPrice: 6800,
-      stockQty: 15,
-      soldQty: 6,
-      isFeatured: true,
-      promotionalBadges: ["👑 Best Seller"],
-      description: "অতি সূক্ষ্ম ও ওজনহীন ঢাকাই মসলিন জামদানি শাড়ি। আভিজাত্যের প্রতীক এবং বিশেষ অনুষ্ঠানের অন্যতম আকর্ষণ।",
-      images: [
-        "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=800&auto=format&fit=crop",
-      tags: "muslin,jamdani,luxury,saree",
-    },
-    {
-      name: "খাঁটি গরদ লাল পাড় শাড়ি",
-      slug: "pure-garad-silk-red-border-saree",
-      sku: "SAR-GRD-010",
-      categoryId: createdCategories["sari"],
-      price: 6200,
-      discountPrice: 5600,
-      stockQty: 20,
-      soldQty: 8,
-      promotionalBadges: ["🆕 New Arrival"],
-      description: "ঐতিহ্যবাহী লাল পাড় গরদ সিল্ক শাড়ি। পুজা, উৎসব ও যেকোনো শুভ অনুষ্ঠানের জন্য বিশেষ পছন্দ।",
-      images: [
-        "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop",
-      tags: "garad,silk,traditional,saree",
-    },
-
-    // ----------------------------------------------------
-    // CATEGORY 2: থ্রি-পিস (slug: three-piece) [10 Products]
-    // ----------------------------------------------------
-    {
-      name: "কাশ্মীরি এমব্রয়ডারি কটন থ্রি-পিস",
-      slug: "kashmiri-embroidered-cotton-three-piece",
-      sku: "THP-KSH-001",
-      categoryId: createdCategories["three-piece"],
-      price: 2450,
-      discountPrice: 2150,
-      stockQty: 50,
-      soldQty: 22,
-      isFeatured: true,
-      isBestSeller: true,
-      promotionalBadges: ["👑 Best Seller", "🔥 Hot Deal"],
-      description: "গলায় ও জামার প্যানেলে নিখুঁত কাশ্মীরি সুতার এমব্রয়ডারি কাজ করা প্রিমিয়াম কটন থ্রি-পিস। সাথে নামাজি শিফন ওড়না।",
-      images: [
-        "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop",
-        "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop",
-      tags: "three-piece,kashmiri,embroidery,cotton",
-    },
-    {
-      name: "প্রিমিয়াম পাকিস্তানি লন থ্রি-পিস",
-      slug: "premium-pakistani-lawn-three-piece",
-      sku: "THP-LWN-002",
-      categoryId: createdCategories["three-piece"],
-      price: 3200,
-      discountPrice: 2850,
-      stockQty: 40,
-      soldQty: 16,
-      isFeatured: true,
-      promotionalBadges: ["⭐ Trending"],
-      description: "ডিজিটাল প্রিন্ট ও লেইস অলংকরণ সহ আরামদায়ক সামার লন থ্রি-পিস। ৫ হাত বড় সফট ভয়েল ওড়না।",
-      images: [
-        "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop",
-      tags: "lawn,pakistani,summer,three-piece",
-    },
-    {
-      name: "পিওর জর্জেট পার্টি থ্রি-পিস",
-      slug: "pure-georgette-party-three-piece",
-      sku: "THP-GEO-003",
-      categoryId: createdCategories["three-piece"],
-      price: 3800,
-      discountPrice: 3350,
-      stockQty: 30,
-      soldQty: 14,
-      isFeatured: true,
-      promotionalBadges: ["👑 Best Seller"],
-      description: "ভারী জরি ও সিকোয়েন্সের কাজ করা ওয়েডিং পার্টি জর্জেট থ্রি-পিস। ভেতরে এটাচড ইনার দেওয়া আছে।",
-      images: [
-        "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=800&auto=format&fit=crop",
-      tags: "georgette,party,sequence,three-piece",
-    },
-    {
-      name: "সুতি হ্যান্ড বাটিক থ্রি-পিস",
-      slug: "cotton-hand-batik-three-piece",
-      sku: "THP-BAT-004",
-      categoryId: createdCategories["three-piece"],
-      price: 1350,
-      discountPrice: 1150,
-      stockQty: 60,
-      soldQty: 35,
-      isFlashSale: true,
-      promotionalBadges: ["🔥 Hot Deal"],
-      description: "১০০% পাকা রঙের খাঁটি সুতি মোম বাটিক থ্রি-পিস। প্রতিদিনের ব্যবহার ও অফিসের জন্য অত্যন্ত আরামদায়ক।",
-      images: [
-        "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop",
-      tags: "batik,cotton,handloom,three-piece",
-    },
-    {
-      name: "ডিজিটাল প্রিন্ট সিল্ক থ্রি-পিস",
-      slug: "digital-print-silk-three-piece",
-      sku: "THP-SLK-005",
-      categoryId: createdCategories["three-piece"],
-      price: 2150,
-      discountPrice: 1850,
-      stockQty: 45,
-      soldQty: 19,
-      promotionalBadges: ["🆕 New Arrival"],
-      description: "রঙিন ফ্লোরাল ডিজিটাল প্রিন্ট সহ আধুনিক আর্ট সিল্ক থ্রি-পিস। দেখতে দারুণ আকর্ষণীয়।",
-      images: [
-        "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=800&auto=format&fit=crop",
-      tags: "silk,digital-print,three-piece",
-    },
-    {
-      name: "অল-ওভার সিকোয়েন্স এমব্রয়ডারি থ্রি-পিস",
-      slug: "all-over-sequence-embroidered-dress",
-      sku: "THP-SEQ-006",
-      categoryId: createdCategories["three-piece"],
-      price: 3600,
-      discountPrice: 3100,
-      stockQty: 30,
-      soldQty: 11,
-      promotionalBadges: ["⭐ Trending"],
-      description: "জমকালো সিকোয়েন্স ও জারদৌসি হাতের কাজের স্পেশাল পার্টি থ্রি-পিস সেট। সাথে ম্যাচিং প্যান্ট ও ওড়না।",
-      images: [
-        "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop",
-      tags: "sequence,party,dress,three-piece",
-    },
-    {
-      name: "আরামদায়ক রেগুলার কটন থ্রি-পিস",
-      slug: "comfortable-daily-cotton-three-piece",
-      sku: "THP-COT-007",
-      categoryId: createdCategories["three-piece"],
-      price: 1150,
-      discountPrice: 950,
-      stockQty: 70,
-      soldQty: 40,
-      promotionalBadges: ["👑 Best Seller"],
-      description: "সফট জয়পুরি কটন সুতা দিয়ে তৈরি ক্যাজুয়াল থ্রি-পিস। কোনো রঙ উঠবে না এবং ওয়াশ করা সহজ।",
-      images: [
-        "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop",
-      tags: "daily,cotton,jaipuri,three-piece",
-    },
-    {
-      name: "হ্যান্ড ব্লক প্রিন্ট ভয়েল থ্রি-পিস",
-      slug: "hand-block-print-voile-three-piece",
-      sku: "THP-VOL-008",
-      categoryId: createdCategories["three-piece"],
-      price: 1750,
-      discountPrice: 1490,
-      stockQty: 40,
-      soldQty: 18,
-      promotionalBadges: ["🆕 New Arrival"],
-      description: "প্রাকৃতিক ভেষজ রঙের হ্যান্ড ব্লক প্রিন্ট ভয়েল কটন থ্রি-পিস সেট। অত্যন্ত ঠান্ডা ও মোলায়েম।",
-      images: [
-        "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=800&auto=format&fit=crop",
-      tags: "block-print,voile,cotton,three-piece",
-    },
-    {
-      name: "লিনেন এমব্রয়ডারি কুর্তি সেট",
-      slug: "linen-embroidered-three-piece-set",
-      sku: "THP-LIN-009",
-      categoryId: createdCategories["three-piece"],
-      price: 1950,
-      discountPrice: 1650,
-      stockQty: 35,
-      soldQty: 15,
-      promotionalBadges: ["⭐ Trending"],
-      description: "ক্লাসিক লিনেন ফেব্রিকে নিখুঁত ক্রস-স্টিচ এমব্রয়ডারি থ্রি-পিস সেট। তরুণীদের জন্য সেরা পছন্দ।",
-      images: [
-        "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop",
-      tags: "linen,kurti,embroidery,three-piece",
-    },
-    {
-      name: "সান সিল্ক গর্জিয়াস পার্টি ড্রেস",
-      slug: "sun-silk-gorgeous-party-three-piece",
-      sku: "THP-SUN-010",
-      categoryId: createdCategories["three-piece"],
-      price: 4200,
-      discountPrice: 3750,
-      stockQty: 25,
-      soldQty: 9,
-      isFeatured: true,
-      promotionalBadges: ["👑 Best Seller"],
-      description: "সান সিল্ক ফেব্রিকে ভারি কারচুপি ও কাটওয়ার্কের কাজের রাজকীয় পার্টি থ্রি-পিস সেট।",
-      images: [
-        "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=800&auto=format&fit=crop",
-      tags: "sun-silk,party,luxury,three-piece",
-    },
-
-    // ----------------------------------------------------
-    // CATEGORY 3: বাচ্চাদের পোশাক ও খেলনা (slug: kids) [10 Products]
-    // ----------------------------------------------------
-    {
-      name: "বাচ্চাদের আরামদায়ক কটন ফ্রক",
-      slug: "baby-girls-floral-cotton-frock",
-      sku: "KID-FRK-001",
-      categoryId: createdCategories["kids"],
-      price: 650,
-      discountPrice: 490,
-      stockQty: 50,
-      soldQty: 26,
-      isFeatured: true,
-      isBestSeller: true,
-      promotionalBadges: ["👑 Best Seller", "🔥 Hot Deal"],
-      description: "বেবি গার্লসদের জন্য সফট সুতি কাপড়ের ফ্লোরাল ফ্রক। শিশুদের ত্বকের জন্য ১০০% নিরাপদ ও আরামদায়ক।",
-      images: [
-        "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800&auto=format&fit=crop",
-      tags: "kids,frock,baby,cotton,clothing",
-    },
-    {
-      name: "বেবি বয় পোলো টি-শার্ট ও শর্টস সেট",
-      slug: "baby-boys-polo-tshirt-shorts-set",
-      sku: "KID-TSH-002",
-      categoryId: createdCategories["kids"],
-      price: 850,
-      discountPrice: 690,
-      stockQty: 45,
-      soldQty: 20,
-      promotionalBadges: ["⭐ Trending"],
-      description: "স্মার্ট লুকের পোলো কলার টি-শার্ট এবং ডেনিম কালার নরম শর্টস প্যান্টের কম্বো সেট।",
-      images: [
-        "https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?q=80&w=800&auto=format&fit=crop",
-      tags: "kids,boys,polo,shorts,cotton",
-    },
-    {
-      name: "নিউবর্ন বেবি কটন রম্পার ৩-পিস সেট",
-      slug: "newborn-baby-cotton-romper-3pack",
-      sku: "KID-RMP-003",
-      categoryId: createdCategories["kids"],
-      price: 950,
-      discountPrice: 790,
-      stockQty: 40,
-      soldQty: 18,
-      promotionalBadges: ["👑 Best Seller"],
-      description: "০-১২ মাস বয়সী নবজাতক শিশুদের জন্য এক্সট্রা সফট অরগানিক কটন রম্পার ৩টি প্যাক।",
-      images: [
-        "https://images.unsplash.com/photo-1522771930-78848d9293e8?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1522771930-78848d9293e8?q=80&w=800&auto=format&fit=crop",
-      tags: "romper,newborn,baby,cotton",
-    },
-    {
-      name: "বাচ্চাদের উৎসবের পাঞ্জাবি পায়জামা সেট",
-      slug: "kids-traditional-cotton-panjabi-set",
-      sku: "KID-PNJ-004",
-      categoryId: createdCategories["kids"],
-      price: 1250,
-      discountPrice: 990,
-      stockQty: 35,
-      soldQty: 15,
-      isFeatured: true,
-      promotionalBadges: ["⭐ Trending"],
-      description: "ঈদ ও উৎসবের জন্য আকর্ষণীয় এমব্রয়ডারি কাজের বাচ্চাদের কটন পাঞ্জাবি ও পাজামা সেট।",
-      images: [
-        "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800&auto=format&fit=crop",
-      tags: "panjabi,kids,eid,festival",
-    },
-    {
-      name: "কিউট সফট প্লাশ জায়ান্ট টেডি বিয়ার",
-      slug: "cute-soft-plush-giant-teddy-bear",
-      sku: "KID-TDY-005",
-      categoryId: createdCategories["kids"],
-      price: 750,
-      discountPrice: 590,
-      stockQty: 50,
-      soldQty: 30,
-      isFlashSale: true,
-      promotionalBadges: ["🔥 Hot Deal"],
-      description: "উচ্চমানের অ্যান্টি-অ্যালার্জিক সফট প্লাশ ম্যাটেরিয়ালে তৈরি ৪০ সেমি কিউট টেডি বিয়ার।",
-      images: [
-        "https://images.unsplash.com/photo-1559454403-b8fb88521f11?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1559454403-b8fb88521f11?q=80&w=800&auto=format&fit=crop",
-      tags: "teddy,plush,toy,kids,soft-toy",
-    },
-    {
-      name: "এডুকেশনাল বিল্ডিং ব্লক ১০০ পিস সেট",
-      slug: "kids-educational-building-blocks-100pcs",
-      sku: "KID-BLK-006",
-      categoryId: createdCategories["kids"],
-      price: 890,
-      discountPrice: 750,
-      stockQty: 45,
-      soldQty: 22,
-      promotionalBadges: ["👑 Best Seller"],
-      description: "শিশুদের বুদ্ধিমত্তা ও সৃজনশীলতা বৃদ্ধির জন্য ১০০ পিসের নন-টক্সিক রঙিন বিল্ডিং ব্লক সেট।",
-      images: [
-        "https://images.unsplash.com/photo-1587654780291-39c9404d746b?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1587654780291-39c9404d746b?q=80&w=800&auto=format&fit=crop",
-      tags: "blocks,educational,toy,kids",
-    },
-    {
-      name: "রিমোট কন্ট্রোল হাই-স্পিড রেসিং কার",
-      slug: "remote-control-high-speed-racing-car",
-      sku: "KID-CAR-007",
-      categoryId: createdCategories["kids"],
-      price: 1650,
-      discountPrice: 1390,
-      stockQty: 30,
-      soldQty: 14,
-      promotionalBadges: ["⭐ Trending"],
-      description: "রিচার্জেবল ব্যাটারি ও LED লাইট সহ ফুল-ফাংশন রিমোট কন্ট্রোল রেসিং ড্রাফট কার।",
-      images: [
-        "https://images.unsplash.com/photo-1594787318286-3d835c1d207f?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1594787318286-3d835c1d207f?q=80&w=800&auto=format&fit=crop",
-      tags: "rc-car,remote,toy,kids,racing",
-    },
-    {
-      name: "বেবি মিউজিক্যাল র্যাটল ও টিথার ৮-পিস সেট",
-      slug: "baby-musical-rattle-teether-8pack",
-      sku: "KID-RAT-008",
-      categoryId: createdCategories["kids"],
-      price: 550,
-      discountPrice: 420,
-      stockQty: 60,
-      soldQty: 34,
-      promotionalBadges: ["🆕 New Arrival"],
-      description: "BPA-ফ্রি ফুড গ্রেড সিলিকন ও প্লাস্টিকের ৮টি রঙিন মিউজিক্যাল র্যাটল ও টিথারের গিফট বক্স।",
-      images: [
-        "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800&auto=format&fit=crop",
-      tags: "rattle,teether,baby,toy",
-    },
-    {
-      name: "কিডস ১৫০-পিস ডিলাক্স আর্ট ও কালার সেট",
-      slug: "kids-150-piece-deluxe-art-painting-set",
-      sku: "KID-ART-009",
-      categoryId: createdCategories["kids"],
-      price: 680,
-      discountPrice: 520,
-      stockQty: 50,
-      soldQty: 28,
-      promotionalBadges: ["🔥 Hot Deal"],
-      description: "বাচ্চাদের ছবি আঁকার সমস্ত রঙের আকর্ষণীয় বক্স—ওয়াটার কালার, ক্রেয়ন, অয়েল প্যাস্টেল ইত্যাদি।",
-      images: [
-        "https://images.unsplash.com/photo-1587654780291-39c9404d746b?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1587654780291-39c9404d746b?q=80&w=800&auto=format&fit=crop",
-      tags: "art,drawing,colors,kids,creative",
-    },
-    {
-      name: "বাচ্চাদের সফট কটন নাইটওয়্যার পাজামা সেট",
-      slug: "kids-soft-cotton-nightwear-pajama-set",
-      sku: "KID-NGT-010",
-      categoryId: createdCategories["kids"],
-      price: 480,
-      discountPrice: 380,
-      stockQty: 60,
-      soldQty: 30,
-      promotionalBadges: ["👑 Best Seller"],
-      description: "রাতে ঘুমানোর জন্য অত্যন্ত মোলায়েম ও বাতাস চলাচলকারী প্রিমিয়াম কটন নাইট ড্রেস সেট।",
-      images: [
-        "https://images.unsplash.com/photo-1522771930-78848d9293e8?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1522771930-78848d9293e8?q=80&w=800&auto=format&fit=crop",
-      tags: "nightwear,pajama,kids,cotton",
-    },
-
-    // ----------------------------------------------------
-    // CATEGORY 4: ব্যাগ ও পাম্প (slug: bag-and-pump) [10 Products]
-    // ----------------------------------------------------
-    {
-      name: "লেডিস প্রিমিয়াম লেদার হ্যান্ডব্যাগ",
-      slug: "ladies-premium-leather-handbag",
-      sku: "BAG-HND-001",
-      categoryId: createdCategories["bag-and-pump"],
-      price: 1850,
-      discountPrice: 1550,
-      stockQty: 40,
-      soldQty: 18,
-      isFeatured: true,
-      isBestSeller: true,
-      promotionalBadges: ["👑 Best Seller", "🔥 Hot Deal"],
-      description: "উচ্চমানের প্রিমিয়াম PU লেদারের স্টাইলিশ লেডিস হ্যান্ডব্যাগ। অফিস, পার্টি ও রেগুলার ব্যবহারের জন্য উপযুক্ত।",
-      images: [
-        "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800&auto=format&fit=crop",
-      tags: "handbag,leather,ladies,fashion,bag",
-    },
-    {
-      name: "এলিগ্যান্ট ফ্যাশন শোল্ডার ব্যাগ",
-      slug: "elegant-fashion-shoulder-bag",
-      sku: "BAG-SHL-002",
-      categoryId: createdCategories["bag-and-pump"],
-      price: 1450,
-      discountPrice: 1190,
-      stockQty: 35,
-      soldQty: 15,
-      promotionalBadges: ["⭐ Trending"],
-      description: "মেটালিক গোল্ডেন চেইন স্ট্র্যাপ ও ম্যাগনেটিক লক সহ ক্লাসি শোল্ডার ব্যাগ।",
-      images: [
-        "https://images.unsplash.com/photo-1590874103328-eac38a683ce7?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1590874103328-eac38a683ce7?q=80&w=800&auto=format&fit=crop",
-      tags: "shoulder-bag,chain,fashion,bag",
-    },
-    {
-      name: "ট্রেন্ডি ক্রস-বডি স্লিং ব্যাগ",
-      slug: "trendy-crossbody-sling-bag",
-      sku: "BAG-SLG-003",
-      categoryId: createdCategories["bag-and-pump"],
-      price: 980,
-      discountPrice: 790,
-      stockQty: 50,
-      soldQty: 27,
-      isFlashSale: true,
-      promotionalBadges: ["🔥 Hot Deal"],
-      description: "হালকা ও সহজে বহনযোগ্য আধুনিক ডিজাইনের ক্যাজুয়াল ক্রস-বডি স্লিং ব্যাগ।",
-      images: [
-        "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?q=80&w=800&auto=format&fit=crop",
-      tags: "sling-bag,crossbody,casual,bag",
-    },
-    {
-      name: "স্টাইলিশ লার্জ ক্যাপাসিটি টোট ব্যাগ",
-      slug: "stylish-large-canvas-tote-bag",
-      sku: "BAG-TOT-004",
-      categoryId: createdCategories["bag-and-pump"],
-      price: 750,
-      discountPrice: 590,
-      stockQty: 60,
-      soldQty: 32,
-      promotionalBadges: ["👑 Best Seller"],
-      description: "ইউনিভার্সিটি ও শপিংয়ের জন্য প্রচুর ধারণক্ষমতার টেকসই ক্যানভাস টোট ব্যাগ।",
-      images: [
-        "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800&auto=format&fit=crop",
-      tags: "tote-bag,canvas,shopping,bag",
-    },
-    {
-      name: "পার্টি গ্ল্যামারাস ক্লাচ ব্যাগ",
-      slug: "glamorous-evening-party-clutch-bag",
-      sku: "BAG-CLT-005",
-      categoryId: createdCategories["bag-and-pump"],
-      price: 1250,
-      discountPrice: 990,
-      stockQty: 30,
-      soldQty: 14,
-      promotionalBadges: ["⭐ Trending"],
-      description: "চকচকে গ্লিটার ও ক্রিস্টাল কাজের পার্টি ইভনিং ক্লাচ ব্যাগ। শাড়ি ও গাউনের সাথে চমৎকার মানায়।",
-      images: [
-        "https://images.unsplash.com/photo-1566150905458-1bf1fc113f0d?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1566150905458-1bf1fc113f0d?q=80&w=800&auto=format&fit=crop",
-      tags: "clutch,party,glitter,evening,bag",
-    },
-    {
-      name: "উইমেনস ক্লাসিক লেদার লং ওয়ালেট",
-      slug: "womens-classic-leather-long-wallet",
-      sku: "BAG-WLT-006",
-      categoryId: createdCategories["bag-and-pump"],
-      price: 650,
-      discountPrice: 480,
-      stockQty: 60,
-      soldQty: 38,
-      promotionalBadges: ["👑 Best Seller"],
-      description: "কার্ড হোল্ডার, জিপার পকেট এবং মোবাইল রাখার স্থান সহ প্রিমিয়াম লং লেদার ওয়ালেট।",
-      images: [
-        "https://images.unsplash.com/photo-1627123424574-724758594e93?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1627123424574-724758594e93?q=80&w=800&auto=format&fit=crop",
-      tags: "wallet,leather,purse,ladies",
-    },
-    {
-      name: "কিউট মিনি ক্যাজুয়াল ব্যাকপ্যাক",
-      slug: "cute-mini-leather-casual-backpack",
-      sku: "BAG-BAK-007",
-      categoryId: createdCategories["bag-and-pump"],
-      price: 1150,
-      discountPrice: 920,
-      stockQty: 40,
-      soldQty: 21,
-      promotionalBadges: ["🆕 New Arrival"],
-      description: "কলেজ ও ভ্রমণের জন্য কমপ্যাক্ট ওয়াটারপ্রুফ মিনি ব্যাকপ্যাক। স্টাইলিশ ও হালকা।",
-      images: [
-        "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?q=80&w=800&auto=format&fit=crop",
-      tags: "backpack,mini,leather,cute,bag",
-    },
-    {
-      name: "মাল্টি-কম্পার্টমেন্ট ট্রাভেল ডাফল ব্যাগ",
-      slug: "multi-compartment-travel-duffel-bag",
-      sku: "BAG-TRV-008",
-      categoryId: createdCategories["bag-and-pump"],
-      price: 1950,
-      discountPrice: 1650,
-      stockQty: 25,
-      soldQty: 11,
-      isFeatured: true,
-      promotionalBadges: ["⭐ Trending"],
-      description: "জুতা ও ভেজা কাপড় রাখার আলাদা পকেট সহ ওয়াটার রেজিস্ট্যান্ট ট্রাভেল ও জিম ডাফল ব্যাগ।",
-      images: [
-        "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?q=80&w=800&auto=format&fit=crop",
-      tags: "travel,duffel,gym,waterproof,bag",
-    },
-    {
-      name: "ক্লাসিক লেডিস পয়েন্টেড হিল পাম্প",
-      slug: "classic-ladies-pointed-toe-heel-pump",
-      sku: "BAG-PMP-009",
-      categoryId: createdCategories["bag-and-pump"],
-      price: 2250,
-      discountPrice: 1850,
-      stockQty: 30,
-      soldQty: 13,
-      isFeatured: true,
-      promotionalBadges: ["👑 Best Seller"],
-      description: "আভিজাত্যপূর্ণ হাই হিল পয়েন্টেড পাম্প শু। আরামদায়ক কুশন ইনসোল এবং অ্যান্টি-স্লিপ সোল।",
-      images: [
-        "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?q=80&w=800&auto=format&fit=crop",
-      tags: "pump,heels,shoes,ladies,footwear",
-    },
-    {
-      name: "আরামদায়ক ভেলভেট স্লিপ-অন ফ্ল্যাট পাম্প শু",
-      slug: "comfortable-velvet-flat-pump-shoes",
-      sku: "BAG-PMP-010",
-      categoryId: createdCategories["bag-and-pump"],
-      price: 1350,
-      discountPrice: 1090,
-      stockQty: 45,
-      soldQty: 24,
-      promotionalBadges: ["🔥 Hot Deal"],
-      description: "সারাদিন পায়ে পরে থাকার মতো নরম ও হালকা ওজনের ফ্ল্যাট পাম্প সু।",
-      images: [
-        "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?q=80&w=800&auto=format&fit=crop",
-      tags: "flat,pump,slipon,comfortable,shoes",
-    },
-
-    // ----------------------------------------------------
-    // CATEGORY 5: প্রেম/কাপল আইটেম (slug: couple-items) [10 Products]
-    // ----------------------------------------------------
-    {
-      name: "রোমান্টিক কাপল সিরামিক মগ সেট",
-      slug: "romantic-king-queen-ceramic-mug-set",
-      sku: "CPL-MUG-001",
-      categoryId: createdCategories["couple-items"],
-      price: 750,
-      discountPrice: 590,
-      stockQty: 60,
-      soldQty: 35,
-      isFeatured: true,
-      isBestSeller: true,
-      promotionalBadges: ["👑 Best Seller", "🔥 Hot Deal"],
-      description: "কিং & কুইন প্রিন্টের প্রিমিয়াম সিরামিক কাপল কফি মগ সেট সাথে চামচ ও গোল্ডেন গিফট বক্স।",
-      images: [
-        "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=800&auto=format&fit=crop",
-      tags: "couple,mug,ceramic,romantic,gift",
-    },
-    {
-      name: "ম্যাগনেটিক কাপল হার্ট ব্রেসলেট সেট",
-      slug: "magnetic-matching-couple-bracelet-set",
-      sku: "CPL-BRC-002",
-      categoryId: createdCategories["couple-items"],
-      price: 450,
-      discountPrice: 340,
-      stockQty: 80,
-      soldQty: 52,
-      isFlashSale: true,
-      promotionalBadges: ["🔥 Hot Deal"],
-      description: "কাছাকাছি এলে চুম্বকের মতো জোড়া লাগা আকর্ষণীয় ম্যাগনেটিক কাপল হ্যান্ড ব্রেসলেট পেয়ার।",
-      images: [
-        "https://images.unsplash.com/photo-1611591475880-99761e2dfb31?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1611591475880-99761e2dfb31?q=80&w=800&auto=format&fit=crop",
-      tags: "couple,bracelet,magnetic,heart",
-    },
-    {
-      name: "কাস্টমাইজড কাপল কাঠের ফটো ফ্রেম",
-      slug: "customized-wooden-couple-photo-frame",
-      sku: "CPL-FRM-003",
-      categoryId: createdCategories["couple-items"],
-      price: 650,
-      discountPrice: 490,
-      stockQty: 45,
-      soldQty: 22,
-      promotionalBadges: ["⭐ Trending"],
-      description: "লেজার এনগ্রেভড সুন্দর ডিজাইনের কাঠের টেবিলটপ কাপল ফটো ফ্রেম। প্রিয়জনের সেরা স্মৃতি সংরক্ষণের জন্য।",
-      images: [
-        "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=800&auto=format&fit=crop",
-      tags: "photo-frame,wooden,couple,gift",
-    },
-    {
-      name: "কাপল হার্ট শেপড সফট ভেলভেট কুশন পেয়ার",
-      slug: "love-heart-shaped-velvet-cushion-pair",
-      sku: "CPL-CSH-004",
-      categoryId: createdCategories["couple-items"],
-      price: 850,
-      discountPrice: 680,
-      stockQty: 40,
-      soldQty: 19,
-      promotionalBadges: ["👑 Best Seller"],
-      description: "নরম ভেলভেট কাপড়ে তৈরি রেড হার্ট শেপের ২টি কাপল কুশন সেট। বিছানা বা সোফায় রাখার জন্য পারফেক্ট।",
-      images: [
-        "https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?q=80&w=800&auto=format&fit=crop",
-      tags: "cushion,heart,couple,velvet",
-    },
-    {
-      name: "লাক্সারি রোমান্টিক রেড রোজ গিফট বক্স",
-      slug: "luxury-romantic-red-rose-gift-box",
-      sku: "CPL-ROZ-005",
-      categoryId: createdCategories["couple-items"],
-      price: 1200,
-      discountPrice: 950,
-      stockQty: 35,
-      soldQty: 18,
-      isFeatured: true,
-      promotionalBadges: ["⭐ Trending"],
-      description: "সুগন্ধি পারফিউমড রেড রোজ ও রোমান্টিক কার্ড সহ আকর্ষণীয় গিফট প্যাকেজ। ভালোবাসা দিবস বা অ্যানিভার্সারির উপহার।",
-      images: [
-        "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=800&auto=format&fit=crop",
-      tags: "rose,gift-box,romantic,anniversary",
-    },
-    {
-      name: "কাপল ম্যাচিং সান & মুন নেকলেস সেট",
-      slug: "couple-sun-moon-magnetic-necklace",
-      sku: "CPL-NCK-006",
-      categoryId: createdCategories["couple-items"],
-      price: 550,
-      discountPrice: 390,
-      stockQty: 60,
-      soldQty: 31,
-      promotionalBadges: ["🔥 Hot Deal"],
-      description: "১০০ ভাষায় 'আই লাভ ইউ' প্রজেকশন সহ সান & মুন কাপল ম্যাগনেটিক লকেট নেকলেস।",
-      images: [
-        "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800&auto=format&fit=crop",
-      tags: "necklace,couple,sun-moon,pendant",
-    },
-    {
-      name: "পার্সোনালাইজড কাপল লেদার কী-রিং সেট",
-      slug: "personalized-couple-leather-key-ring",
-      sku: "CPL-KEY-007",
-      categoryId: createdCategories["couple-items"],
-      price: 380,
-      discountPrice: 280,
-      stockQty: 70,
-      soldQty: 44,
-      promotionalBadges: ["👑 Best Seller"],
-      description: "প্রিমিয়াম লেদার ও মেটালের তৈরি রোমান্টিক কাপল কী-রিং পেয়ার। বাইক, গাড়ি বা বাড়ির চাবির জন্য সুন্দর।",
-      images: [
-        "https://images.unsplash.com/photo-1627123424574-724758594e93?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1627123424574-724758594e93?q=80&w=800&auto=format&fit=crop",
-      tags: "keyring,leather,couple,gift",
-    },
-    {
-      name: "রোমান্টিক লাভ স্টোরি LED ওয়াল ফ্রেম",
-      slug: "romantic-love-story-led-wall-frame",
-      sku: "CPL-WAL-008",
-      categoryId: createdCategories["couple-items"],
-      price: 950,
-      discountPrice: 790,
-      stockQty: 30,
-      soldQty: 12,
-      promotionalBadges: ["🆕 New Arrival"],
-      description: "আলোকিত এলইডি লাইট সমৃদ্ধ রোমান্টিক কোট ও কাপল ইলাস্ট্রেশন ওয়াল ফ্রেম।",
-      images: [
-        "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=800&auto=format&fit=crop",
-      tags: "wall-frame,led,romantic,decor",
-    },
-    {
-      name: "কাপল ম্যাচিং প্রিমিয়াম কটন টি-শার্ট পেয়ার",
-      slug: "couple-matching-cotton-tshirt-pair",
-      sku: "CPL-TSH-009",
-      categoryId: createdCategories["couple-items"],
-      price: 1150,
-      discountPrice: 890,
-      stockQty: 40,
-      soldQty: 25,
-      promotionalBadges: ["⭐ Trending"],
-      description: "১৮০ জিএসএম ১০০% কম্বড সুতির তৈরি 'Better Together' ম্যাচিং কাপল টি-শার্ট সেট (ছেলে+মেয়ে)।",
-      images: [
-        "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?q=80&w=800&auto=format&fit=crop",
-      tags: "tshirt,couple,matching,cotton",
-    },
-    {
-      name: "ক্রিস্টাল গ্লাস রোমান্টিক LED মিউজিক বক্স",
-      slug: "crystal-glass-rotating-led-music-box",
-      sku: "CPL-MSC-010",
-      categoryId: createdCategories["couple-items"],
-      price: 1650,
-      discountPrice: 1350,
-      stockQty: 25,
-      soldQty: 10,
-      isFeatured: true,
-      promotionalBadges: ["👑 Best Seller"],
-      description: "৩৬০ ডিগ্রি ঘোরার সুবিধা ও রোমান্টিক মিউজিক সহ ক্রিস্টাল গ্লাস এলইডি লাইট ল্যাম্প।",
-      images: [
-        "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=800&auto=format&fit=crop",
-      tags: "music-box,crystal,led,romantic,gift",
-    },
-
-    // ----------------------------------------------------
-    // CATEGORY 6: জুয়েলারি ও এক্সেসরিজ (slug: jewelry-and-accessories) [10 Products]
-    // ----------------------------------------------------
-    {
-      name: "কুন্দন ব্রাইডাল নেকলেস ও কানের দুল সেট",
-      slug: "kundan-bridal-necklace-earring-set",
-      sku: "JWL-KND-001",
-      categoryId: createdCategories["jewelry-and-accessories"],
-      price: 2200,
-      discountPrice: 1850,
-      stockQty: 35,
-      soldQty: 16,
-      isFeatured: true,
-      isBestSeller: true,
-      promotionalBadges: ["👑 Best Seller", "🔥 Hot Deal"],
-      description: "রয়েল লুক সমৃদ্ধ রাজস্থানি কুন্দন ও মুক্তার কাজের ব্রাইডাল চোখার নেকলেস ও কানের দুল সেট।",
-      images: [
-        "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800&auto=format&fit=crop",
-      tags: "kundan,necklace,bridal,earring,jewelry",
-    },
-    {
-      name: "অ্যান্টিক গোল্ড প্লেটেড চুড়ি সেট (৪ পিস)",
-      slug: "antique-gold-plated-bangle-set-4pcs",
-      sku: "JWL-BNG-002",
-      categoryId: createdCategories["jewelry-and-accessories"],
-      price: 950,
-      discountPrice: 750,
-      stockQty: 50,
-      soldQty: 29,
-      promotionalBadges: ["⭐ Trending"],
-      description: "ম্যাট অ্যান্টিক গোল্ড পলিশের নিখুঁত নকশার ৪টি চুড়ির আকর্ষণীয় সেট। সহজে রঙ নষ্ট হবে না।",
-      images: [
-        "https://images.unsplash.com/photo-1611591475880-99761e2dfb31?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1611591475880-99761e2dfb31?q=80&w=800&auto=format&fit=crop",
-      tags: "bangles,antique,gold,jewelry",
-    },
-    {
-      name: "ট্রেডিশনাল মীনাকারি ঝুমকা কানের দুল",
-      slug: "traditional-meenakari-jhumka-earrings",
-      sku: "JWL-JHM-003",
-      categoryId: createdCategories["jewelry-and-accessories"],
-      price: 480,
-      discountPrice: 350,
-      stockQty: 70,
-      soldQty: 48,
-      isFlashSale: true,
-      promotionalBadges: ["🔥 Hot Deal"],
-      description: "হ্যান্ড পেইন্টেড মীনাকারি ও ছোট পার্ল ড্রপ সহ ক্লাসিক ঝুমকা। শাড়ি ও কুর্তির সাথে দারুণ মানায়।",
-      images: [
-        "https://images.unsplash.com/photo-1630019852942-f89202989a59?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1630019852942-f89202989a59?q=80&w=800&auto=format&fit=crop",
-      tags: "jhumka,earrings,meenakari,jewelry",
-    },
-    {
-      name: "অ্যাডজাস্টেবল ক্রিস্টাল ফিঙ্গার রিং সেট (৫ পিস)",
-      slug: "adjustable-crystal-finger-rings-5pack",
-      sku: "JWL-RNG-004",
-      categoryId: createdCategories["jewelry-and-accessories"],
-      price: 320,
-      discountPrice: 240,
-      stockQty: 80,
-      soldQty: 55,
-      promotionalBadges: ["👑 Best Seller"],
-      description: "আঙুলের সাইজ অনুযায়ী অ্যাডজাস্ট করার সুবিধাযুক্ত ৫টি ট্রেন্ডি ক্রিস্টাল ও জিরকন পাথরের রিং সেট।",
-      images: [
-        "https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=800&auto=format&fit=crop",
-      tags: "ring,crystal,finger-ring,jewelry",
-    },
-    {
-      name: "রোজ গোল্ড চার্ম ব্রেসলেট",
-      slug: "rose-gold-butterfly-charm-bracelet",
-      sku: "JWL-BRC-005",
-      categoryId: createdCategories["jewelry-and-accessories"],
-      price: 650,
-      discountPrice: 480,
-      stockQty: 45,
-      soldQty: 22,
-      promotionalBadges: ["⭐ Trending"],
-      description: "জিরকন বাটারফ্লাই চার্ম সহ শাইনি রোজ গোল্ড প্লেটেড ব্রেসলেট। ক্লাসি ও মার্জিত।",
-      images: [
-        "https://images.unsplash.com/photo-1611591475880-99761e2dfb31?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1611591475880-99761e2dfb31?q=80&w=800&auto=format&fit=crop",
-      tags: "bracelet,rose-gold,charm,jewelry",
-    },
-    {
-      name: "ট্রেডিশনাল অক্সিডাইজড সিলভার পায়েল পেয়ার",
-      slug: "traditional-oxidized-silver-anklet-payal",
-      sku: "JWL-ANK-006",
-      categoryId: createdCategories["jewelry-and-accessories"],
-      price: 420,
-      discountPrice: 320,
-      stockQty: 60,
-      soldQty: 36,
-      promotionalBadges: ["👑 Best Seller"],
-      description: "মিষ্টি ঘুংঘুর শব্দ সহ নিখুঁত অ্যান্টিক জার্মানি সিলভার ডিজাইনের এক জোড়া নুপুর বা পায়েল।",
-      images: [
-        "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800&auto=format&fit=crop",
-      tags: "anklet,payal,silver,oxidized,jewelry",
-    },
-    {
-      name: "ন্যাচারাল পার্ল জুয়েলারি ব্রাইডাল সেট",
-      slug: "natural-freshwater-pearl-jewelry-set",
-      sku: "JWL-PRL-007",
-      categoryId: createdCategories["jewelry-and-accessories"],
-      price: 1850,
-      discountPrice: 1490,
-      stockQty: 30,
-      soldQty: 14,
-      isFeatured: true,
-      promotionalBadges: ["⭐ Trending"],
-      description: "ফ্রেশওয়াটার খাঁটি মুক্তার ৩ লেয়ার মালা এবং ম্যাচিং মুক্তার টপ কানের দুল।",
-      images: [
-        "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800&auto=format&fit=crop",
-      tags: "pearl,bridal,necklace,earring",
-    },
-    {
-      name: "প্রিমিয়াম পার্ল হেয়ার ক্লিপ সেট (৬ পিস)",
-      slug: "luxury-pearl-crystal-hair-clips-6pack",
-      sku: "JWL-CLP-008",
-      categoryId: createdCategories["jewelry-and-accessories"],
-      price: 280,
-      discountPrice: 190,
-      stockQty: 80,
-      soldQty: 60,
-      promotionalBadges: ["🔥 Hot Deal"],
-      description: "চুলের বিভিন্ন স্টাইলের জন্য ৬টি আকর্ষণীয় পার্ল ও ক্রিস্টাল হেয়ার পিন ও ক্লিপের সেট।",
-      images: [
-        "https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=800&auto=format&fit=crop",
-      tags: "hair-clip,pearl,accessories",
-    },
-    {
-      name: "হ্যান্ডমেড ভেলভেট ব্রাইডাল হেয়ার ব্যান্ড",
-      slug: "handcrafted-padded-velvet-hairband",
-      sku: "JWL-BND-009",
-      categoryId: createdCategories["jewelry-and-accessories"],
-      price: 350,
-      discountPrice: 260,
-      stockQty: 50,
-      soldQty: 24,
-      promotionalBadges: ["🆕 New Arrival"],
-      description: "মোটা প্যাডেড ভেলভেট ও মুক্তার নকশা করা ট্রেন্ডি স্টাইলিশ হেয়ার ব্যান্ড।",
-      images: [
-        "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800&auto=format&fit=crop",
-      tags: "hairband,velvet,pearl,accessories",
-    },
-    {
-      name: "ভিন্টেজ ক্রিস্টাল শাড়ি ব্রোচ",
-      slug: "vintage-crystal-floral-saree-brooch",
-      sku: "JWL-BRC-010",
-      categoryId: createdCategories["jewelry-and-accessories"],
-      price: 380,
-      discountPrice: 280,
-      stockQty: 60,
-      soldQty: 32,
-      promotionalBadges: ["👑 Best Seller"],
-      description: "শাড়ি বা হিজাবের সৌন্দর্য বৃদ্ধিতে আকর্ষণীয় চকচকে স্টোন ও ক্রিস্টাল ব্রোচ পিন।",
-      images: [
-        "https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=800&auto=format&fit=crop",
-      tags: "brooch,saree,pin,crystal,accessories",
-    },
-
-    // ----------------------------------------------------
-    // CATEGORY 7: ঘড়ি ও ব্যাগেল (slug: watch-and-bagel) [10 Products]
-    // ----------------------------------------------------
-    {
-      name: "লেডিস রোজ গোল্ড ম্যাগনেটিক ফ্যাশন ঘড়ি",
-      slug: "ladies-rose-gold-magnetic-strap-watch",
-      sku: "WAT-ROS-001",
-      categoryId: createdCategories["watch-and-bagel"],
-      price: 1150,
-      discountPrice: 890,
-      stockQty: 50,
-      soldQty: 28,
-      isFeatured: true,
-      isBestSeller: true,
-      promotionalBadges: ["👑 Best Seller", "🔥 Hot Deal"],
-      description: "ম্যাগনেটিক লক সহ প্রিমিয়াম রোজ গোল্ড মেশ স্ট্র্যাপ ঘড়ি। রোমান ডায়াল ও ওয়াটার রেজিস্ট্যান্ট।",
-      images: [
-        "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800&auto=format&fit=crop",
-      tags: "watch,ladies,rosegold,magnetic,fashion",
-    },
-    {
-      name: "মেনস ক্রোনোগ্রাফ কোয়ার্টজ লেদার ঘড়ি",
-      slug: "mens-chronograph-quartz-leather-watch",
-      sku: "WAT-MEN-002",
-      categoryId: createdCategories["watch-and-bagel"],
-      price: 2450,
-      discountPrice: 1950,
-      stockQty: 40,
-      soldQty: 17,
-      isFeatured: true,
-      promotionalBadges: ["⭐ Trending"],
-      description: "জাপানি কোয়ার্টজ মুভমেন্ট ও জেনুইন লেদার স্ট্র্যাপ সহ পুরুষদের স্টাইলিশ ক্রোনোগ্রাফ ঘড়ি।",
-      images: [
-        "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=800&auto=format&fit=crop",
-      tags: "watch,men,chronograph,leather,quartz",
-    },
-    {
-      name: "মিনিমালিস্ট আল্ট্রা-স্লিম স্টেইনলেস স্টিল ঘড়ি",
-      slug: "minimalist-ultra-thin-steel-watch",
-      sku: "WAT-MIN-003",
-      categoryId: createdCategories["watch-and-bagel"],
-      price: 1650,
-      discountPrice: 1350,
-      stockQty: 35,
-      soldQty: 15,
-      promotionalBadges: ["👑 Best Seller"],
-      description: "অতি হালকা ও স্লিম ডিজাইনের ব্ল্যাক ডায়াল স্টেইনলেস স্টিল ওয়াচ। অফিস ও ক্যাজুয়াল দুটিতেই সেরা।",
-      images: [
-        "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800&auto=format&fit=crop",
-      tags: "watch,minimalist,steel,slim",
-    },
-    {
-      name: "ক্লাসিক ভিন্টেজ ব্রাউন লেদার স্ট্র্যাপ ওয়াচ",
-      slug: "classic-vintage-brown-leather-watch",
-      sku: "WAT-BRN-004",
-      categoryId: createdCategories["watch-and-bagel"],
-      price: 1350,
-      discountPrice: 1050,
-      stockQty: 45,
-      soldQty: 22,
-      isFlashSale: true,
-      promotionalBadges: ["🔥 Hot Deal"],
-      description: "ভিন্টেজ লুক ও শক্তিশালি ব্রাউন লেদার বেল্টের ক্লাসিকাল রিস্ট ওয়াচ।",
-      images: [
-        "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=800&auto=format&fit=crop",
-      tags: "watch,vintage,leather,classic",
-    },
-    {
-      name: "প্রিমিয়াম গোল্ডেন মেটাল চেইন ওয়াচ",
-      slug: "premium-golden-metal-chain-watch",
-      sku: "WAT-GLD-005",
-      categoryId: createdCategories["watch-and-bagel"],
-      price: 2850,
-      discountPrice: 2350,
-      stockQty: 30,
-      soldQty: 11,
-      promotionalBadges: ["⭐ Trending"],
-      description: "রয়েল গোল্ড পলিশ মেটাল চেইনের লাক্সারি প্রিমিয়াম ঘড়ি। প্রিমিয়াম গিফট বক্স সহ।",
-      images: [
-        "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800&auto=format&fit=crop",
-      tags: "watch,gold,metal,luxury",
-    },
-    {
-      name: "ওয়াটারপ্রুফ ট্যাকটিক্যাল স্পোর্টস ডিজিটাল ঘড়ি",
-      slug: "waterproof-tactical-sports-digital-watch",
-      sku: "WAT-SPT-006",
-      categoryId: createdCategories["watch-and-bagel"],
-      price: 850,
-      discountPrice: 650,
-      stockQty: 60,
-      soldQty: 38,
-      promotionalBadges: ["👑 Best Seller"],
-      description: "৫০ মিটার ওয়াটারপ্রুফ, নাইট লাইট ও স্টপওয়াচ সমৃদ্ধ শকপ্রুফ স্পোর্টস ডিজিটাল ঘড়ি।",
-      images: [
-        "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=800&auto=format&fit=crop",
-      tags: "watch,sports,digital,waterproof",
-    },
-    {
-      name: "ফুল-টাচ ব্লুটুথ কলিং AMOLED স্মার্ট ওয়াচ",
-      slug: "bluetooth-calling-amoled-smartwatch",
-      sku: "WAT-SMT-007",
-      categoryId: createdCategories["watch-and-bagel"],
-      price: 3600,
-      discountPrice: 2950,
-      stockQty: 25,
-      soldQty: 14,
-      isFeatured: true,
-      promotionalBadges: ["⭐ Trending"],
-      description: "HD AMOLED ডিসপ্লে, সরাসরি ব্লুটুথ কলিং, হার্ট রেট ও ১০০+ স্পোর্টস মোড সমৃদ্ধ স্মার্ট ওয়াচ।",
-      images: [
-        "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?q=80&w=800&auto=format&fit=crop",
-      tags: "smartwatch,amoled,calling,bluetooth",
-    },
-    {
-      name: "ফ্যাশন গোল্ডেন মেটাল ব্যাগেল",
-      slug: "fashion-golden-metal-bagel-bracelet",
-      sku: "WAT-BGL-008",
-      categoryId: createdCategories["watch-and-bagel"],
-      price: 750,
-      discountPrice: 580,
-      stockQty: 50,
-      soldQty: 27,
-      promotionalBadges: ["👑 Best Seller"],
-      description: "ঘড়ির সাথে হাতে পড়ার জন্য মার্জিত ডিজাইনের ওপেন কাফ মেটালিক গোল্ডেন ব্যাগেল।",
-      images: [
-        "https://images.unsplash.com/photo-1611591475880-99761e2dfb31?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1611591475880-99761e2dfb31?q=80&w=800&auto=format&fit=crop",
-      tags: "bagel,bangle,cuff,metal,accessories",
-    },
-    {
-      name: "লাক্সারি ডায়মন্ড কাট ব্রেসলেট ঘড়ি",
-      slug: "luxury-diamond-cut-bracelet-watch",
-      sku: "WAT-BRC-009",
-      categoryId: createdCategories["watch-and-bagel"],
-      price: 1950,
-      discountPrice: 1550,
-      stockQty: 30,
-      soldQty: 16,
-      promotionalBadges: ["🔥 Hot Deal"],
-      description: "উজ্জ্বল ক্রিস্টাল ডায়মন্ড কাটিং গ্লাস সহ নারীদের আকর্ষণীয় ব্রেসলেট স্টাইল ওয়াচ।",
-      images: [
-        "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800&auto=format&fit=crop",
-      tags: "watch,diamond,bracelet,ladies",
-    },
-    {
-      name: "স্কয়ার ডায়াল ভিন্টেজ রোমান ঘড়ি",
-      slug: "square-dial-vintage-roman-watch",
-      sku: "WAT-SQR-010",
-      categoryId: createdCategories["watch-and-bagel"],
-      price: 2100,
-      discountPrice: 1750,
-      stockQty: 35,
-      soldQty: 12,
-      promotionalBadges: ["🆕 New Arrival"],
-      description: "ইউনিক স্কয়ার গোল্ডেন ডায়াল ও রোমান সংখ্যার ডায়াল সহ লাক্সারি লেদার ওয়াচ।",
-      images: [
-        "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=800&auto=format&fit=crop",
-      tags: "watch,square,roman,vintage",
-    },
-
-    // ----------------------------------------------------
-    // CATEGORY 8: ইলেকট্রনিক্স ও গ্যাজেট (slug: electronics-and-gadgets) [10 Products]
-    // ----------------------------------------------------
-    {
-      name: "ANC ট্রু ওয়্যারলেস ব্লুটুথ ৫.৩ ইয়ারবাড",
-      slug: "anc-true-wireless-bluetooth-earbuds",
-      sku: "ELC-EBD-001",
-      categoryId: createdCategories["electronics-and-gadgets"],
-      price: 1850,
-      discountPrice: 1450,
-      stockQty: 50,
-      soldQty: 32,
-      isFeatured: true,
-      isBestSeller: true,
-      promotionalBadges: ["👑 Best Seller", "🔥 Hot Deal"],
-      description: "অ্যাক্টিভ নয়েজ ক্যান্সেলেশন (ANC), ডিপ বাস এবং ডিজিটাল LED ডিসপ্লে সহ ৩০ ঘণ্টা ব্যাটারি ব্যাকআপের ইয়ারবাড।",
-      images: [
-        "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?q=80&w=800&auto=format&fit=crop",
-      tags: "earbuds,anc,bluetooth,wireless,audio",
-    },
-    {
-      name: "ফোল্ডেবল ডিপ বাস ওয়্যারলেস হেডফোন",
-      slug: "foldable-deep-bass-wireless-headphones",
-      sku: "ELC-HDP-002",
-      categoryId: createdCategories["electronics-and-gadgets"],
-      price: 2250,
-      discountPrice: 1850,
-      stockQty: 35,
-      soldQty: 18,
-      isFeatured: true,
-      promotionalBadges: ["⭐ Trending"],
-      description: "Hi-Res অডিও, ৪০ মিমি ডাইনামিক ড্রাইভার ও আরামদায়ক সফট মেমরি ফোম কুশন সহ ফোল্ডেবল হেডফোন।",
-      images: [
-        "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800&auto=format&fit=crop",
-      tags: "headphones,bass,wireless,audio",
-    },
-    {
-      name: "২০,০০০ mAh ২২.৫W ফাস্ট চার্জিং পাওয়ার ব্যাংক",
-      slug: "20000mah-fast-charging-power-bank",
-      sku: "ELC-PWR-003",
-      categoryId: createdCategories["electronics-and-gadgets"],
-      price: 1950,
-      discountPrice: 1650,
-      stockQty: 45,
-      soldQty: 26,
-      promotionalBadges: ["👑 Best Seller"],
-      description: "একসাথে ৩টি ডিভাইস চার্জ করার ডুয়াল USB ও Type-C আউটপুট সহ শক্তিশালী ২০,০০০ মিলিঅ্যাম্পিয়ার পাওয়ার ব্যাংক।",
-      images: [
-        "https://images.unsplash.com/photo-1609592426815-56662e0882e3?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1609592426815-56662e0882e3?q=80&w=800&auto=format&fit=crop",
-      tags: "powerbank,20000mah,fast-charge,gadget",
-    },
-    {
-      name: "৬৫W GaN ফাস্ট USB টাইপ-সি চার্জার অ্যাডাপ্টার",
-      slug: "65w-gan-fast-usb-type-c-charger",
-      sku: "ELC-CHG-004",
-      categoryId: createdCategories["electronics-and-gadgets"],
-      price: 1450,
-      discountPrice: 1190,
-      stockQty: 40,
-      soldQty: 22,
-      isFlashSale: true,
-      promotionalBadges: ["🔥 Hot Deal"],
-      description: "ল্যাপটপ, ম্যাকবুক ও স্মার্টফোনের জন্য সুপার ফাস্ট ৬৫ ওয়াট GaN ৩-পোর্ট ফাস্ট চার্জার।",
-      images: [
-        "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?q=80&w=800&auto=format&fit=crop",
-      tags: "charger,gan,65w,type-c,fast-charger",
-    },
-    {
-      name: "১০০W নাইলন ব্রেইডেড ফাস্ট চার্জিং কেবল (২ মিটার)",
-      slug: "100w-nylon-braided-fast-charging-cable",
-      sku: "ELC-CBL-005",
-      categoryId: createdCategories["electronics-and-gadgets"],
-      price: 450,
-      discountPrice: 320,
-      stockQty: 80,
-      soldQty: 65,
-      promotionalBadges: ["👑 Best Seller"],
-      description: "ছিড়ে না যাওয়া টেকসই নাইলন ব্রেইডেড টাইপ-সি টু টাইপ-সি ১০০ ওয়াট ফাস্ট ডেটা ও চার্জিং কেবল।",
-      images: [
-        "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?q=80&w=800&auto=format&fit=crop",
-      tags: "cable,type-c,100w,fast-charging",
-    },
-    {
-      name: "পোর্টেবল RGB বাস ওয়াটারপ্রুফ ব্লুটুথ স্পিকার",
-      slug: "portable-rgb-bass-bluetooth-speaker",
-      sku: "ELC-SPK-006",
-      categoryId: createdCategories["electronics-and-gadgets"],
-      price: 1650,
-      discountPrice: 1350,
-      stockQty: 35,
-      soldQty: 19,
-      promotionalBadges: ["⭐ Trending"],
-      description: "রঙিন আরজিবি লাইট ও শক্তিশালী বুস্ট বাস সমৃদ্ধ আইপিএক্স৭ ওয়াটারপ্রুফ পোর্টেবল ওয়্যারলেস স্পিকার।",
-      images: [
-        "https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?q=80&w=800&auto=format&fit=crop",
-      tags: "speaker,bluetooth,rgb,bass,audio",
-    },
-    {
-      name: "ওয়াটারপ্রুফ ফিটনেস ট্র্যাকার স্মার্ট ব্যান্ড",
-      slug: "waterproof-fitness-tracker-smart-band",
-      sku: "ELC-BND-007",
-      categoryId: createdCategories["electronics-and-gadgets"],
-      price: 1350,
-      discountPrice: 1090,
-      stockQty: 40,
-      soldQty: 25,
-      promotionalBadges: ["👑 Best Seller"],
-      description: "স্টেপ কাউন্টার, হার্ট রেট ও স্লিপ মনিটরিং সমৃদ্ধ ১৪ দিন ব্যাটারি লাইফের স্লিম স্মার্ট ব্যান্ড।",
-      images: [
-        "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?q=80&w=800&auto=format&fit=crop",
-      tags: "smartband,fitness,tracker,waterproof",
-    },
-    {
-      name: "রিচার্জেবল টাচ ফোল্ডেবল LED ডেস্ক ল্যাম্প",
-      slug: "rechargeable-touch-dimmable-desk-lamp",
-      sku: "ELC-LMP-008",
-      categoryId: createdCategories["electronics-and-gadgets"],
-      price: 850,
-      discountPrice: 650,
-      stockQty: 50,
-      soldQty: 30,
-      promotionalBadges: ["🔥 Hot Deal"],
-      description: "চোখের সুরক্ষার জন্য ৩ কালার মোড ও ব্রাইটনেস অ্যাডজাস্টমেন্ট সমৃদ্ধ রিচার্জেবল পড়ার টেবিলের বাতি।",
-      images: [
-        "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop",
-      tags: "desk-lamp,led,rechargeable,study",
-    },
-    {
-      name: "৭-ইন-১ অ্যালুমিনিয়াম USB-C হাব ও ডক",
-      slug: "7in1-aluminum-usb-c-hub-4k-hdmi",
-      sku: "ELC-HUB-009",
-      categoryId: createdCategories["electronics-and-gadgets"],
-      price: 1750,
-      discountPrice: 1450,
-      stockQty: 30,
-      soldQty: 14,
-      isFeatured: true,
-      promotionalBadges: ["⭐ Trending"],
-      description: "4K HDMI, 100W PD চার্জিং, SD কার্ড রিডার ও ৩টি USB 3.0 পোর্ট সহ প্রিমিয়াম ল্যাপটপ হাব।",
-      images: [
-        "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?q=80&w=800&auto=format&fit=crop",
-      tags: "usb-c,hub,adapter,hdmi,laptop",
-    },
-    {
-      name: "অ্যাডজাস্টেবল অ্যালুমিনিয়াম মোবাইল ও ট্যাব স্ট্যান্ড",
-      slug: "adjustable-desktop-phone-tablet-stand",
-      sku: "ELC-STD-010",
-      categoryId: createdCategories["electronics-and-gadgets"],
-      price: 550,
-      discountPrice: 390,
-      stockQty: 60,
-      soldQty: 42,
-      promotionalBadges: ["👑 Best Seller"],
-      description: "শক্তিশালী মেটাল বডি ও অ্যান্টি-স্লিপ সিলিকন প্যাড সহ ফোল্ডেবল ডেস্ক ফোন স্ট্যান্ড।",
-      images: [
-        "https://images.unsplash.com/photo-1586953208448-b95a79798f07?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1586953208448-b95a79798f07?q=80&w=800&auto=format&fit=crop",
-      tags: "stand,mobile-holder,aluminum,tablet",
-    },
-
-    // ----------------------------------------------------
-    // CATEGORY 9: হোম ডেকোর (slug: home-decor) [10 Products]
-    // ----------------------------------------------------
-    {
-      name: "3D রোমান নাম্বার ডেকোরেটিভ মেটাল ওয়াল ক্লক",
-      slug: "3d-roman-number-metal-wall-clock",
-      sku: "HMD-CLK-001",
-      categoryId: createdCategories["home-decor"],
-      price: 1850,
-      discountPrice: 1490,
-      stockQty: 40,
-      soldQty: 21,
-      isFeatured: true,
-      isBestSeller: true,
-      promotionalBadges: ["👑 Best Seller", "🔥 Hot Deal"],
-      description: "লিভিং রুম ও ড্রইং রুমের দেয়ালে আভিজাত্য ফুটিয়ে তুলতে সাইলেন্ট সুইপ মেটালিক 3D দেয়াল ঘড়ি।",
-      images: [
-        "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800&auto=format&fit=crop",
-      tags: "wall-clock,metal,home-decor,living-room",
-    },
-    {
-      name: "মডার্ন নর্ডিক সিরামিক ফ্লাওয়ার ভাস / ফুলদানি",
-      slug: "modern-nordic-ceramic-flower-vase",
-      sku: "HMD-VAS-002",
-      categoryId: createdCategories["home-decor"],
-      price: 750,
-      discountPrice: 580,
-      stockQty: 50,
-      soldQty: 26,
-      promotionalBadges: ["⭐ Trending"],
-      description: "মিনিমালিস্ট ম্যাট ফিনিশের প্রিমিয়াম সিরামিক ফুলদানি। শুকনো বা তাজা ফুলের জন্য উপযুক্ত।",
-      images: [
-        "https://images.unsplash.com/photo-1581783342308-f792dbdd27c5?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1581783342308-f792dbdd27c5?q=80&w=800&auto=format&fit=crop",
-      tags: "vase,ceramic,flower,home-decor",
-    },
-    {
-      name: "ভিন্টেজ উডেন বেডসাইড টেবিল ল্যাম্প",
-      slug: "vintage-wooden-bedside-table-lamp",
-      sku: "HMD-LMP-003",
-      categoryId: createdCategories["home-decor"],
-      price: 1350,
-      discountPrice: 1090,
-      stockQty: 35,
-      soldQty: 18,
-      isFeatured: true,
-      promotionalBadges: ["👑 Best Seller"],
-      description: "বেডরুমের নরম আরামদায়ক আলোর জন্য ফ্যাব্রিক শেড ও কাঠের বেসের টেবিল ল্যাম্প।",
-      images: [
-        "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=800&auto=format&fit=crop",
-      tags: "table-lamp,wooden,bedside,lighting",
-    },
-    {
-      name: "ইসলামিক ক্যালিগ্রাফি ও ল্যান্ডস্কেপ ৩-পিস ক্যানভাস ওয়াল আর্ট",
-      slug: "set-of-3-islamic-calligraphy-canvas-wall-art",
-      sku: "HMD-ART-004",
-      categoryId: createdCategories["home-decor"],
-      price: 1650,
-      discountPrice: 1290,
-      stockQty: 30,
-      soldQty: 15,
-      promotionalBadges: ["⭐ Trending"],
-      description: "গোল্ডেন ফ্রেমড হাই-ডেফিনিশন ক্যানভাস প্রিন্টের ৩টি ছবির সেট। দেয়ালে টাঙানো অত্যন্ত সহজ।",
-      images: [
-        "https://images.unsplash.com/photo-1579783902614-a3fb3927b675?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1579783902614-a3fb3927b675?q=80&w=800&auto=format&fit=crop",
-      tags: "wall-art,calligraphy,canvas,decor",
-    },
-    {
-      name: "গ্যালারি ওয়াল মডার্ন গ্লাস ফটো ফ্রেম (৬ পিস)",
-      slug: "gallery-wall-glass-photo-frames-6pack",
-      sku: "HMD-FRM-005",
-      categoryId: createdCategories["home-decor"],
-      price: 850,
-      discountPrice: 650,
-      stockQty: 45,
-      soldQty: 24,
-      isFlashSale: true,
-      promotionalBadges: ["🔥 Hot Deal"],
-      description: "দেয়ালে পারিবারিক ছবি প্রদর্শনের জন্য বিভিন্ন সাইজের ৬টি ব্ল্যাক বর্ডার ফ্রেমের কম্বো।",
-      images: [
-        "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=800&auto=format&fit=crop",
-      tags: "photo-frame,gallery,wall,decor",
-    },
-    {
-      name: "বোহো রাউন্ড রটান ডেকোরেটিভ মিরর (৪০ সেমি)",
-      slug: "handmade-boho-rattan-round-mirror",
-      sku: "HMD-MRR-006",
-      categoryId: createdCategories["home-decor"],
-      price: 1450,
-      discountPrice: 1190,
-      stockQty: 25,
-      soldQty: 12,
-      promotionalBadges: ["👑 Best Seller"],
-      description: "প্রাকৃতিক বেতের নিখুঁত নকশার রাউন্ড ডেকোরেটিভ আয়না। ঘরকে দেয় নান্দনিক আধুনিক লুক।",
-      images: [
-        "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?q=80&w=800&auto=format&fit=crop",
-      tags: "mirror,rattan,boho,wall-decor",
-    },
-    {
-      name: "এমব্রয়ডারি ভেলভেট কুশন কভার সেট (৫ পিস)",
-      slug: "embroidered-velvet-cushion-covers-5pack",
-      sku: "HMD-CSH-007",
-      categoryId: createdCategories["home-decor"],
-      price: 950,
-      discountPrice: 750,
-      stockQty: 50,
-      soldQty: 29,
-      promotionalBadges: ["⭐ Trending"],
-      description: "সোফা বা বিছানার সৌন্দর্য বাড়াতে গোল্ডেন সুতার কাজ করা ১৬x১৬ ইঞ্চি ভেলভেট কুশন কভার সেট।",
-      images: [
-        "https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?q=80&w=800&auto=format&fit=crop",
-      tags: "cushion-cover,velvet,embroidery,sofa",
-    },
-    {
-      name: "মেটালিক জিওমেট্রিক ক্যান্ডেল হোল্ডার সেট (২ পিস)",
-      slug: "geometric-golden-candle-holder-set",
-      sku: "HMD-CND-008",
-      categoryId: createdCategories["home-decor"],
-      price: 650,
-      discountPrice: 480,
-      stockQty: 40,
-      soldQty: 20,
-      promotionalBadges: ["🆕 New Arrival"],
-      description: "ডাইনিং টেবিল বা সাইডবোর্ডে আলো ছড়াতে গোল্ডেন মেটালিক জিওমেট্রিক মোমবাতি স্ট্যান্ড।",
-      images: [
-        "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800&auto=format&fit=crop",
-      tags: "candle-holder,golden,geometric,decor",
-    },
-    {
-      name: "হ্যান্ডক্রাফটেড সিরামিক ইনডোর প্ল্যান্ট পট উইথ স্ট্যান্ড",
-      slug: "ceramic-indoor-planter-pot-with-stand",
-      sku: "HMD-POT-009",
-      categoryId: createdCategories["home-decor"],
-      price: 580,
-      discountPrice: 420,
-      stockQty: 45,
-      soldQty: 22,
-      promotionalBadges: ["🔥 Hot Deal"],
-      description: "ইনডোর গাছ বা বনসাই সাজাতে কাঠের স্ট্যান্ড সহ মার্বেল টেক্সচারের সিরামিক টব।",
-      images: [
-        "https://images.unsplash.com/photo-1485955900006-10f4d324d411?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1485955900006-10f4d324d411?q=80&w=800&auto=format&fit=crop",
-      tags: "planter,pot,indoor-plant,ceramic",
-    },
-    {
-      name: "এথনিক পিতলের ময়ূর শোপিস",
-      slug: "handcrafted-brass-peacock-showpiece",
-      sku: "HMD-SHW-010",
-      categoryId: createdCategories["home-decor"],
-      price: 1950,
-      discountPrice: 1590,
-      stockQty: 20,
-      soldQty: 9,
-      isFeatured: true,
-      promotionalBadges: ["👑 Best Seller"],
-      description: "হাতে খোদাই করা এথনিক নিখুঁত পিতলের ময়ূর শোপিস। ঘরের শোভা বহুগুণ বাড়িয়ে দেবে।",
-      images: [
-        "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800&auto=format&fit=crop",
-      tags: "showpiece,brass,peacock,ethnic,decor",
-    },
-
-    // ----------------------------------------------------
-    // CATEGORY 10: অর্গানিক পণ্য (slug: organic-products) [10 Products]
-    // ----------------------------------------------------
-    {
-      name: "সুন্দরবনের খাঁটি প্রাকৃতিক মধু (৫০০ গ্রাম)",
-      slug: "pure-sundarbans-wild-raw-honey-500g",
-      sku: "ORG-HNY-001",
-      categoryId: createdCategories["organic-products"],
-      price: 650,
-      discountPrice: 550,
-      stockQty: 60,
-      soldQty: 42,
-      isFeatured: true,
-      isBestSeller: true,
-      promotionalBadges: ["👑 Best Seller", "🔥 Hot Deal"],
-      description: "সুন্দরবনের গভীর বন থেকে সংগ্রহ করা ১০০% প্রাকৃতিক ও অপরিশোধিত খাঁটি মধু। কোনো কৃত্রিম মিষ্টি বা চিনি মিশ্রিত নয়।",
-      images: [
-        "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=800&auto=format&fit=crop",
-      tags: "honey,sundarbans,organic,pure,raw-honey",
-    },
-    {
-      name: "কাঠের ঘানিতে ভাঙা খাঁটি সরিষার তেল (১ লিটার)",
-      slug: "cold-pressed-wood-churned-mustard-oil-1l",
-      sku: "ORG-MST-002",
-      categoryId: createdCategories["organic-products"],
-      price: 380,
-      discountPrice: 320,
-      stockQty: 70,
-      soldQty: 48,
-      isFeatured: true,
-      promotionalBadges: ["⭐ Trending"],
-      description: "দেশি মাঘী সরিষা থেকে কাঠের ঘানিতে কোল্ড প্রেস পদ্ধতিতে তৈরি ঝাঁঝালো ও খাঁটি সরিষার তেল।",
-      images: [
-        "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?q=80&w=800&auto=format&fit=crop",
-      tags: "mustard-oil,cold-pressed,organic,pure",
-    },
-    {
-      name: "এক্সট্রা ভার্জিন অর্গানিক নারিকেল তেল (৫০০ মিলি)",
-      slug: "extra-virgin-organic-coconut-oil-500ml",
-      sku: "ORG-COC-003",
-      categoryId: createdCategories["organic-products"],
-      price: 450,
-      discountPrice: 380,
-      stockQty: 50,
-      soldQty: 25,
-      promotionalBadges: ["👑 Best Seller"],
-      description: "তাজা নারিকেলের দুধ থেকে কোল্ড প্রেস করা ১০০% বিশুদ্ধ এক্সট্রা ভার্জিন নারিকেল তেল।",
-      images: [
-        "https://images.unsplash.com/photo-1526947425960-945c6e72858f?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1526947425960-945c6e72858f?q=80&w=800&auto=format&fit=crop",
-      tags: "coconut-oil,extra-virgin,organic,pure",
-    },
-    {
-      name: "যশোরের খাঁটি খেজুরের পাটালি গুড় (১ কেজি)",
-      slug: "pure-jashore-date-palm-jaggery-1kg",
-      sku: "ORG-JAG-004",
-      categoryId: createdCategories["organic-products"],
-      price: 550,
-      discountPrice: 460,
-      stockQty: 45,
-      soldQty: 30,
-      isFlashSale: true,
-      promotionalBadges: ["🔥 Hot Deal"],
-      description: "যশোরের বিখ্যাত খাঁটি খেজুরের রসের সুস্বাদু ও ঘ্রাণযুক্ত পাটালি গুড়। কোনো চিনি বা রাসায়নিক নেই।",
-      images: [
-        "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=800&auto=format&fit=crop",
-      tags: "gur,jaggery,date-palm,organic,jashore",
-    },
-    {
-      name: "অর্গানিক হলুদ গুঁড়া (২৫০ গ্রাম)",
-      slug: "pure-organic-ground-turmeric-powder-250g",
-      sku: "ORG-TRM-005",
-      categoryId: createdCategories["organic-products"],
-      price: 220,
-      discountPrice: 170,
-      stockQty: 80,
-      soldQty: 50,
-      promotionalBadges: ["👑 Best Seller"],
-      description: "পাহাড়ের খাঁটি দেশি হলুদ রোদে শুকিয়ে ঘরে ভাঙানো সুগন্ধি ও রঙিন হলুদ গুঁড়া।",
-      images: [
-        "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?q=80&w=800&auto=format&fit=crop",
-      tags: "turmeric,spices,organic,powder",
-    },
-    {
-      name: "অর্গানিক শুকনা মরিচ গুঁড়া (২৫০ গ্রাম)",
-      slug: "pure-sun-dried-red-chili-powder-250g",
-      sku: "ORG-CHL-006",
-      categoryId: createdCategories["organic-products"],
-      price: 240,
-      discountPrice: 180,
-      stockQty: 80,
-      soldQty: 54,
-      promotionalBadges: ["⭐ Trending"],
-      description: "রোদে শুকানো খাঁটি মরিচ থেকে গুঁড়া করা। খাবারের স্বাদ ও আকর্ষণীয় রঙের নিশ্চয়তা।",
-      images: [
-        "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?q=80&w=800&auto=format&fit=crop",
-      tags: "chili,spices,organic,powder",
-    },
-    {
-      name: "খাঁটি প্রিমিয়াম কালোজিরা (২০০ গ্রাম)",
-      slug: "natural-premium-black-seed-kalojira-200g",
-      sku: "ORG-KLJ-007",
-      categoryId: createdCategories["organic-products"],
-      price: 200,
-      discountPrice: 150,
-      stockQty: 90,
-      soldQty: 60,
-      promotionalBadges: ["👑 Best Seller"],
-      description: "ধুলাবালি মুক্ত বাছাইকৃত খাঁটি কালোজিরা। বিভিন্ন খাবারে ব্যবহারের জন্য অত্যন্ত উপযোগী।",
-      images: [
-        "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=800&auto=format&fit=crop",
-      tags: "kalojira,black-seed,organic,natural",
-    },
-    {
-      name: "১০০% অর্গানিক র চিয়া সিড (৩০০ গ্রাম)",
-      slug: "100-percent-organic-raw-chia-seeds-300g",
-      sku: "ORG-CHI-008",
-      categoryId: createdCategories["organic-products"],
-      price: 480,
-      discountPrice: 380,
-      stockQty: 65,
-      soldQty: 38,
-      promotionalBadges: ["🔥 Hot Deal"],
-      description: "প্রাকৃতিক ওমেগা-৩ ফ্যাটি এসিড ও ফাইবার সমৃদ্ধ প্রিমিয়াম গ্রেড অর্গানিক চিয়া সিড।",
-      images: [
-        "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=800&auto=format&fit=crop",
-      tags: "chia-seeds,superfood,organic,fiber",
-    },
-    {
-      name: "শ্রীমঙ্গলের প্রিমিয়াম অর্গানিক গ্রিন টি (১৫০ গ্রাম)",
-      slug: "sreemangal-premium-organic-green-tea-150g",
-      sku: "ORG-TEA-009",
-      categoryId: createdCategories["organic-products"],
-      price: 350,
-      discountPrice: 280,
-      stockQty: 55,
-      soldQty: 27,
-      promotionalBadges: ["⭐ Trending"],
-      description: "শ্রীমঙ্গলের পাহাড়ি বাগানের তাজা কচি পাতা দিয়ে তৈরি সতেজকারক অর্গানিক গ্রিন টি।",
-      images: [
-        "https://images.unsplash.com/photo-1576092768241-dec231879fc3?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1576092768241-dec231879fc3?q=80&w=800&auto=format&fit=crop",
-      tags: "green-tea,tea,sreemangal,organic",
-    },
-    {
-      name: "প্রিমিয়াম মিক্সড রোস্টেড ড্রাই ফ্রুটস ও নাটস (৪০০ গ্রাম)",
-      slug: "premium-mixed-dry-fruits-and-nuts-400g",
-      sku: "ORG-NUT-010",
-      categoryId: createdCategories["organic-products"],
-      price: 850,
-      discountPrice: 690,
-      stockQty: 40,
-      soldQty: 22,
-      isFeatured: true,
-      promotionalBadges: ["👑 Best Seller"],
-      description: "কাজুবাদাম, কাঠবাদাম, পেস্তা, কিশমিশ ও আখরোটের পুষ্টিকর মিক্সড ড্রাই ফ্রুটস প্যাক।",
-      images: [
-        "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?q=80&w=800&auto=format&fit=crop",
-      tags: "dry-fruits,nuts,almonds,cashew,organic",
-    },
-
-    // ----------------------------------------------------
-    // CATEGORY 11: কিচেন আইটেম (slug: kitchen-items) [10 Products]
-    // ----------------------------------------------------
-    {
-      name: "গ্রানাইট কোটিং নন-স্টিক ফ্রাইপ্যান (২৬ সেমি)",
-      slug: "granite-non-stick-frying-pan-26cm",
-      sku: "KIT-PAN-001",
-      categoryId: createdCategories["kitchen-items"],
-      price: 1450,
-      discountPrice: 1190,
-      stockQty: 45,
-      soldQty: 22,
-      isFeatured: true,
-      isBestSeller: true,
-      promotionalBadges: ["👑 Best Seller", "🔥 Hot Deal"],
-      description: "তেল ছাড়া রান্নার সুবিধাযুক্ত স্ক্র্যাচ-প্রুফ গ্রানাইট নন-স্টিক ফ্রাইপ্যান। ইনডাকশন ও গ্যাস চুলা উভয়ের জন্য।",
-      images: [
-        "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=800&auto=format&fit=crop",
-      tags: "frypan,non-stick,granite,cookware,kitchen",
-    },
-    {
-      name: "স্টেইনলেস স্টিল রান্নার হাঁড়ি ৩-পিস সেট",
-      slug: "stainless-steel-cooking-pot-set-3pcs",
-      sku: "KIT-POT-002",
-      categoryId: createdCategories["kitchen-items"],
-      price: 2650,
-      discountPrice: 2190,
-      stockQty: 30,
-      soldQty: 14,
-      isFeatured: true,
-      promotionalBadges: ["⭐ Trending"],
-      description: "টেম্পার্ড গ্লাস ঢাকনা সহ ফুড গ্রেড স্টেইনলেস স্টিলের ৩টি মজবুত কুকিং পট সেট।",
-      images: [
-        "https://images.unsplash.com/photo-1584990347449-39744883495d?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1584990347449-39744883495d?q=80&w=800&auto=format&fit=crop",
-      tags: "pots,cookware,stainless-steel,kitchen",
-    },
-    {
-      name: "প্রফেশনাল ৬-পিস শেফ কিচেন নাইফ সেট",
-      slug: "professional-6piece-chef-knife-set",
-      sku: "KIT-KNF-003",
-      categoryId: createdCategories["kitchen-items"],
-      price: 1350,
-      discountPrice: 1050,
-      stockQty: 40,
-      soldQty: 25,
-      promotionalBadges: ["👑 Best Seller"],
-      description: "কাঠের হোল্ডার ব্লক সহ অত্যন্ত ধারালো স্টেইনলেস স্টিল শেফ কিচেন নাইফ ও কাঁচি সেট।",
-      images: [
-        "https://images.unsplash.com/photo-1593618998160-e34014e67546?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1593618998160-e34014e67546?q=80&w=800&auto=format&fit=crop",
-      tags: "knives,chef,knife-set,kitchen",
-    },
-    {
-      name: "অ্যান্টি-ব্যাকটেরিয়াল প্রিমিয়াম বাঁশের কাটিং বোর্ড",
-      slug: "natural-bamboo-cutting-chopping-board",
-      sku: "KIT-BRD-004",
-      categoryId: createdCategories["kitchen-items"],
-      price: 650,
-      discountPrice: 480,
-      stockQty: 55,
-      soldQty: 32,
-      isFlashSale: true,
-      promotionalBadges: ["🔥 Hot Deal"],
-      description: "পরিবেশবান্ধব ও সহজে পরিষ্কারযোগ্য প্রাকৃতিক বাঁশের তৈরি টেকসই কাটিং ও চপিং বোর্ড।",
-      images: [
-        "https://images.unsplash.com/photo-1590794056226-79ef3a8147e1?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1590794056226-79ef3a8147e1?q=80&w=800&auto=format&fit=crop",
-      tags: "cutting-board,bamboo,chopping,kitchen",
-    },
-    {
-      name: "৩৬০ ডিগ্রি রোটেটিং স্পাইস র্যাক (১২ জার)",
-      slug: "360-rotating-spice-jar-rack-12jars",
-      sku: "KIT-SPC-005",
-      categoryId: createdCategories["kitchen-items"],
-      price: 1250,
-      discountPrice: 990,
-      stockQty: 40,
-      soldQty: 23,
-      promotionalBadges: ["⭐ Trending"],
-      description: "মসলা গুছিয়ে রাখার জন্য ১২টি কাঁচের জার সহ ৩৬০ ডিগ্রি ঘোরার সুবিধা সমৃদ্ধ স্টেইনলেস স্টিল স্পাইস র্যাক।",
-      images: [
-        "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=800&auto=format&fit=crop",
-      tags: "spice-rack,organizer,jars,kitchen",
-    },
-    {
-      name: "এয়ারটাইট ফুড স্টোরেজ কন্টেইনার সেট (৬ পিস)",
-      slug: "airtight-food-storage-box-6piece-set",
-      sku: "KIT-STR-006",
-      categoryId: createdCategories["kitchen-items"],
-      price: 950,
-      discountPrice: 750,
-      stockQty: 60,
-      soldQty: 38,
-      promotionalBadges: ["👑 Best Seller"],
-      description: "BPA-ফ্রি ক্লিয়ার ফুড গ্রেড প্লাস্টিক কন্টেইনার। ডাল, চাল ও বিস্কুট ফ্রেশ রাখার জন্য এয়ারটাইট লক।",
-      images: [
-        "https://images.unsplash.com/photo-1584990347449-39744883495d?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1584990347449-39744883495d?q=80&w=800&auto=format&fit=crop",
-      tags: "storage-box,airtight,containers,kitchen",
-    },
-    {
-      name: "প্রিমিয়াম ফ্লোরাল সিরামিক ডিনার সেট (১৮ পিস)",
-      slug: "luxury-floral-ceramic-dinner-set-18pcs",
-      sku: "KIT-DIN-007",
-      categoryId: createdCategories["kitchen-items"],
-      price: 3800,
-      discountPrice: 3250,
-      stockQty: 20,
-      soldQty: 8,
-      isFeatured: true,
-      promotionalBadges: ["⭐ Trending"],
-      description: "১৮ পিসের বিলাসবহুল ফ্লোরাল সিরামিক ডিনার সেট—প্লেট, বাটি, ডিশ ও স্যুপ বাটি সহ।",
-      images: [
-        "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=800&auto=format&fit=crop",
-      tags: "dinner-set,ceramic,plates,luxury,kitchen",
-    },
-    {
-      name: "বোরোসিলিকেট ডাবল ওয়াল গ্লাস কফি মগ (২ পিস)",
-      slug: "double-wall-glass-coffee-mug-pair",
-      sku: "KIT-MUG-008",
-      categoryId: createdCategories["kitchen-items"],
-      price: 580,
-      discountPrice: 450,
-      stockQty: 50,
-      soldQty: 29,
-      promotionalBadges: ["🔥 Hot Deal"],
-      description: "হিট-ইনসুলেটেড ডাবল লেয়ার গ্লাস কফি ও চা মগ। বাইরে গরম বা ঠান্ডা লাগবে না।",
-      images: [
-        "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=800&auto=format&fit=crop",
-      tags: "mug,glass,coffee,double-wall,kitchen",
-    },
-    {
-      name: "হিট রেজিস্ট্যান্ট সিলিকন রান্নার চামচ সেট (১০ পিস)",
-      slug: "heat-resistant-silicone-kitchen-utensil-set",
-      sku: "KIT-UTN-009",
-      categoryId: createdCategories["kitchen-items"],
-      price: 850,
-      discountPrice: 650,
-      stockQty: 45,
-      soldQty: 26,
-      promotionalBadges: ["👑 Best Seller"],
-      description: "নন-স্টিক প্যানে কোনো স্ক্র্যাচ বা দাগ না ফেলে রান্না করার জন্য ফুড গ্রেড সিলিকন চামচ ও স্প্যাচুলা সেট।",
-      images: [
-        "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=800&auto=format&fit=crop",
-      tags: "utensils,spatula,silicone,cookware,kitchen",
-    },
-    {
-      name: "এক্সটেন্ডেবল স্টেইনলেস স্টিল কিচেন সিঙ্ক ডিশ র‍্যাক",
-      slug: "extendable-stainless-steel-sink-dish-rack",
-      sku: "KIT-RCK-010",
-      categoryId: createdCategories["kitchen-items"],
-      price: 750,
-      discountPrice: 580,
-      stockQty: 40,
-      soldQty: 21,
-      promotionalBadges: ["🆕 New Arrival"],
-      description: "থালা-বাসন ও ফলমূল ধুয়ে পানি ঝরানোর জন্য সিঙ্কের মাপে বড়-ছোট করার সুবিধাযুক্ত স্টিল ড্রেনার র‍্যাক।",
-      images: [
-        "https://images.unsplash.com/photo-1584990347449-39744883495d?q=80&w=800&auto=format&fit=crop",
-      ],
-      thumbnail: "https://images.unsplash.com/photo-1584990347449-39744883495d?q=80&w=800&auto=format&fit=crop",
-      tags: "dish-rack,sink,drainer,kitchen-organizer",
-    },
-  ];
-
-  let createdProductCount = 0;
-  const categoryProductCountMap: Record<string, number> = {};
-
-  for (const prod of productsData) {
-    const createdProduct = await prisma.product.create({
-      data: {
-        ...prod,
-        weight: 0.5,
-        unit: "piece",
-        variants: {
-          create: [
-            {
-              name: "স্ট্যান্ডার্ড ভ্যারিয়েন্ট (Standard)",
-              sku: `${prod.sku}-STD`,
-              price: prod.price,
-              discountPrice: prod.discountPrice,
-              stockQty: prod.stockQty,
-              isActive: true,
-              sortOrder: 1,
-            },
-          ],
-        },
+  const subcategoriesDataset = [
+  {
+    "parentSlug": "sari",
+    "subSlug": "jamdani-sari",
+    "subName": "জামদানি শাড়ি",
+    "products": [
+      {
+        "name": "ঢাকাই অরিজিনাল জামদানি শাড়ি",
+        "price": 4200,
+        "discount": 3650,
+        "images": [
+          "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800"
+        ]
       },
-    });
-
-    createdProductCount++;
-    categoryProductCountMap[prod.categoryId] = (categoryProductCountMap[prod.categoryId] || 0) + 1;
+      {
+        "name": "হাতে বোনা সুতি জামদানি শাড়ি",
+        "price": 3400,
+        "discount": 2950,
+        "images": [
+          "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800"
+        ]
+      },
+      {
+        "name": "গর্জিয়াস গোল্ডেন জরি জামদানি",
+        "price": 5600,
+        "discount": 4850,
+        "images": [
+          "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=800"
+        ]
+      },
+      {
+        "name": "হালকা গোলাপি সফট জামদানি শাড়ি",
+        "price": 3800,
+        "discount": 3200,
+        "images": [
+          "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800"
+        ]
+      },
+      {
+        "name": "বিয়ে ও উৎসব স্পেশাল জামদানি",
+        "price": 6200,
+        "discount": 5400,
+        "images": [
+          "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "sari",
+    "subSlug": "katan-banarasi-sari",
+    "subName": "কাতান ও বেনারসি",
+    "products": [
+      {
+        "name": "মিরপুর কাতান সিল্ক শাড়ি",
+        "price": 4800,
+        "discount": 4150,
+        "images": [
+          "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=800"
+        ]
+      },
+      {
+        "name": "ব্রাইডাল রেড বেনারসি কাতান",
+        "price": 8500,
+        "discount": 7400,
+        "images": [
+          "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800"
+        ]
+      },
+      {
+        "name": "রয়েল ব্লু অপেরা কাতান শাড়ি",
+        "price": 5200,
+        "discount": 4600,
+        "images": [
+          "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800"
+        ]
+      },
+      {
+        "name": "গোল্ডেন জরি বর্ডার বেনারসি",
+        "price": 6900,
+        "discount": 5950,
+        "images": [
+          "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=800"
+        ]
+      },
+      {
+        "name": "ঐতিহ্যবাহী বেনারসি কাতান শাড়ি",
+        "price": 7200,
+        "discount": 6300,
+        "images": [
+          "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "sari",
+    "subSlug": "silk-muslin-sari",
+    "subName": "সিল্ক ও মসলিন শাড়ি",
+    "products": [
+      {
+        "name": "রাজশাহী পিওর সিল্ক শাড়ি",
+        "price": 4500,
+        "discount": 3900,
+        "images": [
+          "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800"
+        ]
+      },
+      {
+        "name": "হ্যান্ডপেইন্টেড ঢাকাই মসলিন শাড়ি",
+        "price": 7800,
+        "discount": 6800,
+        "images": [
+          "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800"
+        ]
+      },
+      {
+        "name": "টসর সিল্ক এম্ব্রয়ডারি শাড়ি",
+        "price": 5100,
+        "discount": 4450,
+        "images": [
+          "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=800"
+        ]
+      },
+      {
+        "name": "ফ্লোরাল প্রিন্ট মসলিন সিল্ক",
+        "price": 4200,
+        "discount": 3600,
+        "images": [
+          "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800"
+        ]
+      },
+      {
+        "name": "প্রিমিয়াম কাতান মসলিন শাড়ি",
+        "price": 6500,
+        "discount": 5700,
+        "images": [
+          "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "sari",
+    "subSlug": "cotton-handloom-sari",
+    "subName": "সুতি ও হ্যান্ডলুম",
+    "products": [
+      {
+        "name": "টাঙ্গাইল তাঁতের সুতি শাড়ি",
+        "price": 1850,
+        "discount": 1550,
+        "images": [
+          "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800"
+        ]
+      },
+      {
+        "name": "কুমিল্লা খাদি কটন শাড়ি",
+        "price": 2100,
+        "discount": 1750,
+        "images": [
+          "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800"
+        ]
+      },
+      {
+        "name": "ব্লক প্রিন্ট সফট কটন শাড়ি",
+        "price": 1650,
+        "discount": 1390,
+        "images": [
+          "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=800"
+        ]
+      },
+      {
+        "name": "হাতে বোনা মনিপুরী কটন শাড়ি",
+        "price": 2400,
+        "discount": 1990,
+        "images": [
+          "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800"
+        ]
+      },
+      {
+        "name": "প্রাকৃতিক ডাই হ্যান্ডলুম শাড়ি",
+        "price": 2250,
+        "discount": 1850,
+        "images": [
+          "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "sari",
+    "subSlug": "party-georgette-sari",
+    "subName": "পার্টি ও জর্জেট",
+    "products": [
+      {
+        "name": "সিকোয়েন্স ওয়ার্ক জর্জেট শাড়ি",
+        "price": 3200,
+        "discount": 2750,
+        "images": [
+          "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800"
+        ]
+      },
+      {
+        "name": "শিফন জর্জেট এম্ব্রয়ডারি শাড়ি",
+        "price": 2950,
+        "discount": 2450,
+        "images": [
+          "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=800"
+        ]
+      },
+      {
+        "name": "ওয়েডিং স্পেশাল গর্জিয়াস জর্জেট",
+        "price": 4600,
+        "discount": 3990,
+        "images": [
+          "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800"
+        ]
+      },
+      {
+        "name": "ওমব্রে শেড ডিজাইনার জর্জেট",
+        "price": 3500,
+        "discount": 2990,
+        "images": [
+          "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800"
+        ]
+      },
+      {
+        "name": "লেস বর্ডার পার্টি ওয়্যার জর্জেট",
+        "price": 3100,
+        "discount": 2600,
+        "images": [
+          "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "three-piece",
+    "subSlug": "cotton-three-piece",
+    "subName": "পিওর কটন থ্রি-পিস",
+    "products": [
+      {
+        "name": "প্রিমিয়াম পিওর কটন থ্রি-পিস",
+        "price": 2450,
+        "discount": 2050,
+        "images": [
+          "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800"
+        ]
+      },
+      {
+        "name": "জয়পুরি কটন ব্লক প্রিন্ট থ্রি-পিস",
+        "price": 2200,
+        "discount": 1850,
+        "images": [
+          "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800"
+        ]
+      },
+      {
+        "name": "বাটিক প্রিন্ট সুতি থ্রি-পিস",
+        "price": 1750,
+        "discount": 1450,
+        "images": [
+          "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800"
+        ]
+      },
+      {
+        "name": "মালহার সফট কটন থ্রি-পিস",
+        "price": 2600,
+        "discount": 2190,
+        "images": [
+          "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800"
+        ]
+      },
+      {
+        "name": "প্রিন্টেড কটন উইথ শিফন ওড়না",
+        "price": 1950,
+        "discount": 1650,
+        "images": [
+          "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "three-piece",
+    "subSlug": "embroidered-three-piece",
+    "subName": "এমব্রয়ডারি থ্রি-পিস",
+    "products": [
+      {
+        "name": "লাক্সারি নেক এমব্রয়ডারি থ্রি-পিস",
+        "price": 3200,
+        "discount": 2690,
+        "images": [
+          "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800"
+        ]
+      },
+      {
+        "name": "কাশ্মীরি সুতা এমব্রয়ডারি থ্রি-পিস",
+        "price": 3800,
+        "discount": 3250,
+        "images": [
+          "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800"
+        ]
+      },
+      {
+        "name": "চিকেনকারি এমব্রয়ডারি কটন ড্রেস",
+        "price": 2900,
+        "discount": 2450,
+        "images": [
+          "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800"
+        ]
+      },
+      {
+        "name": "জারদৌসি ওয়ার্ক পার্টি থ্রি-পিস",
+        "price": 4200,
+        "discount": 3600,
+        "images": [
+          "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800"
+        ]
+      },
+      {
+        "name": "হ্যান্ড এমব্রয়ডারি ফ্যাশন থ্রি-পিস",
+        "price": 3500,
+        "discount": 2990,
+        "images": [
+          "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "three-piece",
+    "subSlug": "pakistani-lawn",
+    "subName": "পাকিস্তানি ডিজিটাল লন",
+    "products": [
+      {
+        "name": "পাকিস্তানি মারিয়া বি ডিজিটাল লন",
+        "price": 3600,
+        "discount": 3100,
+        "images": [
+          "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800"
+        ]
+      },
+      {
+        "name": "সানাসাফিনাজ প্রিন্ট ডিজিটাল লন",
+        "price": 3400,
+        "discount": 2890,
+        "images": [
+          "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800"
+        ]
+      },
+      {
+        "name": "গুল আহমেদ লাক্সারি লন কালেকশন",
+        "price": 3900,
+        "discount": 3350,
+        "images": [
+          "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800"
+        ]
+      },
+      {
+        "name": "আঘানুর এমব্রয়ডারি লন থ্রি-পিস",
+        "price": 4400,
+        "discount": 3790,
+        "images": [
+          "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800"
+        ]
+      },
+      {
+        "name": "অরিজিনাল পাকিস্তানি ডিজিটাল লন",
+        "price": 3100,
+        "discount": 2650,
+        "images": [
+          "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "three-piece",
+    "subSlug": "party-three-piece",
+    "subName": "গর্জিয়াস পার্টি ওয়্যার",
+    "products": [
+      {
+        "name": "ওয়েডিং পার্টি সিল্ক থ্রি-পিস",
+        "price": 4800,
+        "discount": 4100,
+        "images": [
+          "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800"
+        ]
+      },
+      {
+        "name": "অর্গানজা টিস্যু পার্টি থ্রি-পিস",
+        "price": 4200,
+        "discount": 3590,
+        "images": [
+          "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800"
+        ]
+      },
+      {
+        "name": "জর্জেট সিকোয়েন্স পার্টি ড্রেস",
+        "price": 3800,
+        "discount": 3200,
+        "images": [
+          "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800"
+        ]
+      },
+      {
+        "name": "ভেলভেট এম্ব্রয়ডারি উইন্টার স্পেশাল",
+        "price": 5400,
+        "discount": 4600,
+        "images": [
+          "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800"
+        ]
+      },
+      {
+        "name": "রয়েল ব্লু পার্টি সিল্ক ড্রেস",
+        "price": 4600,
+        "discount": 3950,
+        "images": [
+          "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "three-piece",
+    "subSlug": "kurti-tunic",
+    "subName": "কুর্তি ও টিউনিক",
+    "products": [
+      {
+        "name": "রেডিমেড কটন ডিজাইনার কুর্তি",
+        "price": 1450,
+        "discount": 1190,
+        "images": [
+          "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800"
+        ]
+      },
+      {
+        "name": "লং এম্ব্রয়ডারি পার্টি গাউন",
+        "price": 2800,
+        "discount": 2350,
+        "images": [
+          "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800"
+        ]
+      },
+      {
+        "name": "ফ্লোরাল প্রিন্ট সামার কুর্তি",
+        "price": 1250,
+        "discount": 990,
+        "images": [
+          "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800"
+        ]
+      },
+      {
+        "name": "অ্যাংগরাখা স্টাইল রেডিমেড কুর্তি",
+        "price": 1850,
+        "discount": 1550,
+        "images": [
+          "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800"
+        ]
+      },
+      {
+        "name": "টপস ও টিউনিক টু-পিস সেট",
+        "price": 1650,
+        "discount": 1350,
+        "images": [
+          "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "kids",
+    "subSlug": "baby-boy-clothing",
+    "subName": "বেবি বয় ড্রেস",
+    "products": [
+      {
+        "name": "বেবি বয় ৩-পিস স্যুট ও প্যান্ট",
+        "price": 1850,
+        "discount": 1490,
+        "images": [
+          "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800"
+        ]
+      },
+      {
+        "name": "কিডস কটন পাঞ্জাবি ও পায়জামা",
+        "price": 1250,
+        "discount": 990,
+        "images": [
+          "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800"
+        ]
+      },
+      {
+        "name": "ছেলে শিশুদের ডেনিম জিন্স ও শার্ট",
+        "price": 1500,
+        "discount": 1250,
+        "images": [
+          "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800"
+        ]
+      },
+      {
+        "name": "কার্টুন প্রিন্ট কটন টি-শার্ট কম্বো",
+        "price": 950,
+        "discount": 750,
+        "images": [
+          "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800"
+        ]
+      },
+      {
+        "name": "উইন্টার হুডি ও ট্রাউজার সেট",
+        "price": 1650,
+        "discount": 1350,
+        "images": [
+          "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "kids",
+    "subSlug": "baby-girl-frocks",
+    "subName": "বেবি গার্ল ফ্রক ও ড্রেস",
+    "products": [
+      {
+        "name": "প্রিন্সেস পার্টি ফ্রক উইথ বো",
+        "price": 1950,
+        "discount": 1590,
+        "images": [
+          "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800"
+        ]
+      },
+      {
+        "name": "কিডস এম্ব্রয়ডারি লেহেঙ্গা সেট",
+        "price": 2600,
+        "discount": 2190,
+        "images": [
+          "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800"
+        ]
+      },
+      {
+        "name": "ফ্লোরাল কটন সামার ফ্রক",
+        "price": 850,
+        "discount": 690,
+        "images": [
+          "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800"
+        ]
+      },
+      {
+        "name": "বেবি গার্ল টু-পিস টপস ও স্কার্ট",
+        "price": 1350,
+        "discount": 1090,
+        "images": [
+          "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800"
+        ]
+      },
+      {
+        "name": "বার্থডে স্পেশাল টিস্যু ফ্রক",
+        "price": 2200,
+        "discount": 1850,
+        "images": [
+          "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "kids",
+    "subSlug": "newborn-baby-care",
+    "subName": "নিউবর্ন বেবি কেয়ার",
+    "products": [
+      {
+        "name": "নিউবর্ন বেবি সফট কটন রম্পার সেট",
+        "price": 1200,
+        "discount": 950,
+        "images": [
+          "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800"
+        ]
+      },
+      {
+        "name": "বেবি স্লিপিং ব্যাগ ও ক্যারিয়ার",
+        "price": 1650,
+        "discount": 1350,
+        "images": [
+          "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800"
+        ]
+      },
+      {
+        "name": "নরম বেবি কমফোর্টার ব্ল্যাঙ্কেট",
+        "price": 1400,
+        "discount": 1150,
+        "images": [
+          "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800"
+        ]
+      },
+      {
+        "name": "বেবি কেয়ার গ্রুমিং ও বাথ কিট",
+        "price": 990,
+        "discount": 790,
+        "images": [
+          "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800"
+        ]
+      },
+      {
+        "name": "নিউবর্ন গিফট বক্স ৮-ইন-১ সেট",
+        "price": 2450,
+        "discount": 1990,
+        "images": [
+          "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "kids",
+    "subSlug": "educational-toys",
+    "subName": "শিক্ষণীয় ও বিনোদন খেলনা",
+    "products": [
+      {
+        "name": "ম্যাগনেটিক বিল্ডিং ব্লক টয়",
+        "price": 1450,
+        "discount": 1150,
+        "images": [
+          "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800"
+        ]
+      },
+      {
+        "name": "বাচ্চাদের ডিজিটাল রাইটিং ড্রয়িং প্যাড",
+        "price": 650,
+        "discount": 490,
+        "images": [
+          "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800"
+        ]
+      },
+      {
+        "name": "উডেন বর্ণমালা ও গণিত পাজল বোর্ড",
+        "price": 850,
+        "discount": 690,
+        "images": [
+          "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800"
+        ]
+      },
+      {
+        "name": "রিমোট কন্ট্রোল ৪×৪ স্টান্ট কার",
+        "price": 1850,
+        "discount": 1490,
+        "images": [
+          "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800"
+        ]
+      },
+      {
+        "name": "টকিং ক্যাকটাস ড্যান্সিং টয়",
+        "price": 790,
+        "discount": 590,
+        "images": [
+          "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "bag-and-pump",
+    "subSlug": "ladies-handbags",
+    "subName": "লেডিস হ্যান্ডব্যাগ",
+    "products": [
+      {
+        "name": "লাক্সারি লেদার হ্যান্ডব্যাগ",
+        "price": 2850,
+        "discount": 2350,
+        "images": [
+          "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800"
+        ]
+      },
+      {
+        "name": "টোট ব্যাগ উইথ মেটাল স্ট্র্যাপ",
+        "price": 1950,
+        "discount": 1590,
+        "images": [
+          "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800"
+        ]
+      },
+      {
+        "name": "ক্লাসিক শোল্ডার স্লিং ব্যাগ",
+        "price": 1650,
+        "discount": 1350,
+        "images": [
+          "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800"
+        ]
+      },
+      {
+        "name": "কোরিয়ান মিনি ক্রস বডি ব্যাগ",
+        "price": 1450,
+        "discount": 1190,
+        "images": [
+          "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800"
+        ]
+      },
+      {
+        "name": "অফিসিয়াল প্রিমিয়াম লেডিস ব্যাগ",
+        "price": 3200,
+        "discount": 2690,
+        "images": [
+          "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "bag-and-pump",
+    "subSlug": "party-clutches",
+    "subName": "পার্টি ক্লাচ ও পার্স",
+    "products": [
+      {
+        "name": "ক্রিস্টাল এমব্রয়ডারি পার্টি ক্লাচ",
+        "price": 1850,
+        "discount": 1490,
+        "images": [
+          "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800"
+        ]
+      },
+      {
+        "name": "গোল্ডেন মেটালিক ইভিনিং ক্লাচ",
+        "price": 1600,
+        "discount": 1290,
+        "images": [
+          "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800"
+        ]
+      },
+      {
+        "name": "ভেলভেট হ্যান্ডক্রাফটেড পার্টি পার্স",
+        "price": 2100,
+        "discount": 1750,
+        "images": [
+          "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800"
+        ]
+      },
+      {
+        "name": "পার্ল ওয়ার্ক ব্রাইডাল হ্যান্ড পার্স",
+        "price": 2400,
+        "discount": 1990,
+        "images": [
+          "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800"
+        ]
+      },
+      {
+        "name": "সিলভার গ্লিটার পার্টি ক্লাচ",
+        "price": 1750,
+        "discount": 1390,
+        "images": [
+          "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "bag-and-pump",
+    "subSlug": "pump-shoes-heels",
+    "subName": "হিল ও পাম্প শু",
+    "products": [
+      {
+        "name": "ক্লাসিক পয়েন্টেড টো হিল পাম্প",
+        "price": 2450,
+        "discount": 1990,
+        "images": [
+          "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?q=80&w=800"
+        ]
+      },
+      {
+        "name": "ব্লক হিল পার্টি পাম্প জুতা",
+        "price": 2100,
+        "discount": 1750,
+        "images": [
+          "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?q=80&w=800"
+        ]
+      },
+      {
+        "name": "কমফোর্ট ফ্ল্যাট পাম্প শু",
+        "price": 1650,
+        "discount": 1350,
+        "images": [
+          "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?q=80&w=800"
+        ]
+      },
+      {
+        "name": "ওয়েডিং ব্রাইডাল গ্লিটার হিল",
+        "price": 2900,
+        "discount": 2450,
+        "images": [
+          "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?q=80&w=800"
+        ]
+      },
+      {
+        "name": "লেদার লোফার পাম্প শু",
+        "price": 1850,
+        "discount": 1490,
+        "images": [
+          "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "bag-and-pump",
+    "subSlug": "ladies-wallets",
+    "subName": "লেডিস ওয়ালেট ও ব্যাকপ্যাক",
+    "products": [
+      {
+        "name": "ট্রিপল জিপার লেদার ওয়ালেট",
+        "price": 950,
+        "discount": 750,
+        "images": [
+          "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800"
+        ]
+      },
+      {
+        "name": "লেডিস ফ্যাশন ব্যাকপ্যাক",
+        "price": 1850,
+        "discount": 1490,
+        "images": [
+          "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800"
+        ]
+      },
+      {
+        "name": "কার্ড হোল্ডার মিনি পার্স ওয়ালেট",
+        "price": 550,
+        "discount": 420,
+        "images": [
+          "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800"
+        ]
+      },
+      {
+        "name": "ক্যাজুয়াল কলেজ ব্যাকপ্যাক",
+        "price": 1650,
+        "discount": 1290,
+        "images": [
+          "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800"
+        ]
+      },
+      {
+        "name": "স্মার্টফোন পকেট লং ওয়ালেট",
+        "price": 1100,
+        "discount": 890,
+        "images": [
+          "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "couple-items",
+    "subSlug": "couple-matching-dress",
+    "subName": "কাপল ম্যাচিং ড্রেস",
+    "products": [
+      {
+        "name": "কাপল ম্যাচিং শাড়ি ও পাঞ্জাবি কম্বো",
+        "price": 4200,
+        "discount": 3600,
+        "images": [
+          "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=800"
+        ]
+      },
+      {
+        "name": "কটন ম্যাচিং কাপল টি-শার্ট সেট",
+        "price": 1250,
+        "discount": 990,
+        "images": [
+          "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=800"
+        ]
+      },
+      {
+        "name": "উৎসব স্পেশাল কাপল পাঞ্জাবি ও কুর্তি",
+        "price": 3400,
+        "discount": 2890,
+        "images": [
+          "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=800"
+        ]
+      },
+      {
+        "name": "উইন্টার কাপল হুডি কম্বো",
+        "price": 2100,
+        "discount": 1750,
+        "images": [
+          "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=800"
+        ]
+      },
+      {
+        "name": "রয়েল ব্লু কাপল কালেকশন",
+        "price": 3800,
+        "discount": 3250,
+        "images": [
+          "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "couple-items",
+    "subSlug": "couple-mugs-frames",
+    "subName": "রোমান্টিক মগ ও ফ্রেম",
+    "products": [
+      {
+        "name": "কাস্টমাইজড লাভ সিরামিক মগ সেট",
+        "price": 850,
+        "discount": 650,
+        "images": [
+          "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=800"
+        ]
+      },
+      {
+        "name": "রোমান্টিক ফটো ফ্রেম উইথ এলইডি লাইট",
+        "price": 1100,
+        "discount": 850,
+        "images": [
+          "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=800"
+        ]
+      },
+      {
+        "name": "ম্যাজিক কাপল মগ পেয়ার",
+        "price": 750,
+        "discount": 590,
+        "images": [
+          "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=800"
+        ]
+      },
+      {
+        "name": "লাভ মেমোরি কাঠের ওয়াল ফ্রেম",
+        "price": 1450,
+        "discount": 1150,
+        "images": [
+          "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=800"
+        ]
+      },
+      {
+        "name": "কাপল থিমড কোট কিচেন মগ",
+        "price": 690,
+        "discount": 520,
+        "images": [
+          "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "couple-items",
+    "subSlug": "couple-watch-bracelets",
+    "subName": "কাপল ওয়াচ ও ব্রেসলেট",
+    "products": [
+      {
+        "name": "লাক্সারি কাপল ওয়াচ সেট (হিজ অ্যান্ড হার্স)",
+        "price": 2450,
+        "discount": 1990,
+        "images": [
+          "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=800"
+        ]
+      },
+      {
+        "name": "ম্যাগনেটিক হার্ট কাপল ব্রেসলেট পেয়ার",
+        "price": 650,
+        "discount": 490,
+        "images": [
+          "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=800"
+        ]
+      },
+      {
+        "name": "সিলভার চেইন কাপল ফিঙ্গার রিং সেট",
+        "price": 850,
+        "discount": 650,
+        "images": [
+          "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=800"
+        ]
+      },
+      {
+        "name": "স্টেইনলেস স্টিল কাপল ওয়াচ পেয়ার",
+        "price": 2900,
+        "discount": 2350,
+        "images": [
+          "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=800"
+        ]
+      },
+      {
+        "name": "কাস্টম নেইম এনগ্রেভড কাপল ব্রেসলেট",
+        "price": 950,
+        "discount": 750,
+        "images": [
+          "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "couple-items",
+    "subSlug": "couple-gift-box",
+    "subName": "কাপল কম্বো গিফট বক্স",
+    "products": [
+      {
+        "name": "রোমান্টিক ভ্যালেন্টাইন গিফট কম্বো বক্স",
+        "price": 2200,
+        "discount": 1790,
+        "images": [
+          "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=800"
+        ]
+      },
+      {
+        "name": "চকলেট ও পারফিউম স্পেশাল গিফট বক্স",
+        "price": 1850,
+        "discount": 1490,
+        "images": [
+          "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=800"
+        ]
+      },
+      {
+        "name": "অ্যানিভার্সারি সারপ্রাইজ গিফট হ্যাম্পার",
+        "price": 2900,
+        "discount": 2400,
+        "images": [
+          "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=800"
+        ]
+      },
+      {
+        "name": "টেডি বেয়ার ও ফ্লাওয়ার কম্বো বক্স",
+        "price": 1450,
+        "discount": 1190,
+        "images": [
+          "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=800"
+        ]
+      },
+      {
+        "name": "লাক্সারি উডেন মেমোরি গিফট বক্স",
+        "price": 2600,
+        "discount": 2150,
+        "images": [
+          "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "jewelry-and-accessories",
+    "subSlug": "kundan-bridal-sets",
+    "subName": "কুন্দন ও ব্রাইডাল সেট",
+    "products": [
+      {
+        "name": "গোল্ড প্লেটেড কুন্দন ব্রাইডাল নেকলেস সেট",
+        "price": 3450,
+        "discount": 2890,
+        "images": [
+          "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800"
+        ]
+      },
+      {
+        "name": "রুবি এমারেল্ড কুন্দন চকার সেট",
+        "price": 2900,
+        "discount": 2450,
+        "images": [
+          "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800"
+        ]
+      },
+      {
+        "name": "পার্ল ড্রপ ব্রাইডাল গোল্ডেন হার সেট",
+        "price": 4200,
+        "discount": 3600,
+        "images": [
+          "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800"
+        ]
+      },
+      {
+        "name": "রানি হার উইথ ম্যাচিং টিকলি ও দুল",
+        "price": 3800,
+        "discount": 3190,
+        "images": [
+          "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800"
+        ]
+      },
+      {
+        "name": "ঐতিহ্যবাহী মিয়াকি কুন্দন সেট",
+        "price": 3100,
+        "discount": 2590,
+        "images": [
+          "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "jewelry-and-accessories",
+    "subSlug": "traditional-jhumkas",
+    "subName": "ঐতিহ্যবাহী ঝুমকা ও দুল",
+    "products": [
+      {
+        "name": "গোল্ডেন ময়ূর ডিজাইন কাশ্মীরি ঝুমকা",
+        "price": 1100,
+        "discount": 850,
+        "images": [
+          "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800"
+        ]
+      },
+      {
+        "name": "পার্ল স্টাডেড ট্রেডিশনাল ঝুমকা",
+        "price": 950,
+        "discount": 750,
+        "images": [
+          "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800"
+        ]
+      },
+      {
+        "name": "অক্সিডাইজ সিলভার পার্টি কানের দুল",
+        "price": 650,
+        "discount": 490,
+        "images": [
+          "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800"
+        ]
+      },
+      {
+        "name": "চাঁদবালি ব্রাইডাল দুল উইথ কানপাশা",
+        "price": 1350,
+        "discount": 1050,
+        "images": [
+          "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800"
+        ]
+      },
+      {
+        "name": "কালারফুল স্টোন ড্রপ ঝুমকা",
+        "price": 850,
+        "discount": 650,
+        "images": [
+          "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "jewelry-and-accessories",
+    "subSlug": "bangles-bracelets",
+    "subName": "প্রিমিয়াম চুড়ি ও বালা",
+    "products": [
+      {
+        "name": "গোল্ড প্লেটেড ব্রাইডাল চুড়ি ৪-পিস সেট",
+        "price": 1850,
+        "discount": 1490,
+        "images": [
+          "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800"
+        ]
+      },
+      {
+        "name": "ভেলভেট মেটাল চুড়ি ডজন সেট",
+        "price": 550,
+        "discount": 420,
+        "images": [
+          "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800"
+        ]
+      },
+      {
+        "name": "কুন্দন কারুকাজ করা শাখা বাঁধানো বালা",
+        "price": 2100,
+        "discount": 1750,
+        "images": [
+          "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800"
+        ]
+      },
+      {
+        "name": "এডজাস্টেবল স্টার্লিং সিলভার ব্রেসলেট",
+        "price": 1250,
+        "discount": 990,
+        "images": [
+          "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800"
+        ]
+      },
+      {
+        "name": "ট্রেডিশনাল পলার বালা গোল্ডেন ক্যাপ",
+        "price": 1650,
+        "discount": 1350,
+        "images": [
+          "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "jewelry-and-accessories",
+    "subSlug": "rings-accessories",
+    "subName": "ফিঙ্গার রিং ও নূপুর",
+    "products": [
+      {
+        "name": "এডজাস্টেবল কুন্দন ফিঙ্গার রিং",
+        "price": 650,
+        "discount": 490,
+        "images": [
+          "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800"
+        ]
+      },
+      {
+        "name": "ট্রেডিশনাল ঘুংঘুর গোল্ডেন নূপুর পেয়ার",
+        "price": 1100,
+        "discount": 850,
+        "images": [
+          "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800"
+        ]
+      },
+      {
+        "name": "হ্যান্ডমেড ফ্লোরাল নথ ও টিকলি",
+        "price": 750,
+        "discount": 590,
+        "images": [
+          "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800"
+        ]
+      },
+      {
+        "name": "সিলভার পায়েল উইথ বেলস",
+        "price": 950,
+        "discount": 750,
+        "images": [
+          "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800"
+        ]
+      },
+      {
+        "name": "রোজ গোল্ড জিরকন স্টোন রিং",
+        "price": 850,
+        "discount": 650,
+        "images": [
+          "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "watch-and-bagel",
+    "subSlug": "ladies-luxury-watches",
+    "subName": "লেডিস লাক্সারি ঘড়ি",
+    "products": [
+      {
+        "name": "রোজ গোল্ড ডায়মন্ড কাট লেডিস ঘড়ি",
+        "price": 2150,
+        "discount": 1750,
+        "images": [
+          "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800"
+        ]
+      },
+      {
+        "name": "চেইন স্ট্র্যাপ ম্যাগনেটিক লেডিস ওয়াচ",
+        "price": 1450,
+        "discount": 1190,
+        "images": [
+          "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800"
+        ]
+      },
+      {
+        "name": "মার্বেল ডায়াল ক্লাসিক লেডিস ওয়াচ",
+        "price": 1850,
+        "discount": 1490,
+        "images": [
+          "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800"
+        ]
+      },
+      {
+        "name": "সিলভার ডায়াল কোয়ার্টজ লেডিস ঘড়ি",
+        "price": 1650,
+        "discount": 1350,
+        "images": [
+          "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800"
+        ]
+      },
+      {
+        "name": "লেদার বেল্ট এলিগ্যান্ট লেডিস ঘড়ি",
+        "price": 1250,
+        "discount": 990,
+        "images": [
+          "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "watch-and-bagel",
+    "subSlug": "gents-chronograph-watches",
+    "subName": "জেন্টস মেটাল ও লেদার ঘড়ি",
+    "products": [
+      {
+        "name": "জেন্টস ওয়াটারপ্রুফ ক্রোনোগ্রাফ ঘড়ি",
+        "price": 2850,
+        "discount": 2350,
+        "images": [
+          "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800"
+        ]
+      },
+      {
+        "name": "জেন্টস প্রিমিয়াম লেদার বেল্ট ওয়াচ",
+        "price": 1950,
+        "discount": 1590,
+        "images": [
+          "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800"
+        ]
+      },
+      {
+        "name": "ব্ল্যাক মেটাল লাক্সারি মেনস ওয়াচ",
+        "price": 2600,
+        "discount": 2150,
+        "images": [
+          "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800"
+        ]
+      },
+      {
+        "name": "স্পোর্টস সিলিকন স্ট্র্যাপ ঘড়ি",
+        "price": 1350,
+        "discount": 1090,
+        "images": [
+          "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800"
+        ]
+      },
+      {
+        "name": "অটোমেটিক মেকানিক্যাল জেন্টস ওয়াচ",
+        "price": 3900,
+        "discount": 3250,
+        "images": [
+          "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "watch-and-bagel",
+    "subSlug": "smart-watches-band",
+    "subName": "স্মার্ট ওয়াচ ও ফিটনেস ব্যান্ড",
+    "products": [
+      {
+        "name": "এমোলেড ডিসপ্লে ব্লুটুথ কলিং স্মার্টওয়াচ",
+        "price": 3450,
+        "discount": 2890,
+        "images": [
+          "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800"
+        ]
+      },
+      {
+        "name": "হার্ট রেট ও স্লিপ মনিটরিং ফিটনেস ব্যান্ড",
+        "price": 1650,
+        "discount": 1350,
+        "images": [
+          "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800"
+        ]
+      },
+      {
+        "name": "ওয়াটারপ্রুফ স্পোর্টস স্মার্টওয়াচ",
+        "price": 2600,
+        "discount": 2190,
+        "images": [
+          "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800"
+        ]
+      },
+      {
+        "name": "লেডিস গোল্ডেন স্মার্ট ফিটনেস ওয়াচ",
+        "price": 2950,
+        "discount": 2450,
+        "images": [
+          "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800"
+        ]
+      },
+      {
+        "name": "অ্যাল্ট্রা ৮ ম্যাক্স এইচডি স্মার্টওয়াচ",
+        "price": 2100,
+        "discount": 1750,
+        "images": [
+          "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "watch-and-bagel",
+    "subSlug": "fashion-bagel-chain",
+    "subName": "ফ্যাশন ব্যাগেল ও চেইন",
+    "products": [
+      {
+        "name": "স্টেইনলেস স্টিল মেনস কিউবান চেইন",
+        "price": 850,
+        "discount": 650,
+        "images": [
+          "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800"
+        ]
+      },
+      {
+        "name": "লেদার র‍্যাপ ফ্যাশন ব্রেসলেট ব্যাগেল",
+        "price": 650,
+        "discount": 490,
+        "images": [
+          "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800"
+        ]
+      },
+      {
+        "name": "গোল্ডেন মেটাল ফ্যাশন ব্যাগেল",
+        "price": 950,
+        "discount": 750,
+        "images": [
+          "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800"
+        ]
+      },
+      {
+        "name": "টাইটানিয়াম স্টিল ক্রস লকেট চেইন",
+        "price": 790,
+        "discount": 590,
+        "images": [
+          "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800"
+        ]
+      },
+      {
+        "name": "সিলভার সিলিন্ডার ম্যাগনেটিক ব্যাগেল",
+        "price": 890,
+        "discount": 690,
+        "images": [
+          "https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "electronics-and-gadgets",
+    "subSlug": "bluetooth-earbuds",
+    "subName": "ওয়্যারলেস ব্লুটুথ ইয়ারবাড",
+    "products": [
+      {
+        "name": "ট্রু ওয়্যারলেস ব্লুটুথ ৫.৩ ইয়ারবাড",
+        "price": 1850,
+        "discount": 1490,
+        "images": [
+          "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800"
+        ]
+      },
+      {
+        "name": "অ্যাক্টিভ নয়েজ ক্যানসেলিং ইয়ারবাড",
+        "price": 2950,
+        "discount": 2450,
+        "images": [
+          "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800"
+        ]
+      },
+      {
+        "name": "গেমিং লো লেটেন্সি আরজিবি ইয়ারবাড",
+        "price": 1650,
+        "discount": 1350,
+        "images": [
+          "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800"
+        ]
+      },
+      {
+        "name": "হেভি বেস ওয়ারলেস ব্লুটুথ নেকব্যান্ড",
+        "price": 1250,
+        "discount": 990,
+        "images": [
+          "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800"
+        ]
+      },
+      {
+        "name": "প্রো ওভার-ইয়ার স্টুডিও হেডফোন",
+        "price": 2600,
+        "discount": 2190,
+        "images": [
+          "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "electronics-and-gadgets",
+    "subSlug": "smart-gadgets",
+    "subName": "স্মার্ট গ্যাজেট ও অ্যাক্সেসরিজ",
+    "products": [
+      {
+        "name": "স্মার্ট অটোমেটিক ওয়াটার ডিসপেনসার",
+        "price": 950,
+        "discount": 750,
+        "images": [
+          "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800"
+        ]
+      },
+      {
+        "name": "রিচার্জেবল মিনি পোর্টেবল ফ্যান",
+        "price": 790,
+        "discount": 590,
+        "images": [
+          "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800"
+        ]
+      },
+      {
+        "name": "স্মার্ট সেন্সর নাইট লাইট ল্যাম্প",
+        "price": 650,
+        "discount": 490,
+        "images": [
+          "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800"
+        ]
+      },
+      {
+        "name": "ব্লুটুথ সেলফি স্টিক ট্রাইপড উইথ লাইট",
+        "price": 1100,
+        "discount": 850,
+        "images": [
+          "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800"
+        ]
+      },
+      {
+        "name": "কার ড্যাশবোর্ড ম্যাগনেটিক মোবাইল হোল্ডার",
+        "price": 550,
+        "discount": 390,
+        "images": [
+          "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "electronics-and-gadgets",
+    "subSlug": "bluetooth-speakers",
+    "subName": "পোর্টেবল ব্লুটুথ স্পিকার",
+    "products": [
+      {
+        "name": "পোর্টেবল ওয়াটারপ্রুফ ব্লুটুথ স্পিকার",
+        "price": 2150,
+        "discount": 1750,
+        "images": [
+          "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800"
+        ]
+      },
+      {
+        "name": "আরজিবি লাইটিং পার্টি স্পিকার উইথ মাইক",
+        "price": 3450,
+        "discount": 2890,
+        "images": [
+          "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800"
+        ]
+      },
+      {
+        "name": "মিনি পকেট ব্লুটুথ স্পিকার",
+        "price": 950,
+        "discount": 750,
+        "images": [
+          "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800"
+        ]
+      },
+      {
+        "name": "টিভি হোম থিয়েটার সাউন্ডবার স্পিকার",
+        "price": 4600,
+        "discount": 3950,
+        "images": [
+          "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800"
+        ]
+      },
+      {
+        "name": "উডেন ভিনটেজ ব্লুটুথ স্পিকার",
+        "price": 2400,
+        "discount": 1990,
+        "images": [
+          "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "electronics-and-gadgets",
+    "subSlug": "powerbanks-chargers",
+    "subName": "ফাস্ট চার্জার ও পাওয়ার ব্যাংক",
+    "products": [
+      {
+        "name": "২০,০০০ এমএএইচ ২২.৫ ওয়াট ফাস্ট পাওয়ার ব্যাংক",
+        "price": 2250,
+        "discount": 1850,
+        "images": [
+          "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800"
+        ]
+      },
+      {
+        "name": "৬৫ ওয়াট গান ফাস্ট টাইপ-সি চার্জার",
+        "price": 1650,
+        "discount": 1350,
+        "images": [
+          "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800"
+        ]
+      },
+      {
+        "name": "১০,০০০ এমএএইচ ম্যাগনেটিক ওয়্যারলেস পাওয়ার ব্যাংক",
+        "price": 1950,
+        "discount": 1590,
+        "images": [
+          "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800"
+        ]
+      },
+      {
+        "name": "১০০ ওয়াট ব্রেইডেড টাইপ-সি ফাস্ট কেবল",
+        "price": 450,
+        "discount": 320,
+        "images": [
+          "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800"
+        ]
+      },
+      {
+        "name": "মাল্টি-প্লাগ এক্সটেনশন উইথ ইউএসবি পোর্ট",
+        "price": 1250,
+        "discount": 990,
+        "images": [
+          "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "home-decor",
+    "subSlug": "wall-clocks-art",
+    "subName": "দেয়াল ঘড়ি ও আর্ট ফ্রেম",
+    "products": [
+      {
+        "name": "আধুনিক ৩ডি মেটাল দেয়াল ঘড়ি",
+        "price": 2600,
+        "discount": 2150,
+        "images": [
+          "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800"
+        ]
+      },
+      {
+        "name": "ইসলামিক ক্যালিগ্রাফি গোল্ডেন ওয়াল আর্ট",
+        "price": 1850,
+        "discount": 1490,
+        "images": [
+          "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800"
+        ]
+      },
+      {
+        "name": "ভিনটেজ উডেন সাইলেন্ট দেয়াল ঘড়ি",
+        "price": 1450,
+        "discount": 1190,
+        "images": [
+          "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800"
+        ]
+      },
+      {
+        "name": "ক্যানভাস ৩-পিস পেইন্টিং ফ্রেম সেট",
+        "price": 2200,
+        "discount": 1790,
+        "images": [
+          "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800"
+        ]
+      },
+      {
+        "name": "মডার্ন অ্যাক্রিলিক মিরর ওয়াল ক্লক",
+        "price": 1100,
+        "discount": 850,
+        "images": [
+          "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "home-decor",
+    "subSlug": "table-lamps-decor",
+    "subName": "টেবিল ল্যাম্প ও লাইটিং",
+    "products": [
+      {
+        "name": "ক্রিস্টাল টাচ কন্ট্রোল টেবিল ল্যাম্প",
+        "price": 1650,
+        "discount": 1350,
+        "images": [
+          "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800"
+        ]
+      },
+      {
+        "name": "হিমালয়ান পিংক রক সল্ট ল্যাম্প",
+        "price": 1450,
+        "discount": 1190,
+        "images": [
+          "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800"
+        ]
+      },
+      {
+        "name": "উডেন বেইজ রিডিং বেডসাইড ল্যাম্প",
+        "price": 1850,
+        "discount": 1490,
+        "images": [
+          "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800"
+        ]
+      },
+      {
+        "name": "আরজিবি কালার চেঞ্জিং কর্নার ফ্লোর ল্যাম্প",
+        "price": 3200,
+        "discount": 2690,
+        "images": [
+          "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800"
+        ]
+      },
+      {
+        "name": "সফট ওয়ার্ম ফেয়ারি স্ট্রিং লাইটস",
+        "price": 450,
+        "discount": 320,
+        "images": [
+          "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "home-decor",
+    "subSlug": "flower-vases",
+    "subName": "সিরামিক ও মেটাল ফুলদানি",
+    "products": [
+      {
+        "name": "নর্ডিক সিরামিক ফ্লাওয়ার ভাস সেট",
+        "price": 1450,
+        "discount": 1190,
+        "images": [
+          "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800"
+        ]
+      },
+      {
+        "name": "গোল্ডেন মেটাল জিওমেট্রিক ফুলদানি",
+        "price": 1250,
+        "discount": 990,
+        "images": [
+          "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800"
+        ]
+      },
+      {
+        "name": "হ্যান্ডক্রাফটেড টেরাকোটা ফুলদানি",
+        "price": 950,
+        "discount": 750,
+        "images": [
+          "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800"
+        ]
+      },
+      {
+        "name": "প্রিমিয়াম আর্টিফিশিয়াল টিউলিপ ফুল সেট",
+        "price": 850,
+        "discount": 650,
+        "images": [
+          "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800"
+        ]
+      },
+      {
+        "name": "মডার্ন বোহো ফ্লাওয়ার পট ভাস",
+        "price": 1650,
+        "discount": 1350,
+        "images": [
+          "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "home-decor",
+    "subSlug": "cushions-rugs",
+    "subName": "কুশন কভার ও রাগস",
+    "products": [
+      {
+        "name": "ভেলভেট এম্ব্রয়ডারি কুশন কভার ৫-পিস",
+        "price": 1350,
+        "discount": 1090,
+        "images": [
+          "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800"
+        ]
+      },
+      {
+        "name": "সফট ফার লিভিং রুম ফ্লোর রাগস কার্পেট",
+        "price": 2850,
+        "discount": 2350,
+        "images": [
+          "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800"
+        ]
+      },
+      {
+        "name": "জ্যাকোয়ার্ড কটন সোফা কুশন কভার সেট",
+        "price": 1100,
+        "discount": 850,
+        "images": [
+          "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800"
+        ]
+      },
+      {
+        "name": "অ্যান্টি-স্লিপ ডোরম্যাট কম্বো ৩-পিস",
+        "price": 650,
+        "discount": 490,
+        "images": [
+          "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800"
+        ]
+      },
+      {
+        "name": "বোহিমিয়ান হ্যান্ড-ওভেন ফ্লোর রানার",
+        "price": 1950,
+        "discount": 1590,
+        "images": [
+          "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "organic-products",
+    "subSlug": "pure-honey-ghee",
+    "subName": "সুন্দরবনের মধু ও ঘি",
+    "products": [
+      {
+        "name": "১০০% প্রাকৃতিক সুন্দরবনের খলিশা ফুলের মধু ১কেজি",
+        "price": 1450,
+        "discount": 1250,
+        "images": [
+          "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=800"
+        ]
+      },
+      {
+        "name": "গাভীর খাঁটি গাওয়া ঘি ৫০০ গ্রাম",
+        "price": 1100,
+        "discount": 950,
+        "images": [
+          "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=800"
+        ]
+      },
+      {
+        "name": "কালোজিরা ফুলের প্রাকৃতিক মধু ৫০০ গ্রাম",
+        "price": 750,
+        "discount": 650,
+        "images": [
+          "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=800"
+        ]
+      },
+      {
+        "name": "প্রিমিয়াম মাখন তোলা দেশি ঘি ১কেজি",
+        "price": 2150,
+        "discount": 1850,
+        "images": [
+          "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=800"
+        ]
+      },
+      {
+        "name": "অর্গানিক কম্বো: মধু + ঘি ৫০০ গ্রাম সেট",
+        "price": 1750,
+        "discount": 1490,
+        "images": [
+          "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "organic-products",
+    "subSlug": "cold-pressed-mustard-oil",
+    "subName": "সরিষা ও নারিকেল তেল",
+    "products": [
+      {
+        "name": "কাঠের ঘানির খাঁটি সরিষার তেল ১ লিটার",
+        "price": 380,
+        "discount": 340,
+        "images": [
+          "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=800"
+        ]
+      },
+      {
+        "name": "কোল্ড প্রেসড এক্সট্রা ভার্জিন নারিকেল তেল ৫০০ মি.লি",
+        "price": 550,
+        "discount": 480,
+        "images": [
+          "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=800"
+        ]
+      },
+      {
+        "name": "ঘানির সরিষার তেল ৫ লিটার জার",
+        "price": 1850,
+        "discount": 1650,
+        "images": [
+          "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=800"
+        ]
+      },
+      {
+        "name": "কালোজিরা তেল ১০০ মি.লি বোতল",
+        "price": 350,
+        "discount": 290,
+        "images": [
+          "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=800"
+        ]
+      },
+      {
+        "name": "তিলের তেল ২৫০ মি.লি",
+        "price": 420,
+        "discount": 360,
+        "images": [
+          "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "organic-products",
+    "subSlug": "dry-fruits-nuts",
+    "subName": "ড্রাই ফ্রুটস ও বাদাম",
+    "products": [
+      {
+        "name": "প্রিমিয়াম প্রি-মিক্স নাটস ও ড্রাই ফ্রুটস ৫০০ গ্রাম",
+        "price": 950,
+        "discount": 820,
+        "images": [
+          "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=800"
+        ]
+      },
+      {
+        "name": "আমেরিকান রোস্টেড কাজুবাদাম ৫০০ গ্রাম",
+        "price": 850,
+        "discount": 750,
+        "images": [
+          "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=800"
+        ]
+      },
+      {
+        "name": "ইরানি মরিয়ম খেজুর ১কেজি বক্স",
+        "price": 1250,
+        "discount": 1050,
+        "images": [
+          "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=800"
+        ]
+      },
+      {
+        "name": "আফগান গোল্ডেন কিশমিশ ৫০০ গ্রাম",
+        "price": 480,
+        "discount": 390,
+        "images": [
+          "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=800"
+        ]
+      },
+      {
+        "name": "ক্যালিফোর্নিয়া কাঠবাদাম ৫০০ গ্রাম",
+        "price": 650,
+        "discount": 550,
+        "images": [
+          "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "organic-products",
+    "subSlug": "organic-tea-spices",
+    "subName": "অর্গানিক চা ও মসলা",
+    "products": [
+      {
+        "name": "শ্রীমঙ্গল স্পেশাল প্রিমিয়াম ব্ল্যাক টি ৫০০ গ্রাম",
+        "price": 420,
+        "discount": 360,
+        "images": [
+          "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=800"
+        ]
+      },
+      {
+        "name": "অর্গানিক গ্রিন টি উইথ লেমনগ্রাস",
+        "price": 380,
+        "discount": 320,
+        "images": [
+          "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=800"
+        ]
+      },
+      {
+        "name": "খাঁটি গুঁড়া হলুদ ও মরিচ কম্বো প্যাক",
+        "price": 550,
+        "discount": 460,
+        "images": [
+          "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=800"
+        ]
+      },
+      {
+        "name": "প্রাকৃতিক চিয়া সিড ২৫০ গ্রাম",
+        "price": 390,
+        "discount": 320,
+        "images": [
+          "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=800"
+        ]
+      },
+      {
+        "name": "স্পেশাল শাহী গরম মসলা মিক্স ২০০ গ্রাম",
+        "price": 450,
+        "discount": 380,
+        "images": [
+          "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "kitchen-items",
+    "subSlug": "nonstick-cookware",
+    "subName": "নন-স্টিক কুকওয়্যার সেট",
+    "products": [
+      {
+        "name": "৭-পিস গ্রানাইট নন-স্টিক কুকওয়্যার সেট",
+        "price": 4850,
+        "discount": 4190,
+        "images": [
+          "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=800"
+        ]
+      },
+      {
+        "name": "২৮ সে.মি নন-স্টিক ফ্রাইপ্যান উইথ গ্লাস লিড",
+        "price": 1650,
+        "discount": 1350,
+        "images": [
+          "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=800"
+        ]
+      },
+      {
+        "name": "ইন্ডাকশন বটম দোসা তাওয়া",
+        "price": 1250,
+        "discount": 990,
+        "images": [
+          "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=800"
+        ]
+      },
+      {
+        "name": "স্টেইনলেস স্টিল প্রেশার কুকার ৫ লিটার",
+        "price": 2950,
+        "discount": 2450,
+        "images": [
+          "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=800"
+        ]
+      },
+      {
+        "name": "নন-স্টিক মিল্ক প্যান উইth স্পাউট",
+        "price": 850,
+        "discount": 690,
+        "images": [
+          "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "kitchen-items",
+    "subSlug": "chef-knives-boards",
+    "subName": "শেফ নাইফ ও কাটিং বোর্ড",
+    "products": [
+      {
+        "name": "৬-পিস প্রফেশনাল স্টেইনলেস স্টিল নাইফ সেট",
+        "price": 1850,
+        "discount": 1490,
+        "images": [
+          "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=800"
+        ]
+      },
+      {
+        "name": "প্রাকৃতিক ব্যাম্বু উডেন কাটিং বোর্ড",
+        "price": 950,
+        "discount": 750,
+        "images": [
+          "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=800"
+        ]
+      },
+      {
+        "name": "মাল্টি-ফাংশন কিচেন সিজর ও ব্লেড",
+        "price": 450,
+        "discount": 320,
+        "images": [
+          "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=800"
+        ]
+      },
+      {
+        "name": "জাপানিজ দামেস্ক শেফ নাইফ ৮ ইঞ্চি",
+        "price": 2200,
+        "discount": 1790,
+        "images": [
+          "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=800"
+        ]
+      },
+      {
+        "name": "অ্যান্টি-ব্যাকটেরিয়াল সিলিকন কাটিং ম্যাট",
+        "price": 550,
+        "discount": 390,
+        "images": [
+          "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "kitchen-items",
+    "subSlug": "kitchen-organizers",
+    "subName": "স্পাইস ও কিচেন অর্গানাইজার",
+    "products": [
+      {
+        "name": "৩৬০ ডিগ্রি রোটেটিং স্পাইস রেক ১২ জার",
+        "price": 1650,
+        "discount": 1350,
+        "images": [
+          "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=800"
+        ]
+      },
+      {
+        "name": "স্টেইনলেস স্টিল সিংক ডিশ ড্রাইং রেক",
+        "price": 2450,
+        "discount": 1990,
+        "images": [
+          "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=800"
+        ]
+      },
+      {
+        "name": "এয়ারটাইট ফুড স্টোরেজ কন্টেইনার ৬-পিস সেট",
+        "price": 1250,
+        "discount": 990,
+        "images": [
+          "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=800"
+        ]
+      },
+      {
+        "name": "ওয়াল মাউন্টেড কিচেন র্যাক ও হোল্ডার",
+        "price": 1100,
+        "discount": 850,
+        "images": [
+          "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=800"
+        ]
+      },
+      {
+        "name": "কাটলারি ও চামচ অর্গানাইজার বক্স",
+        "price": 650,
+        "discount": 490,
+        "images": [
+          "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=800"
+        ]
+      }
+    ]
+  },
+  {
+    "parentSlug": "kitchen-items",
+    "subSlug": "choppers-blenders",
+    "subName": "ইলেকট্রিক চপার ও ব্লেন্ডার",
+    "products": [
+      {
+        "name": "ইলেকট্রিক মিট ও ভেজিটেবল ফুড চপার ২ লিটার",
+        "price": 1850,
+        "discount": 1490,
+        "images": [
+          "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=800"
+        ]
+      },
+      {
+        "name": "রিচার্জেবল পোর্টেবল ইউএসবি স্মুদি ব্লেন্ডার",
+        "price": 1250,
+        "discount": 990,
+        "images": [
+          "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=800"
+        ]
+      },
+      {
+        "name": "৩-ইন-১ মাল্টিফাংশনাল হ্যান্ড ব্লেন্ডার সেট",
+        "price": 2600,
+        "discount": 2150,
+        "images": [
+          "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=800"
+        ]
+      },
+      {
+        "name": "ম্যানুয়াল পুশ হ্যান্ড চপার ৯০০ মি.লি",
+        "price": 550,
+        "discount": 390,
+        "images": [
+          "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=800"
+        ]
+      },
+      {
+        "name": "ইলেকট্রিক স্পাইস ও কফি গ্রাইন্ডার",
+        "price": 1450,
+        "discount": 1150,
+        "images": [
+          "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=800"
+        ]
+      }
+    ]
   }
+];
 
-  // Add 1 sample order with order item
-  const firstProduct = await prisma.product.findFirst();
-  if (firstProduct && customerUser) {
-    const sampleOrder = await prisma.order.create({
-      data: {
-        customerId: customerUser.id,
-        status: "CONFIRMED",
-        grandTotal: firstProduct.price + 60,
-        deliveryCharge: 60,
-        deliveryZoneId: insideDhaka.id,
-        orderItems: {
-          create: [
-            {
-              productId: firstProduct.id,
-              productName: firstProduct.name,
-              productSku: firstProduct.sku,
-              productImage: firstProduct.thumbnail,
-              quantity: 1,
-              price: firstProduct.price,
-            },
-          ],
+  let totalProducts = 0;
+  const brandIds = Object.values(createdBrands);
+
+  for (const subGroup of subcategoriesDataset) {
+    const subcategoryId = createdCategories[subGroup.subSlug];
+    const parentId = createdCategories[subGroup.parentSlug];
+
+    if (!subcategoryId) {
+      console.warn("Subcategory not found:", subGroup.subSlug);
+      continue;
+    }
+
+    let pIdx = 1;
+    for (const prod of subGroup.products) {
+      totalProducts++;
+      const uniqueSlug = subGroup.subSlug + "-" + pIdx + "-" + Date.now().toString().slice(-4);
+      const uniqueSku = (subGroup.subSlug.substring(0, 4).toUpperCase() + "-" + String(pIdx).padStart(3, '0') + "-" + totalProducts);
+
+      const brandId = brandIds[totalProducts % brandIds.length];
+
+      await prisma.product.create({
+        data: {
+          name: prod.name,
+          slug: uniqueSlug,
+          sku: uniqueSku,
+          categoryId: subcategoryId, // Linked directly to subcategory
+          brandId,
+          price: prod.price,
+          discountPrice: prod.discount,
+          stockQty: 25 + (totalProducts % 30),
+          soldQty: 10 + (totalProducts % 40),
+          isFeatured: pIdx === 1 || pIdx === 3,
+          isBestSeller: pIdx === 1 || pIdx === 2,
+          promotionalBadges: pIdx === 1 ? ["👑 Best Seller", "🔥 Hot Deal"] : ["✨ New Arrival"],
+          tags: subGroup.subName + ", " + prod.name + ", " + subGroup.parentSlug,
+          description: "<p>১০০% খাঁটি ও সর্বোচ্চ মানের <strong>" + prod.name + "</strong>। সারা দেশে দ্রুততম সময়ে হোম ডেলিভারি ও ক্যাশ অন ডেলিভারিতে চেক করে মূল্য পরিশোধের সুবিধা।</p>",
+          images: prod.images,
+          thumbnail: prod.images[0],
+          videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+          isActive: true,
+          variants: {
+            create: [
+              {
+                name: "Standard",
+                sku: uniqueSku + "-STD",
+                price: prod.discount || prod.price,
+                stockQty: 15,
+                isActive: true,
+              },
+              {
+                name: "Premium Edition",
+                sku: uniqueSku + "-PRM",
+                price: (prod.discount || prod.price) + 200,
+                stockQty: 10,
+                isActive: true,
+              },
+            ],
+          },
         },
-        timelineEvents: {
-          create: [
-            {
-              status: "CONFIRMED",
-              note: "অর্ডার সফলভাবে গ্রহণ ও নিশ্চিত করা হয়েছে।",
-            },
-          ],
-        },
-      },
-    });
+      });
+
+      pIdx++;
+    }
   }
 
   console.log("==========================================================");
-  console.log("CATEGORY SEED COMPLETED");
-  console.log("==========================================================");
-  
-  for (const cat of categoryDefinitions) {
-    const catId = createdCategories[cat.slug];
-    const count = categoryProductCountMap[catId] || 0;
-    console.log(`${cat.name}: ${count} products`);
-  }
-
-  console.log("----------------------------------------------------------");
-  console.log(`TOTAL CATEGORIES: ${categoryDefinitions.length}`);
-  console.log(`TOTAL PRODUCTS: ${createdProductCount}`);
+  console.log("ALL SUBCATEGORIES SEEDED SUCCESSFULLY WITH 5+ PRODUCTS EACH");
+  console.log("TOTAL SUBCATEGORIES: 46");
+  console.log("TOTAL PRODUCTS SEEDED: " + totalProducts);
   console.log("==========================================================");
 }
 
 main()
   .catch((e) => {
-    console.error("Seeding failed with error:", e);
+    console.error("Seed execution error:", e);
     process.exit(1);
   })
   .finally(async () => {
