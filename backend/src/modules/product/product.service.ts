@@ -9,10 +9,25 @@ const generateSlug = (text: string): string => {
     .replace(/(^-|-$)+/g, "");
 };
 
-async function getCategoryChildrenIds(categoryId: string): Promise<string[]> {
-  const ids: string[] = [categoryId];
+async function getCategoryChildrenIds(categoryIdOrSlug: string): Promise<string[]> {
+  if (!categoryIdOrSlug) return [];
+
+  // Resolve to real category record (slug or id)
+  const category = await prisma.category.findFirst({
+    where: {
+      OR: [
+        { id: categoryIdOrSlug },
+        { slug: categoryIdOrSlug },
+      ],
+    },
+    select: { id: true },
+  });
+
+  if (!category) return [categoryIdOrSlug];
+
+  const ids: string[] = [category.id];
   const children = await prisma.category.findMany({
-    where: { parentId: categoryId },
+    where: { parentId: category.id },
     select: { id: true },
   });
 
