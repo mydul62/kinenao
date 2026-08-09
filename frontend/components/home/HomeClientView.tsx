@@ -72,19 +72,19 @@ export default function HomeClientView({
     },
     {
       id: "banner-2",
-      title: "তাজা ফল ও অর্গানিক শাকসবজি",
-      subtitle: "ফরমালিনমুক্ত তাজা ফলের সমাহার সরাসরি বাগান থেকে আপনার দোরগোড়ায়।",
+      title: "ঐতিহ্যবাহী জামদানি ও কাতান শাড়ি",
+      subtitle: "উৎসব ও বিয়ের জমকালো সাজে সেরা ডিজাইনের প্রিমিয়াম শাড়ি কালেকশন।",
       imageUrl:
-        "https://images.unsplash.com/photo-1610832958506-aa56368176cf?q=80&w=1200&auto=format&fit=crop",
-      linkUrl: "/category/fruits-vegetables",
+        "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=1200&auto=format&fit=crop",
+      linkUrl: "/category/sari",
     },
     {
       id: "banner-3",
-      title: "প্রিমিয়াম ফ্যাশন ও কসমেটিক্স",
-      subtitle: "নতুন ডিজাইনের এক্সক্লুসিভ কালেকশনে উপভোগ করুন আকর্ষণীয় ছাড়।",
+      title: "খাঁটি ও প্রাকৃতিক অর্গানিক খাদ্যপণ্য",
+      subtitle: "সুন্দরবনের মধু, কাঠের ঘানির সরিষার তেল ও পুষ্টিকর সুপারফুড।",
       imageUrl:
-        "https://images.unsplash.com/photo-1596462502278-27bfdc403348?q=80&w=1200&auto=format&fit=crop",
-      linkUrl: "/category/beauty-cosmetics",
+        "https://images.unsplash.com/photo-1587049352846-4a222e784d38?q=80&w=1200&auto=format&fit=crop",
+      linkUrl: "/category/organic-products",
     },
   ];
 
