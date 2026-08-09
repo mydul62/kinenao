@@ -499,7 +499,12 @@ export const Header: React.FC = () => {
                         <div className="flex-1 flex flex-col justify-between">
                           <div>
                             <h3 className="font-bold text-xs line-clamp-1">{item.name}</h3>
-                            <p className="text-[10px] text-muted-foreground">
+                            {item.variantName && (
+                              <span className="inline-block text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-200/80 px-1.5 py-0.2 rounded mt-0.5">
+                                কালার / ভ্যারিয়েন্ট: {item.variantName}
+                              </span>
+                            )}
+                            <p className="text-[10px] text-muted-foreground mt-0.5">
                               ৳{price} x {item.quantity}
                             </p>
                           </div>

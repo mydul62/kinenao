@@ -131,7 +131,11 @@ export default function CheckoutPage() {
         couponCode: appliedCoupon?.code || undefined,
         items: cart.map((item) => ({
           productId: item.id,
+          productVariantId: item.variantId || undefined,
           quantity: item.quantity,
+          name: item.name,
+          variantName: item.variantName || undefined,
+          price: item.discountPrice || item.price,
         })),
         guestInfo: {
           fullName: form.fullName,
@@ -381,7 +385,12 @@ export default function CheckoutPage() {
                       />
                       <div className="flex-1 min-w-0">
                         <h4 className="font-bold text-xs text-slate-800 truncate">{item.name}</h4>
-                        <p className="text-[11px] text-slate-500">
+                        {item.variantName && (
+                          <span className="inline-block text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-200/80 px-1.5 py-0.2 rounded mt-0.5">
+                            কালার / ভ্যারিয়েন্ট: {item.variantName}
+                          </span>
+                        )}
+                        <p className="text-[11px] text-slate-500 mt-0.5">
                           ৳{(item.discountPrice || item.price)} &times; {item.quantity}
                         </p>
                       </div>
