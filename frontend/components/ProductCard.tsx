@@ -55,7 +55,18 @@ export default function ProductCard({
       ? Math.round(((product.price - product.discountPrice) / product.price) * 100)
       : 0;
 
-  const hasVariants = product.variants && product.variants.length > 0;
+  const colorVariants = product.variants?.filter((v: any) => Boolean(v.colorName || v.colorCode)) || [];
+  const sizeVariants = product.variants?.filter((v: any) => Boolean(v.size)) || [];
+  
+  let variantBadgeText: string | null = null;
+  if (colorVariants.length > 1) {
+    variantBadgeText = `${colorVariants.length} টি কালার`;
+  } else if (sizeVariants.length > 1) {
+    variantBadgeText = `${sizeVariants.length} টি সাইজ`;
+  } else if (product.variants && product.variants.length > 1) {
+    variantBadgeText = `${product.variants.length} টি অপশন`;
+  }
+
   const hasVideo = Boolean(product.videoUrl);
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -224,10 +235,10 @@ export default function ProductCard({
           </span>
         ) : null}
 
-        {/* Variant count badge */}
-        {hasVariants && (
+        {/* Variant count badge (Only if real colors/sizes/options exist) */}
+        {variantBadgeText && (
           <div className="absolute top-2 left-2 z-10 bg-white/90 backdrop-blur-md border border-slate-200 text-slate-800 text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full shadow-xs">
-            {product.variants!.length} টি কালার
+            {variantBadgeText}
           </div>
         )}
       </Link>

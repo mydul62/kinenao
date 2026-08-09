@@ -2905,6 +2905,129 @@ async function main() {
 
       const brandId = brandIds[totalProducts % brandIds.length];
 
+      // Category-Aware Realistic Variants
+      let variantCreateData: any = undefined;
+
+      if (subGroup.parentSlug === "sari" || subGroup.parentSlug === "three-piece") {
+        // Fashion Items -> Real Color Variants
+        variantCreateData = {
+          create: [
+            {
+              name: "রানি গোলাপি (Magenta Pink)",
+              colorName: "Magenta Pink",
+              colorCode: "#EC4899",
+              sku: uniqueSku + "-PNK",
+              price: prod.discount || prod.price,
+              stockQty: 12,
+              isActive: true,
+            },
+            {
+              name: "রয়েল ব্লু (Royal Blue)",
+              colorName: "Royal Blue",
+              colorCode: "#1D4ED8",
+              sku: uniqueSku + "-BLU",
+              price: prod.discount || prod.price,
+              stockQty: 10,
+              isActive: true,
+            },
+            {
+              name: "মরুন লাল (Maroon Red)",
+              colorName: "Maroon Red",
+              colorCode: "#991B1B",
+              sku: uniqueSku + "-RED",
+              price: prod.discount || prod.price,
+              stockQty: 8,
+              isActive: true,
+            },
+          ],
+        };
+      } else if (subGroup.parentSlug === "kids") {
+        // Kids Clothing -> Real Size Variants
+        variantCreateData = {
+          create: [
+            {
+              name: "১-২ বছর (Size 20)",
+              size: "1-2 Years",
+              sku: uniqueSku + "-SZ20",
+              price: prod.discount || prod.price,
+              stockQty: 10,
+              isActive: true,
+            },
+            {
+              name: "৩-৪ বছর (Size 24)",
+              size: "3-4 Years",
+              sku: uniqueSku + "-SZ24",
+              price: prod.discount || prod.price,
+              stockQty: 12,
+              isActive: true,
+            },
+            {
+              name: "৫-৬ বছর (Size 28)",
+              size: "5-6 Years",
+              sku: uniqueSku + "-SZ28",
+              price: prod.discount || prod.price,
+              stockQty: 8,
+              isActive: true,
+            },
+          ],
+        };
+      } else if (subGroup.parentSlug === "organic-products") {
+        // Organic Products -> Real Weight Variants
+        variantCreateData = {
+          create: [
+            {
+              name: "২৫০ গ্রাম",
+              size: "250g",
+              sku: uniqueSku + "-250G",
+              price: Math.round((prod.discount || prod.price) * 0.55),
+              stockQty: 20,
+              isActive: true,
+            },
+            {
+              name: "৫০০ গ্রাম",
+              size: "500g",
+              sku: uniqueSku + "-500G",
+              price: prod.discount || prod.price,
+              stockQty: 25,
+              isActive: true,
+            },
+            {
+              name: "১ কেজি",
+              size: "1kg",
+              sku: uniqueSku + "-1KG",
+              price: Math.round((prod.discount || prod.price) * 1.9),
+              stockQty: 15,
+              isActive: true,
+            },
+          ],
+        };
+      } else if (subGroup.parentSlug === "electronics-and-gadgets" || subGroup.parentSlug === "watch-and-bagel") {
+        // Gadgets & Watches -> Real Color Options
+        variantCreateData = {
+          create: [
+            {
+              name: "Midnight Black",
+              colorName: "Midnight Black",
+              colorCode: "#0F172A",
+              sku: uniqueSku + "-BLK",
+              price: prod.discount || prod.price,
+              stockQty: 15,
+              isActive: true,
+            },
+            {
+              name: "Silver Metal",
+              colorName: "Silver Metal",
+              colorCode: "#94A3B8",
+              sku: uniqueSku + "-SLV",
+              price: prod.discount || prod.price,
+              stockQty: 10,
+              isActive: true,
+            },
+          ],
+        };
+      }
+      // Kitchen Items, Home Decor, Bags, Jewelry, Couple items have NO fake variants!
+
       await prisma.product.create({
         data: {
           name: prod.name,
@@ -2925,24 +3048,7 @@ async function main() {
           thumbnail: prod.images[0],
           videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
           isActive: true,
-          variants: {
-            create: [
-              {
-                name: "Standard",
-                sku: uniqueSku + "-STD",
-                price: prod.discount || prod.price,
-                stockQty: 15,
-                isActive: true,
-              },
-              {
-                name: "Premium Edition",
-                sku: uniqueSku + "-PRM",
-                price: (prod.discount || prod.price) + 200,
-                stockQty: 10,
-                isActive: true,
-              },
-            ],
-          },
+          variants: variantCreateData,
         },
       });
 
