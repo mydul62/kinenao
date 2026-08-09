@@ -369,7 +369,7 @@ export const dbGetProductById = async (id: string) => {
 };
 
 export const dbGetProductBySlug = async (slug: string) => {
-  const product = await prisma.product.findUnique({
+  let product = await prisma.product.findUnique({
     where: { slug },
     include: {
       category: {
@@ -396,6 +396,44 @@ export const dbGetProductBySlug = async (slug: string) => {
       },
     },
   });
+
+  // Resilient Fallback: If slug contains old timestamp suffix (e.g. party-georgette-sari-2-0182), resolve it
+  if (!product) {
+    const cleanSlug = slug.replace(/-[0-9]{3,6}$/, "");
+    product = await prisma.product.findFirst({
+      where: {
+        OR: [
+          { slug: cleanSlug },
+          { slug: { startsWith: cleanSlug } },
+          { slug: { contains: cleanSlug, mode: "insensitive" } },
+        ],
+      },
+      include: {
+        category: {
+          include: {
+            parentCategory: true,
+          },
+        },
+        brand: true,
+        variants: {
+          orderBy: { sortOrder: "asc" },
+        },
+        reviews: {
+          where: { isApproved: true },
+          include: {
+            customer: {
+              select: {
+                profile: {
+                  select: { fullName: true, avatarUrl: true },
+                },
+              },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+        },
+      },
+    });
+  }
 
   if (!product) {
     throw new NotFoundError("Product not found");
