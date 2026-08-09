@@ -2,7 +2,7 @@ import { Router } from "express";
 import {
   createCategory,
   getCategories,
-  getCategoryById,
+  getCategoryByIdOrSlug,
   updateCategory,
   deleteCategory,
 } from "./category.controller";
@@ -14,7 +14,8 @@ import { Role } from "@prisma/client";
 const router = Router();
 
 router.get("/", getCategories);
-router.get("/:id", getCategoryById);
+router.get("/slug/:id", getCategoryByIdOrSlug);
+router.get("/:id", getCategoryByIdOrSlug);
 
 router.post(
   "/",

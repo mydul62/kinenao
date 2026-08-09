@@ -2,6 +2,21 @@ import { z } from "zod";
 
 const optionalString = z.string().optional().nullable().transform((val) => (val === "" ? null : val));
 
+const variantSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1, "Variant name is required"),
+  colorName: optionalString,
+  colorCode: optionalString,
+  imageUrl: optionalString,
+  sku: optionalString,
+  price: z.number().nonnegative().optional().nullable(),
+  discountPrice: z.number().nonnegative().optional().nullable(),
+  stockQty: z.number().int().nonnegative().default(0),
+  size: optionalString,
+  isActive: z.boolean().optional(),
+  sortOrder: z.number().int().optional(),
+});
+
 export const createProductSchema = z.object({
   body: z.object({
     name: z.string().min(1, "Product name is required"),
@@ -26,6 +41,9 @@ export const createProductSchema = z.object({
     isActive: z.boolean().optional(),
     images: z.array(z.string()).optional(),
     thumbnail: optionalString,
+    videoUrl: optionalString,
+    videoPosterUrl: optionalString,
+    variants: z.array(variantSchema).optional(),
   }).refine((data) => {
     if (data.discountPrice !== undefined && data.discountPrice !== null) {
       return data.discountPrice < data.price;
@@ -61,6 +79,9 @@ export const updateProductSchema = z.object({
     isActive: z.boolean().optional(),
     images: z.array(z.string()).optional(),
     thumbnail: optionalString,
+    videoUrl: optionalString,
+    videoPosterUrl: optionalString,
+    variants: z.array(variantSchema).optional(),
   }).refine((data) => {
     if (data.price !== undefined && data.discountPrice !== undefined && data.discountPrice !== null) {
       return data.discountPrice < data.price;

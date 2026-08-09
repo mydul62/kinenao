@@ -66,12 +66,17 @@ model Address {
 }
 
 model Category {
-  id              String     @id @default(uuid())
+  id              String           @id @default(uuid())
   name            String
-  slug            String     @unique
+  slug            String           @unique
+  imageUrl        String?
+  description     String?          @db.Text
+  isActive        Boolean          @default(true)
+  sortOrder       Int              @default(0)
+  isFeatured      Boolean          @default(false)
   parentId        String?
-  parentCategory  Category?  @relation("CategoryToCategory", fields: [parentId], references: [id], onDelete: Restrict)
-  childCategories Category[] @relation("CategoryToCategory")
+  parentCategory  Category?        @relation("CategoryToCategory", fields: [parentId], references: [id], onDelete: Restrict)
+  childCategories Category[]       @relation("CategoryToCategory")
   products        Product[]
 }
 
@@ -85,39 +90,63 @@ model Brand {
 }
 
 model Product {
-  id                String      @id @default(uuid())
+  id                String           @id @default(uuid())
   name              String
-  slug              String      @unique
-  sku               String      @unique
+  slug              String           @unique
+  sku               String           @unique
   barcode           String?
-  description       String      @db.Text
+  description       String           @db.Text
   categoryId        String
-  category          Category    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  category          Category         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   brandId           String?
-  brand             Brand?      @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  brand             Brand?           @relation(fields: [brandId], references: [id], onDelete: SetNull)
   price             Float
   discountPrice     Float?
   weight            Float?
   unit              String?
-  stockQty          Int         @default(0)
-  reservedStockQty  Int         @default(0)
-  soldQty           Int         @default(0)
+  stockQty          Int              @default(0)
+  reservedStockQty  Int              @default(0)
+  soldQty           Int              @default(0)
   tags              String?
-  isFeatured        Boolean     @default(false)
-  isBestSeller      Boolean     @default(false)
-  isFlashSale       Boolean     @default(false)
+  isFeatured        Boolean          @default(false)
+  isBestSeller      Boolean          @default(false)
+  isFlashSale       Boolean          @default(false)
   customBadge       String?
-  promotionalBadges String[]    @default([])
+  promotionalBadges String[]         @default([])
   seoTitle          String?
   seoDescription    String?
-  isActive          Boolean     @default(true)
+  isActive          Boolean          @default(true)
   images            String[]
   thumbnail         String?
+  videoUrl          String?
+  videoPosterUrl    String?
+  variants          ProductVariant[]
   orderItems        OrderItem[]
   reviews           Review[]
   wishlist          WishlistItem[]
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+}
+
+model ProductVariant {
+  id               String      @id @default(uuid())
+  productId        String
+  product          Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name             String
+  colorName        String?
+  colorCode        String?
+  imageUrl         String?
+  sku              String?
+  price            Float?
+  discountPrice    Float?
+  stockQty         Int         @default(0)
+  reservedStockQty Int         @default(0)
+  size             String?
+  isActive         Boolean     @default(true)
+  sortOrder        Int         @default(0)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  orderItems       OrderItem[]
 }
 
 model PaymentMethod {
@@ -161,13 +190,22 @@ model Order {
 }
 
 model OrderItem {
-  id        String  @id @default(uuid())
-  orderId   String
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
-  quantity  Int
-  price     Float
+  id           String          @id @default(uuid())
+  orderId      String
+  order        Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId    String
+  product      Product         @relation(fields: [productId], references: [id], onDelete: Restrict)
+  productName  String?
+  productSku   String?
+  productImage String?
+  variantId    String?
+  variant      ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  variantName  String?
+  colorName    String?
+  colorCode    String?
+  size         String?
+  quantity     Int
+  price        Float
 }
 
 model TimelineEvent {

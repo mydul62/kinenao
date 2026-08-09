@@ -10,13 +10,13 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Set up standard Multer memory storage
+// Multer memory storage
 const storage = multer.memoryStorage();
 
 export const upload = multer({
   storage,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
+    fileSize: 10 * 1024 * 1024, // 10MB image limit
   },
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith("image/")) {
@@ -27,11 +27,55 @@ export const upload = multer({
   },
 });
 
+export const uploadVideo = multer({
+  storage,
+  limits: {
+    fileSize: 60 * 1024 * 1024, // 60MB video limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (
+      file.mimetype.startsWith("video/") ||
+      file.mimetype === "application/octet-stream" ||
+      file.originalname.match(/\.(mp4|webm|mov|m4v|mkv)$/i)
+    ) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only video files (MP4, WebM, MOV) are allowed!") as any, false);
+    }
+  },
+});
+
 // Helper function to upload image buffers directly to Cloudinary
-export const uploadToCloudinary = (fileBuffer: Buffer, folder: string = "grocery"): Promise<string> => {
+export const uploadToCloudinary = (
+  fileBuffer: Buffer,
+  folder: string = "kinenao"
+): Promise<string> => {
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
-      { folder },
+      { folder, resource_type: "image" },
+      (error, result) => {
+        if (error) {
+          return reject(error);
+        }
+        resolve(result?.secure_url || "");
+      }
+    );
+    uploadStream.end(fileBuffer);
+  });
+};
+
+// Helper function to upload video buffers directly to Cloudinary
+export const uploadVideoToCloudinary = (
+  fileBuffer: Buffer,
+  folder: string = "kinenao/videos"
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder,
+        resource_type: "video",
+        chunk_size: 6000000,
+      },
       (error, result) => {
         if (error) {
           return reject(error);

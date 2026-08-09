@@ -4,23 +4,44 @@ import React, { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { useRouter, useParams } from "next/navigation";
 import { toast } from "sonner";
-import { ArrowLeft, Upload, X, Loader2, Plus, Sparkles, Tag } from "lucide-react";
+import {
+  ArrowLeft,
+  Upload,
+  X,
+  Loader2,
+  Plus,
+  Sparkles,
+  Tag,
+  Film,
+  Layers,
+  Trash2,
+  Check,
+  Image as ImageIcon,
+  Shirt,
+  Scale,
+  Box,
+  Palette,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import RichTextEditor from "@/components/RichTextEditor";
+import ProductVideoPlayer from "@/components/ProductVideoPlayer";
 
-const PRESET_BADGES = [
-  "🔥 Hot Deal",
-  "⚡ Flash Sale",
-  "🎁 Buy 1 Get 1",
-  "⭐ Trending",
-  "🏷️ Save 65%",
-  "✨ Exclusive",
-  "🎀 Special Offer",
-  "📦 Limited Stock",
-];
+interface VariantFormItem {
+  id?: string;
+  name: string;
+  colorName: string;
+  colorCode: string;
+  size: string;
+  imageUrl: string;
+  sku: string;
+  price: string;
+  discountPrice: string;
+  stockQty: string;
+  isActive: boolean;
+}
 
 export default function EditProductPage() {
   const router = useRouter();
@@ -31,13 +52,21 @@ export default function EditProductPage() {
   const [brands, setBrands] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+
+  // Media
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [thumbnail, setThumbnail] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
+  const [videoPosterUrl, setVideoPosterUrl] = useState("");
 
-  // Dynamic Promotional Badges State
+  // Universal Multi-Attribute Variants
+  const [enableVariants, setEnableVariants] = useState(false);
+  const [variants, setVariants] = useState<VariantFormItem[]>([]);
+
+  // Promotional Badges
   const [promotionalBadges, setPromotionalBadges] = useState<string[]>([]);
-  const [customBadgeText, setCustomBadgeText] = useState("");
   const [newBadgeInput, setNewBadgeInput] = useState("");
 
   const [form, setForm] = useState({
@@ -50,13 +79,14 @@ export default function EditProductPage() {
     price: "",
     discountPrice: "",
     weight: "",
-    unit: "",
+    unit: "Piece",
     stockQty: "0",
     tags: "",
     isFeatured: false,
     isBestSeller: false,
     isFlashSale: false,
     isActive: true,
+    customBadge: "",
     seoTitle: "",
     seoDescription: "",
   });
@@ -70,15 +100,15 @@ export default function EditProductPage() {
       setLoading(true);
       try {
         const [catRes, brandRes, productRes] = await Promise.all([
-          api.get("/categories"),
+          api.get("/categories?includeInactive=true"),
           api.get("/brands"),
           api.get(`/products/${id}`),
         ]);
 
-        setCategories(catRes.data.data.categories || []);
-        setBrands(brandRes.data.data.brands || []);
+        setCategories(catRes.data?.data?.categories || []);
+        setBrands(brandRes.data?.data?.brands || []);
 
-        const product = productRes.data.data.product;
+        const product = productRes.data?.data?.product;
         if (product) {
           setForm({
             name: product.name || "",
@@ -87,28 +117,55 @@ export default function EditProductPage() {
             description: product.description || "",
             categoryId: product.categoryId || "",
             brandId: product.brandId || "",
-            price: product.price !== undefined && product.price !== null ? String(product.price) : "",
-            discountPrice: product.discountPrice !== undefined && product.discountPrice !== null ? String(product.discountPrice) : "",
-            weight: product.weight !== undefined && product.weight !== null ? String(product.weight) : "",
-            unit: product.unit || "",
-            stockQty: product.stockQty !== undefined && product.stockQty !== null ? String(product.stockQty) : "0",
+            price: product.price !== undefined ? String(product.price) : "",
+            discountPrice:
+              product.discountPrice !== null && product.discountPrice !== undefined
+                ? String(product.discountPrice)
+                : "",
+            weight: product.weight !== null && product.weight !== undefined ? String(product.weight) : "",
+            unit: product.unit || "Piece",
+            stockQty: product.stockQty !== undefined ? String(product.stockQty) : "0",
             tags: product.tags || "",
             isFeatured: Boolean(product.isFeatured),
             isBestSeller: Boolean(product.isBestSeller),
             isFlashSale: Boolean(product.isFlashSale),
-            isActive: product.isActive !== undefined ? Boolean(product.isActive) : true,
+            isActive: Boolean(product.isActive),
+            customBadge: product.customBadge || "",
             seoTitle: product.seoTitle || "",
             seoDescription: product.seoDescription || "",
           });
 
           setUploadedImages(product.images || []);
-          setThumbnail(product.thumbnail || (product.images && product.images[0]) || "");
-          setCustomBadgeText(product.customBadge || "");
+          setThumbnail(product.thumbnail || "");
+          setVideoUrl(product.videoUrl || "");
+          setVideoPosterUrl(product.videoPosterUrl || "");
           setPromotionalBadges(product.promotionalBadges || []);
+
+          if (product.variants && product.variants.length > 0) {
+            setEnableVariants(true);
+            setVariants(
+              product.variants.map((v: any) => ({
+                id: v.id,
+                name: v.name || "",
+                colorName: v.colorName || "",
+                colorCode: v.colorCode || "",
+                size: v.size || "",
+                imageUrl: v.imageUrl || "",
+                sku: v.sku || "",
+                price: v.price !== null && v.price !== undefined ? String(v.price) : "",
+                discountPrice:
+                  v.discountPrice !== null && v.discountPrice !== undefined
+                    ? String(v.discountPrice)
+                    : "",
+                stockQty: v.stockQty !== undefined ? String(v.stockQty) : "0",
+                isActive: v.isActive !== undefined ? Boolean(v.isActive) : true,
+              }))
+            );
+          }
         }
-      } catch (err: any) {
+      } catch (err) {
+        console.error("Error loading product:", err);
         toast.error("Failed to load product details");
-        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -126,17 +183,12 @@ export default function EditProductPage() {
     }
     setPromotionalBadges((prev) => [...prev, trimmed]);
     setNewBadgeInput("");
-    toast.success(`Badge "${trimmed}" added!`);
-  };
-
-  const handleRemoveBadge = (badgeToRemove: string) => {
-    setPromotionalBadges((prev) => prev.filter((b) => b !== badgeToRemove));
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files?.length) return;
-    setUploading(true);
+    setUploadingImage(true);
     try {
       for (const file of Array.from(files)) {
         const fd = new FormData();
@@ -149,46 +201,141 @@ export default function EditProductPage() {
       }
       toast.success("Images uploaded successfully");
     } catch {
-      toast.error("Image upload failed");
+      toast.error("Failed to upload image");
     } finally {
-      setUploading(false);
+      setUploadingImage(false);
     }
+  };
+
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingVideo(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const { data } = await api.post("/upload/video", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setVideoUrl(data.data.url);
+      if (data.data.posterUrl) setVideoPosterUrl(data.data.posterUrl);
+      toast.success("Product video uploaded successfully");
+    } catch {
+      toast.error("Failed to upload video");
+    } finally {
+      setUploadingVideo(false);
+    }
+  };
+
+  // Variant Helpers
+  const handleAddVariant = (customDefaults?: Partial<VariantFormItem>) => {
+    const newIdx = variants.length + 1;
+    const baseSku = form.sku ? `${form.sku}-V${newIdx}` : `VAR-${Date.now()}-${newIdx}`;
+    setVariants((prev) => [
+      ...prev,
+      {
+        name: customDefaults?.name || `Variant ${newIdx}`,
+        colorName: customDefaults?.colorName || "",
+        colorCode: customDefaults?.colorCode || "",
+        size: customDefaults?.size || "",
+        imageUrl: customDefaults?.imageUrl || thumbnail || "",
+        sku: customDefaults?.sku || baseSku,
+        price: customDefaults?.price || form.price || "",
+        discountPrice: customDefaults?.discountPrice || form.discountPrice || "",
+        stockQty: customDefaults?.stockQty || "15",
+        isActive: true,
+      },
+    ]);
+  };
+
+  // Quick Preset Generators for multiple categories
+  const applyPresetVariants = (preset: "sizes" | "weights" | "volumes" | "colors" | "saree") => {
+    if (preset === "sizes") {
+      const sizes = ["S (Small)", "M (Medium)", "L (Large)", "XL (Extra Large)", "XXL"];
+      sizes.forEach((s) => handleAddVariant({ name: s, size: s.split(" ")[0] }));
+      toast.success("Added Fashion Size variants (S, M, L, XL, XXL)");
+    } else if (preset === "weights") {
+      const weights = ["250 Gram", "500 Gram", "1 Kg", "2 Kg", "5 Kg"];
+      weights.forEach((w) => handleAddVariant({ name: w, size: w }));
+      toast.success("Added Grocery Weight variants (250g, 500g, 1kg, 2kg, 5kg)");
+    } else if (preset === "volumes") {
+      const volumes = ["500 ml Bottle", "1 Litre Bottle", "2 Litre Jar", "5 Litre Can"];
+      volumes.forEach((v) => handleAddVariant({ name: v, size: v.split(" ")[0] }));
+      toast.success("Added Liquid Volume variants (500ml, 1L, 2L, 5L)");
+    } else if (preset === "colors") {
+      const colors = [
+        { name: "Crimson Red", code: "#DC2626" },
+        { name: "Royal Blue", code: "#2563EB" },
+        { name: "Emerald Green", code: "#059669" },
+        { name: "Deep Maroon", code: "#831843" },
+        { name: "Classic Black", code: "#111827" },
+      ];
+      colors.forEach((c) =>
+        handleAddVariant({ name: c.name, colorName: c.name, colorCode: c.code })
+      );
+      toast.success("Added 5 Color Swatch variants");
+    } else if (preset === "saree") {
+      const sareeOptions = [
+        { name: "12 হাত শাড়ি (With Blouse Piece)", size: "12 Hat" },
+        { name: "Semi-Stitched Suit", size: "Semi-Stitched" },
+        { name: "Unstitched Fabric", size: "Unstitched" },
+      ];
+      sareeOptions.forEach((s) => handleAddVariant({ name: s.name, size: s.size }));
+      toast.success("Added Saree & Three Piece options");
+    }
+  };
+
+  const removeVariant = (index: number) => {
+    setVariants((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const updateVariant = (index: number, key: keyof VariantFormItem, val: any) => {
+    setVariants((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], [key]: val };
+      return copy;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.sku || !form.categoryId || !form.price) {
-      toast.error("Please fill all required fields");
+    if (!form.name || !form.price || !form.categoryId) {
+      toast.error("Please fill in required fields: Name, Price, and Category");
       return;
     }
+
     setSubmitting(true);
     try {
       const payload = {
-        name: form.name,
-        sku: form.sku,
-        description: form.description || form.name,
-        categoryId: form.categoryId,
-        brandId: form.brandId || undefined,
+        ...form,
         price: parseFloat(form.price),
-        discountPrice: form.discountPrice && !isNaN(parseFloat(form.discountPrice)) ? parseFloat(form.discountPrice) : undefined,
-        weight: form.weight && !isNaN(parseFloat(form.weight)) ? parseFloat(form.weight) : undefined,
-        stockQty: parseInt(form.stockQty) || 0,
-        barcode: form.barcode || undefined,
-        unit: form.unit || undefined,
-        tags: form.tags || undefined,
-        isFeatured: form.isFeatured,
-        isBestSeller: form.isBestSeller,
-        isFlashSale: form.isFlashSale,
-        isActive: form.isActive,
-        customBadge: customBadgeText || undefined,
-        promotionalBadges: promotionalBadges,
-        seoTitle: form.seoTitle || undefined,
-        seoDescription: form.seoDescription || undefined,
+        discountPrice: form.discountPrice ? parseFloat(form.discountPrice) : null,
+        stockQty: parseInt(form.stockQty || "0"),
+        weight: form.weight ? parseFloat(form.weight) : null,
         images: uploadedImages,
-        thumbnail: thumbnail || (uploadedImages.length > 0 ? uploadedImages[0] : undefined),
+        thumbnail: thumbnail || uploadedImages[0] || "",
+        videoUrl: videoUrl || null,
+        videoPosterUrl: videoPosterUrl || null,
+        promotionalBadges,
+        variants: enableVariants
+          ? variants.map((v, i) => ({
+              id: v.id,
+              name: v.name,
+              colorName: v.colorName || null,
+              colorCode: v.colorCode || null,
+              size: v.size || null,
+              imageUrl: v.imageUrl || null,
+              sku: v.sku || `${form.sku || "PROD"}-V${i + 1}`,
+              price: v.price ? parseFloat(v.price) : null,
+              discountPrice: v.discountPrice ? parseFloat(v.discountPrice) : null,
+              stockQty: parseInt(v.stockQty || "0"),
+              isActive: v.isActive,
+            }))
+          : [],
       };
-      await api.patch(`/products/${id}`, payload);
-      toast.success("Product updated successfully!");
+
+      await api.put(`/products/${id}`, payload);
+      toast.success("Product updated successfully with all variants & media!");
       router.push("/admin/products");
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Failed to update product");
@@ -199,356 +346,543 @@ export default function EditProductPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-[#6C5CE7]" />
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      {/* Top Header */}
-      <div className="flex items-center gap-4">
-        <button
-          onClick={() => router.back()}
-          className="p-2.5 rounded-xl bg-white border border-[#E5E7EB] text-slate-600 hover:text-[#6C5CE7] transition-all shadow-sm"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </button>
-        <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-[#111827] tracking-tight">
-            Edit Product
-          </h1>
-          <p className="text-slate-500 text-xs md:text-sm mt-0.5">
-            Update catalog specs, gallery photos, pricing, and dynamic promotional badges.
-          </p>
+    <div className="p-4 sm:p-8 max-w-5xl mx-auto space-y-6">
+      {/* Header Bar */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => router.back()}
+            className="rounded-xl"
+          >
+            <ArrowLeft className="w-4 h-4 mr-1" /> Back
+          </Button>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900">Edit Product</h1>
+            <p className="text-xs text-slate-500">Update product information, universal variants, and media.</p>
+          </div>
         </div>
+
+        <Button
+          type="button"
+          onClick={handleSubmit}
+          disabled={submitting}
+          className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold px-6 shadow-md"
+        >
+          {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Check className="w-4 h-4 mr-1" />}
+          Save Changes
+        </Button>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* General Info */}
-            <div className="bg-white border border-[#E5E7EB] rounded-[24px] p-6 shadow-sm space-y-4">
-              <h2 className="font-extrabold text-slate-900 text-base border-b border-[#E5E7EB] pb-3">
-                General Product Details
-              </h2>
-              <div className="space-y-1.5">
-                <Label className="text-slate-700 text-xs font-bold uppercase">Product Title *</Label>
-                <Input
-                  value={form.name}
-                  onChange={(e) => set("name", e.target.value)}
-                  className="bg-[#F8FAFC] border-[#E5E7EB] text-slate-900 font-semibold rounded-xl"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-slate-700 text-xs font-bold uppercase">SKU *</Label>
-                  <Input
-                    value={form.sku}
-                    onChange={(e) => set("sku", e.target.value)}
-                    className="bg-[#F8FAFC] border-[#E5E7EB] text-slate-900 font-mono rounded-xl"
-                    required
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-slate-700 text-xs font-bold uppercase">Barcode</Label>
-                  <Input
-                    value={form.barcode}
-                    onChange={(e) => set("barcode", e.target.value)}
-                    className="bg-[#F8FAFC] border-[#E5E7EB] text-slate-900 rounded-xl"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-slate-700 text-xs font-bold uppercase">Tags</Label>
-                  <Input
-                    value={form.tags}
-                    onChange={(e) => set("tags", e.target.value)}
-                    className="bg-[#F8FAFC] border-[#E5E7EB] text-slate-900 rounded-xl"
-                  />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-slate-700 text-xs font-bold uppercase">Description *</Label>
-                <RichTextEditor
-                  value={form.description}
-                  onChange={(html) => set("description", html)}
-                />
-              </div>
+        {/* CARD 1: Basic Information */}
+        <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-7 shadow-xs space-y-4">
+          <h2 className="text-sm font-black uppercase text-slate-500 tracking-wider">Basic Information</h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5 md:col-span-2">
+              <Label className="text-xs font-bold text-slate-800">
+                Product Title / Name <span className="text-rose-500">*</span>
+              </Label>
+              <Input
+                required
+                placeholder="e.g. Premium Handloom Cotton Saree"
+                value={form.name}
+                onChange={(e) => set("name", e.target.value)}
+                className="rounded-xl text-xs h-11 font-bold"
+              />
             </div>
 
-            {/* Pricing & Stock */}
-            <div className="bg-white border border-[#E5E7EB] rounded-[24px] p-6 shadow-sm space-y-4">
-              <h2 className="font-extrabold text-slate-900 text-base border-b border-[#E5E7EB] pb-3">
-                Pricing & Stock Control
-              </h2>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-slate-700 text-xs font-bold uppercase">Price (৳) *</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.price}
-                    onChange={(e) => set("price", e.target.value)}
-                    className="bg-[#F8FAFC] border-[#E5E7EB] text-slate-900 font-bold rounded-xl"
-                    required
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-slate-700 text-xs font-bold uppercase">Sale Price (৳)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.discountPrice}
-                    onChange={(e) => set("discountPrice", e.target.value)}
-                    className="bg-[#F8FAFC] border-[#E5E7EB] text-slate-900 font-bold rounded-xl"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-slate-700 text-xs font-bold uppercase">Stock Qty *</Label>
-                  <Input
-                    type="number"
-                    value={form.stockQty}
-                    onChange={(e) => set("stockQty", e.target.value)}
-                    className="bg-[#F8FAFC] border-[#E5E7EB] text-slate-900 font-bold rounded-xl"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-slate-700 text-xs font-bold uppercase">Weight (kg)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.weight}
-                    onChange={(e) => set("weight", e.target.value)}
-                    className="bg-[#F8FAFC] border-[#E5E7EB] text-slate-900 rounded-xl"
-                  />
-                </div>
-              </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-slate-800">
+                Category <span className="text-rose-500">*</span>
+              </Label>
+              <select
+                required
+                value={form.categoryId}
+                onChange={(e) => set("categoryId", e.target.value)}
+                className="w-full h-11 px-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                <option value="">Select Category</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.parentId ? `└── ${c.name}` : c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-slate-800">Brand (Optional)</Label>
+              <select
+                value={form.brandId}
+                onChange={(e) => set("brandId", e.target.value)}
+                className="w-full h-11 px-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                <option value="">No Brand</option>
+                {brands.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-slate-800">
+                SKU <span className="text-rose-500">*</span>
+              </Label>
+              <Input
+                required
+                placeholder="PROD-001"
+                value={form.sku}
+                onChange={(e) => set("sku", e.target.value)}
+                className="rounded-xl text-xs h-11 font-mono"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-slate-800">Barcode (Optional)</Label>
+              <Input
+                placeholder="Barcode number"
+                value={form.barcode}
+                onChange={(e) => set("barcode", e.target.value)}
+                className="rounded-xl text-xs h-11"
+              />
             </div>
           </div>
+        </div>
 
-          {/* Right Column */}
-          <div className="space-y-6">
-            {/* Classification */}
-            <div className="bg-white border border-[#E5E7EB] rounded-[24px] p-6 shadow-sm space-y-4">
-              <h2 className="font-extrabold text-slate-900 text-base border-b border-[#E5E7EB] pb-3">
-                Classification
-              </h2>
-              <div className="space-y-1.5">
-                <Label className="text-slate-700 text-xs font-bold uppercase">Category *</Label>
-                <select
-                  value={form.categoryId}
-                  onChange={(e) => set("categoryId", e.target.value)}
-                  className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-slate-900 rounded-xl px-3 py-2 text-xs md:text-sm font-semibold focus:outline-none"
-                  required
-                >
-                  <option value="">Select Category</option>
-                  {categories.map((c: any) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+        {/* CARD 2: Pricing & Stock */}
+        <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-7 shadow-xs space-y-4">
+          <h2 className="text-sm font-black uppercase text-slate-500 tracking-wider">Pricing & Stock</h2>
 
-              <div className="space-y-1.5">
-                <Label className="text-slate-700 text-xs font-bold uppercase">Brand</Label>
-                <select
-                  value={form.brandId}
-                  onChange={(e) => set("brandId", e.target.value)}
-                  className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-slate-900 rounded-xl px-3 py-2 text-xs md:text-sm font-semibold focus:outline-none"
-                >
-                  <option value="">No Brand</option>
-                  {brands.map((b: any) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-slate-800">
+                Regular Price (৳) <span className="text-rose-500">*</span>
+              </Label>
+              <Input
+                type="number"
+                required
+                min="0"
+                step="any"
+                placeholder="2500"
+                value={form.price}
+                onChange={(e) => set("price", e.target.value)}
+                className="rounded-xl text-xs h-11 font-bold"
+              />
             </div>
 
-            {/* DYNAMIC PROMOTIONAL BADGES CARD */}
-            <div className="bg-white border border-[#E5E7EB] rounded-[24px] p-6 shadow-sm space-y-4">
-              <div className="flex items-center justify-between border-b border-[#E5E7EB] pb-3">
-                <h2 className="font-extrabold text-slate-900 text-base flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-[#6C5CE7]" /> Dynamic Promotional Badges
-                </h2>
-              </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-slate-800">Discount Price (৳)</Label>
+              <Input
+                type="number"
+                min="0"
+                step="any"
+                placeholder="1950"
+                value={form.discountPrice}
+                onChange={(e) => set("discountPrice", e.target.value)}
+                className="rounded-xl text-xs h-11 font-bold text-emerald-700"
+              />
+            </div>
 
-              {/* Standard Status Switches */}
-              <div className="space-y-2.5">
-                {[
-                  { key: "isActive", label: "Active (Store Visible)" },
-                  { key: "isFeatured", label: "Featured Product" },
-                  { key: "isBestSeller", label: "Best Seller Badge" },
-                  { key: "isFlashSale", label: "Flash Sale Campaign" },
-                ].map(({ key, label }) => (
-                  <div key={key} className="flex items-center justify-between py-1 border-b border-slate-100 last:border-0">
-                    <span className="text-slate-800 text-xs font-semibold">{label}</span>
-                    <Switch
-                      checked={form[key as keyof typeof form] as boolean}
-                      onCheckedChange={(v) => set(key, v)}
-                    />
-                  </div>
-                ))}
-              </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-slate-800">Base Stock Qty</Label>
+              <Input
+                type="number"
+                min="0"
+                value={form.stockQty}
+                onChange={(e) => set("stockQty", e.target.value)}
+                className="rounded-xl text-xs h-11"
+              />
+            </div>
 
-              {/* Custom Primary Badge Pill Input */}
-              <div className="space-y-1.5 pt-2 border-t border-[#E5E7EB]">
-                <Label className="text-slate-700 text-xs font-bold uppercase flex items-center gap-1">
-                  <Tag className="h-3.5 w-3.5 text-[#009669]" /> Primary Badge Text (Card Ribbon)
-                </Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-slate-800">Unit</Label>
+              <Input
+                placeholder="Piece, KG, Box"
+                value={form.unit}
+                onChange={(e) => set("unit", e.target.value)}
+                className="rounded-xl text-xs h-11"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* CARD 3: Media (Images & Product Video) */}
+        <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-7 shadow-xs space-y-5">
+          <h2 className="text-sm font-black uppercase text-slate-500 tracking-wider flex items-center gap-1.5">
+            <Film className="w-4 h-4 text-emerald-600" />
+            <span>Product Media & Video Showcase</span>
+          </h2>
+
+          {/* Product Video Upload */}
+          <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold text-slate-900">Product Video Upload</p>
+                <p className="text-[11px] text-slate-500">
+                  Upload MP4/WebM video to showcase your product prominently on the storefront.
+                </p>
+              </div>
+              {videoUrl && (
+                <button
+                  type="button"
+                  onClick={() => setVideoUrl("")}
+                  className="text-xs font-bold text-rose-600 hover:underline"
+                >
+                  Remove Video
+                </button>
+              )}
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 items-center">
+              <label className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs cursor-pointer shadow-sm transition-colors">
+                {uploadingVideo ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Film className="w-4 h-4" />
+                )}
+                <span>{videoUrl ? "Replace Video" : "Upload Video File"}</span>
+                <input
+                  type="file"
+                  accept="video/*"
+                  onChange={handleVideoUpload}
+                  className="hidden"
+                />
+              </label>
+
+              <div className="flex-1 w-full">
                 <Input
-                  value={customBadgeText}
-                  onChange={(e) => setCustomBadgeText(e.target.value)}
-                  placeholder="e.g. Save 65% / Hot Deal"
-                  className="bg-[#F8FAFC] border-[#E5E7EB] text-slate-900 text-xs font-bold rounded-xl"
+                  placeholder="Or paste Direct Video URL (Cloudinary / CDN MP4)"
+                  value={videoUrl}
+                  onChange={(e) => setVideoUrl(e.target.value)}
+                  className="rounded-xl text-xs h-10 bg-white"
                 />
               </div>
-
-              {/* Dynamic Badge Creator */}
-              <div className="space-y-2 pt-2 border-t border-[#E5E7EB]">
-                <Label className="text-slate-700 text-xs font-bold uppercase">
-                  Add Dynamic Custom Badges
-                </Label>
-
-                <div className="flex gap-2">
-                  <Input
-                    value={newBadgeInput}
-                    onChange={(e) => setNewBadgeInput(e.target.value)}
-                    placeholder="Type custom badge..."
-                    className="bg-[#F8FAFC] border-[#E5E7EB] text-slate-900 text-xs rounded-xl"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        handleAddBadge(newBadgeInput);
-                      }
-                    }}
-                  />
-                  <Button
-                    type="button"
-                    onClick={() => handleAddBadge(newBadgeInput)}
-                    className="bg-[#6C5CE7] hover:bg-[#5b4bc4] text-white text-xs px-3 rounded-xl cursor-pointer"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                {/* Preset Clickable Badges */}
-                <div className="space-y-1 pt-1">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase">Quick Presets:</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {PRESET_BADGES.map((badge) => (
-                      <button
-                        key={badge}
-                        type="button"
-                        onClick={() => handleAddBadge(badge)}
-                        className="text-[11px] font-semibold bg-slate-100 hover:bg-[#6C5CE7]/10 hover:text-[#6C5CE7] text-slate-700 px-2.5 py-1 rounded-lg border border-slate-200 transition-colors cursor-pointer"
-                      >
-                        + {badge}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Active Applied Badges */}
-                {promotionalBadges.length > 0 && (
-                  <div className="pt-2">
-                    <span className="text-[10px] text-slate-500 font-bold uppercase block mb-1.5">
-                      Applied Badges ({promotionalBadges.length}):
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {promotionalBadges.map((badge) => (
-                        <span
-                          key={badge}
-                          className="inline-flex items-center gap-1 text-xs font-extrabold bg-[#6C5CE7] text-white px-2.5 py-1 rounded-xl shadow-sm"
-                        >
-                          {badge}
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveBadge(badge)}
-                            className="hover:text-rose-200 cursor-pointer"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
 
-            {/* Gallery Upload */}
-            <div className="bg-white border border-[#E5E7EB] rounded-[24px] p-6 shadow-sm space-y-4">
-              <h2 className="font-extrabold text-slate-900 text-base border-b border-[#E5E7EB] pb-3">
-                Product Gallery
-              </h2>
-              <label className="flex flex-col items-center justify-center border-2 border-dashed border-[#E5E7EB] bg-[#F8FAFC] rounded-2xl p-6 cursor-pointer hover:border-[#6C5CE7] transition-colors">
-                {uploading ? (
-                  <Loader2 className="h-6 w-6 animate-spin text-[#6C5CE7] mb-2" />
+            {/* Video Preview */}
+            {videoUrl && (
+              <div className="pt-2 max-w-md">
+                <p className="text-[11px] font-bold text-slate-600 mb-1.5">Video Player Preview:</p>
+                <ProductVideoPlayer videoUrl={videoUrl} />
+              </div>
+            )}
+          </div>
+
+          {/* Images Upload */}
+          <div className="space-y-3">
+            <Label className="text-xs font-bold text-slate-800">Product Images</Label>
+            <div className="flex flex-wrap items-center gap-3">
+              <label className="w-24 h-24 rounded-2xl border-2 border-dashed border-slate-300 hover:border-emerald-500 bg-slate-50 flex flex-col items-center justify-center text-slate-500 hover:text-emerald-600 cursor-pointer transition-colors shrink-0">
+                {uploadingImage ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
                 ) : (
-                  <Upload className="h-6 w-6 text-slate-400 mb-2" />
+                  <Upload className="w-5 h-5" />
                 )}
-                <span className="text-slate-600 text-xs font-semibold text-center">
-                  {uploading ? "Uploading..." : "Upload Product Photos"}
-                </span>
+                <span className="text-[10px] font-bold mt-1">Upload</span>
                 <input
                   type="file"
                   multiple
                   accept="image/*"
                   onChange={handleImageUpload}
                   className="hidden"
-                  disabled={uploading}
                 />
               </label>
 
-              {uploadedImages.length > 0 && (
-                <div className="grid grid-cols-3 gap-2">
-                  {uploadedImages.map((url, i) => (
-                    <div key={i} className="relative group aspect-square rounded-xl overflow-hidden border border-slate-200">
-                      <img src={url} alt="" className="w-full h-full object-cover" />
-                      {url === thumbnail && (
-                        <span className="absolute top-1 left-1 bg-[#6C5CE7] text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded">
-                          MAIN
-                        </span>
-                      )}
-                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-1 transition-opacity">
-                        <button
-                          type="button"
-                          onClick={() => setThumbnail(url)}
-                          className="bg-[#6C5CE7] text-white text-[9px] font-bold rounded px-1.5 py-1"
-                        >
-                          Main
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setUploadedImages((prev) => prev.filter((u) => u !== url))}
-                          className="bg-rose-500 text-white p-1 rounded-lg"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+              {uploadedImages.map((img, idx) => (
+                <div
+                  key={idx}
+                  className={`relative w-24 h-24 rounded-2xl border overflow-hidden shrink-0 group ${
+                    thumbnail === img ? "ring-2 ring-emerald-600" : "border-slate-200"
+                  }`}
+                >
+                  <img src={img} alt="Product image preview" className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUploadedImages((prev) => prev.filter((_, i) => i !== idx));
+                      if (thumbnail === img) setThumbnail(uploadedImages[0] || "");
+                    }}
+                    className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-rose-600 transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setThumbnail(img)}
+                    className="absolute bottom-1 left-1 bg-black/70 text-white text-[9px] font-bold px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    {thumbnail === img ? "Thumbnail" : "Set Cover"}
+                  </button>
                 </div>
-              )}
-            </div>
-
-            {/* Submit */}
-            <div className="bg-white border border-[#E5E7EB] rounded-[24px] p-6 shadow-sm">
-              <Button
-                type="submit"
-                disabled={submitting || uploading}
-                className="w-full bg-[#6C5CE7] hover:bg-[#5b4bc4] text-white font-extrabold py-3.5 rounded-xl cursor-pointer shadow-lg shadow-[#6C5CE7]/20 uppercase tracking-wider"
-              >
-                {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : "Save Changes"}
-              </Button>
+              ))}
             </div>
           </div>
+        </div>
+
+        {/* CARD 4: Universal Multi-Attribute Product Variants Management */}
+        <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-7 shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Layers className="w-5 h-5 text-purple-600" />
+              <div>
+                <h2 className="text-sm font-black uppercase text-slate-800 tracking-wider">
+                  Product Variants & Multiple Attributes
+                </h2>
+                <p className="text-[11px] text-slate-500">
+                  Manage multiple variant types: Colors, Sizes (S/M/L/XL), Weights (500g/1kg), Volumes (1L/2L), or Custom options with dedicated stock & prices.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={enableVariants}
+                onCheckedChange={(c) => {
+                  setEnableVariants(c);
+                  if (c && variants.length === 0) handleAddVariant();
+                }}
+              />
+              <span className="text-xs font-bold text-slate-800">Enable Variants</span>
+            </div>
+          </div>
+
+          {enableVariants && (
+            <div className="space-y-5 pt-2">
+              {/* Quick Preset Generator Buttons */}
+              <div className="p-3.5 bg-purple-50/60 border border-purple-200/80 rounded-2xl space-y-2">
+                <p className="text-xs font-extrabold text-purple-900 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                  <span>1-Click Preset Generator for Multiple Categories:</span>
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => applyPresetVariants("sizes")}
+                    className="inline-flex items-center gap-1 text-xs font-bold bg-white hover:bg-purple-100/70 border border-purple-200 text-purple-800 px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
+                  >
+                    <Shirt className="w-3.5 h-3.5" /> + Fashion Sizes (S, M, L, XL, XXL)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => applyPresetVariants("weights")}
+                    className="inline-flex items-center gap-1 text-xs font-bold bg-white hover:bg-purple-100/70 border border-purple-200 text-purple-800 px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
+                  >
+                    <Scale className="w-3.5 h-3.5" /> + Weights (250g, 500g, 1kg, 2kg, 5kg)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => applyPresetVariants("volumes")}
+                    className="inline-flex items-center gap-1 text-xs font-bold bg-white hover:bg-purple-100/70 border border-purple-200 text-purple-800 px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
+                  >
+                    <Box className="w-3.5 h-3.5" /> + Liquid Volumes (500ml, 1L, 2L, 5L)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => applyPresetVariants("colors")}
+                    className="inline-flex items-center gap-1 text-xs font-bold bg-white hover:bg-purple-100/70 border border-purple-200 text-purple-800 px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
+                  >
+                    <Palette className="w-3.5 h-3.5" /> + Color Swatches (Red, Blue, Green, Maroon, Black)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => applyPresetVariants("saree")}
+                    className="inline-flex items-center gap-1 text-xs font-bold bg-white hover:bg-purple-100/70 border border-purple-200 text-purple-800 px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
+                  >
+                    <Layers className="w-3.5 h-3.5" /> + Saree & Three Piece Options (12 হাত / Unstitched)
+                  </button>
+                </div>
+              </div>
+
+              {/* Variants Rows List */}
+              <div className="space-y-3">
+                {variants.map((v, idx) => (
+                  <div
+                    key={idx}
+                    className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                        <span className="w-5 h-5 rounded-full bg-purple-600 text-white flex items-center justify-center text-[10px]">
+                          {idx + 1}
+                        </span>
+                        <span>{v.name || `Variant #${idx + 1}`}</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeVariant(idx)}
+                        className="text-rose-600 hover:text-rose-700 text-xs font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> Remove
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+                      {/* Variant Name */}
+                      <div className="space-y-1 sm:col-span-2">
+                        <Label className="text-[11px] font-bold text-slate-700">
+                          Variant Name / Option Title
+                        </Label>
+                        <Input
+                          placeholder="e.g. 1 Litre Jar / Crimson Red - XL"
+                          value={v.name}
+                          onChange={(e) => updateVariant(idx, "name", e.target.value)}
+                          className="h-9 text-xs rounded-xl bg-white font-semibold"
+                        />
+                      </div>
+
+                      {/* Size / Weight / Volume Tag */}
+                      <div className="space-y-1">
+                        <Label className="text-[11px] font-bold text-slate-700">
+                          Size / Weight / Vol
+                        </Label>
+                        <Input
+                          placeholder="e.g. XL, 1L, 500g"
+                          value={v.size}
+                          onChange={(e) => updateVariant(idx, "size", e.target.value)}
+                          className="h-9 text-xs rounded-xl bg-white font-bold"
+                        />
+                      </div>
+
+                      {/* Color Picker (Optional) */}
+                      <div className="space-y-1">
+                        <Label className="text-[11px] font-bold text-slate-700">Color Dot (Hex)</Label>
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="color"
+                            value={v.colorCode || "#DC2626"}
+                            onChange={(e) => updateVariant(idx, "colorCode", e.target.value)}
+                            className="w-8 h-8 rounded-lg border cursor-pointer p-0.5 shrink-0"
+                          />
+                          <Input
+                            placeholder="#HEX"
+                            value={v.colorCode || ""}
+                            onChange={(e) => updateVariant(idx, "colorCode", e.target.value)}
+                            className="h-9 text-[11px] rounded-xl bg-white font-mono"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Stock Quantity */}
+                      <div className="space-y-1">
+                        <Label className="text-[11px] font-bold text-slate-700">Stock Qty</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          value={v.stockQty}
+                          onChange={(e) => updateVariant(idx, "stockQty", e.target.value)}
+                          className="h-9 text-xs rounded-xl bg-white font-bold"
+                        />
+                      </div>
+
+                      {/* Variant Price (৳) */}
+                      <div className="space-y-1">
+                        <Label className="text-[11px] font-bold text-slate-700">Price (৳)</Label>
+                        <Input
+                          type="number"
+                          placeholder={form.price || "Price"}
+                          value={v.price}
+                          onChange={(e) => updateVariant(idx, "price", e.target.value)}
+                          className="h-9 text-xs rounded-xl bg-white font-bold text-emerald-700"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <Button
+                    type="button"
+                    onClick={() => handleAddVariant()}
+                    variant="outline"
+                    size="sm"
+                    className="rounded-xl text-xs font-bold border-purple-300 text-purple-800 hover:bg-purple-50"
+                  >
+                    <Plus className="w-3.5 h-3.5 mr-1" /> Add Custom Variant Option
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* CARD 5: Promotional Badges */}
+        <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-7 shadow-xs space-y-4">
+          <h2 className="text-sm font-black uppercase text-slate-500 tracking-wider flex items-center gap-1.5">
+            <Tag className="w-4 h-4 text-emerald-600" />
+            <span>Promotional Badges & Flags</span>
+          </h2>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <label className="flex items-center gap-2 text-xs font-bold text-slate-800 cursor-pointer">
+              <Switch checked={form.isFeatured} onCheckedChange={(c) => set("isFeatured", c)} />
+              <span>Featured Product</span>
+            </label>
+            <label className="flex items-center gap-2 text-xs font-bold text-slate-800 cursor-pointer">
+              <Switch checked={form.isBestSeller} onCheckedChange={(c) => set("isBestSeller", c)} />
+              <span>Best Seller</span>
+            </label>
+            <label className="flex items-center gap-2 text-xs font-bold text-slate-800 cursor-pointer">
+              <Switch checked={form.isFlashSale} onCheckedChange={(c) => set("isFlashSale", c)} />
+              <span>Flash Sale Deal</span>
+            </label>
+            <label className="flex items-center gap-2 text-xs font-bold text-slate-800 cursor-pointer">
+              <Switch checked={form.isActive} onCheckedChange={(c) => set("isActive", c)} />
+              <span>Published (Active)</span>
+            </label>
+          </div>
+
+          <div className="space-y-1.5 pt-2">
+            <Label className="text-xs font-bold text-slate-800">Custom Badge Text</Label>
+            <Input
+              placeholder="e.g. ⭐ Best Value, 100% Pure"
+              value={form.customBadge}
+              onChange={(e) => set("customBadge", e.target.value)}
+              className="rounded-xl text-xs h-11"
+            />
+          </div>
+        </div>
+
+        {/* CARD 6: Rich Text Description */}
+        <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-7 shadow-xs space-y-3">
+          <h2 className="text-sm font-black uppercase text-slate-500 tracking-wider">
+            Rich Text Description & Product Details
+          </h2>
+          <RichTextEditor
+            content={form.description}
+            onChange={(html) => set("description", html)}
+          />
+        </div>
+
+        {/* Submit Bottom Bar */}
+        <div className="flex justify-end gap-3 pt-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.back()}
+            className="rounded-xl"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            disabled={submitting}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold px-8 shadow-md"
+          >
+            {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Check className="w-4 h-4 mr-1" />}
+            Save Changes
+          </Button>
         </div>
       </form>
     </div>

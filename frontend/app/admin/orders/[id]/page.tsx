@@ -14,19 +14,20 @@ import {
   CheckCircle,
   Printer,
   Sparkles,
+  Layers,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 
 const statusColors: Record<string, string> = {
-  PENDING_PAYMENT: "bg-amber-100 text-amber-700 border-amber-200",
-  PENDING_PAYMENT_VERIFICATION: "bg-orange-100 text-orange-700 border-orange-200",
-  CONFIRMED: "bg-blue-100 text-blue-700 border-blue-200",
-  PACKED: "bg-indigo-100 text-indigo-700 border-indigo-200",
-  SHIPPED: "bg-purple-100 text-purple-700 border-purple-200",
-  OUT_FOR_DELIVERY: "bg-sky-100 text-sky-700 border-sky-200",
-  DELIVERED: "bg-emerald-100 text-emerald-700 border-emerald-200",
-  CANCELLED: "bg-rose-100 text-rose-700 border-rose-200",
+  PENDING_PAYMENT: "bg-amber-100 text-amber-800 border-amber-200",
+  PENDING_PAYMENT_VERIFICATION: "bg-orange-100 text-orange-800 border-orange-200",
+  CONFIRMED: "bg-blue-100 text-blue-800 border-blue-200",
+  PACKED: "bg-indigo-100 text-indigo-800 border-indigo-200",
+  SHIPPED: "bg-purple-100 text-purple-800 border-purple-200",
+  OUT_FOR_DELIVERY: "bg-sky-100 text-sky-800 border-sky-200",
+  DELIVERED: "bg-emerald-100 text-emerald-800 border-emerald-200",
+  CANCELLED: "bg-rose-100 text-rose-800 border-rose-200",
 };
 
 const allStatuses = [
@@ -83,236 +84,247 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-[#6C5CE7]" />
+        <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
       </div>
     );
   }
 
   if (!order) {
     return (
-      <div className="text-center py-16 bg-white border border-[#E5E7EB] rounded-[24px]">
+      <div className="text-center py-16 bg-white border border-slate-200 rounded-[24px]">
         <p className="text-slate-500 text-sm">Order record not found</p>
-        <Button onClick={() => router.back()} className="mt-4 bg-[#6C5CE7] text-white">
+        <Button onClick={() => router.back()} className="mt-4 bg-emerald-600 text-white">
           Go Back
         </Button>
       </div>
     );
   }
 
+  const isCOD =
+    order.paymentMethod?.accountType === "COD" ||
+    order.paymentMethod?.name?.toLowerCase().includes("cash") ||
+    !order.transactionId;
+
   return (
-    <div className="space-y-6 max-w-5xl mx-auto print:max-w-none print:p-0 print:m-0">
-      {/* Top Bar (Hidden on print) */}
+    <div className="space-y-6 max-w-5xl mx-auto p-4 md:p-6 print:p-0 print:max-w-none">
+      {/* Top Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
-        <div className="flex items-center gap-4">
-          <button
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => router.back()}
-            className="p-2.5 rounded-xl bg-white border border-[#E5E7EB] text-slate-600 hover:text-[#6C5CE7] transition-all shadow-sm"
+            className="rounded-xl border-slate-200"
           >
-            <ArrowLeft className="h-4 w-4" />
-          </button>
+            <ArrowLeft className="h-4 w-4 mr-1.5" /> Back
+          </Button>
           <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl md:text-3xl font-extrabold text-[#111827] tracking-tight">
-                Order #{order.orderNumber}
-              </h1>
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-bold border ${
-                  statusColors[order.status] || "bg-slate-100 text-slate-700"
-                }`}
-              >
-                {order.status.replace(/_/g, " ")}
-              </span>
-            </div>
-            <p className="text-slate-500 text-xs md:text-sm mt-0.5">
-              Placed on {new Date(order.createdAt).toLocaleString()}
+            <h1 className="text-xl md:text-2xl font-black text-slate-900">
+              Order #{order.orderNumber}
+            </h1>
+            <p className="text-xs text-slate-400">
+              Placed on {new Date(order.createdAt).toLocaleDateString()} at{" "}
+              {new Date(order.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
             </p>
           </div>
         </div>
 
-        <Button
-          onClick={handlePrint}
-          className="bg-gradient-to-r from-[#6C5CE7] to-[#8B5CF6] text-white font-semibold text-xs rounded-xl shadow-md shadow-[#6C5CE7]/20"
-        >
-          <Printer className="h-4 w-4 mr-2" /> Print Official Invoice
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={handlePrint}
+            variant="outline"
+            className="rounded-xl border-slate-200 text-xs font-bold"
+          >
+            <Printer className="h-4 w-4 mr-1.5" /> Print Invoice
+          </Button>
+          <span
+            className={`px-3 py-1 text-xs font-black rounded-full border ${
+              statusColors[order.status] || "bg-slate-100 text-slate-700"
+            }`}
+          >
+            {order.status.replace(/_/g, " ")}
+          </span>
+        </div>
       </div>
 
-      {/* -------------------------------------------------------- */}
-      {/* PRINTABLE INVOICE HEADER FOR PRINT MODE & DISPLAY */}
-      {/* -------------------------------------------------------- */}
-      <div className="bg-white border border-[#E5E7EB] rounded-[24px] p-6 md:p-8 shadow-sm space-y-6 print:border-none print:shadow-none print:p-0">
-        <div className="flex justify-between items-start border-b border-[#E5E7EB] pb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#6C5CE7] to-[#8B5CF6] text-white flex items-center justify-center font-black text-2xl shadow-md shadow-[#6C5CE7]/30">
-              <Sparkles className="w-6 h-6" />
+      {/* Main Order Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left 2 Cols: Order Items Snapshot & Payment Info */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Order Items Table */}
+          <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4">
+            <h2 className="text-xs font-black uppercase tracking-wider text-slate-500">
+              Purchased Items Snapshot
+            </h2>
+
+            <div className="divide-y divide-slate-100">
+              {order.orderItems?.map((item: any) => {
+                const colorCode = item.colorCode || item.variant?.colorCode;
+                const colorName = item.colorName || item.variant?.colorName;
+                const variantName = item.variantName || item.variant?.name;
+                const itemImg = item.productImage || item.variant?.imageUrl || item.product?.thumbnail;
+
+                return (
+                  <div key={item.id} className="py-3.5 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={itemImg || "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=400&auto=format&fit=crop"}
+                        alt=""
+                        className="w-12 h-12 rounded-xl object-cover border border-slate-200 shrink-0"
+                      />
+                      <div>
+                        <p className="font-extrabold text-slate-900 text-xs sm:text-sm">
+                          {item.productName || item.product?.name}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 mt-0.5">
+                          {variantName && (
+                            <span className="flex items-center gap-1 font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded">
+                              {colorCode && (
+                                <span
+                                  className="w-2.5 h-2.5 rounded-full border inline-block"
+                                  style={{ backgroundColor: colorCode }}
+                                />
+                              )}
+                              <span>{variantName}</span>
+                            </span>
+                          )}
+                          <span>SKU: {item.productSku || item.product?.sku}</span>
+                          <span>• Qty: <strong className="text-slate-800">{item.quantity}</strong></span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="text-right shrink-0">
+                      <p className="font-black text-xs sm:text-sm text-emerald-700">
+                        ৳{item.price * item.quantity}
+                      </p>
+                      <p className="text-[10px] text-slate-400 font-mono">৳{item.price} each</p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            <div>
-              <h2 className="text-xl font-extrabold text-[#111827]">eBazar Store</h2>
-              <p className="text-xs text-slate-500">Official E-Commerce Invoice</p>
+
+            {/* Financial Summary */}
+            <div className="pt-3 border-t border-slate-100 space-y-1.5 text-xs text-slate-600">
+              <div className="flex justify-between">
+                <span>Items Subtotal:</span>
+                <span className="font-bold text-slate-800">
+                  ৳{order.orderItems?.reduce((acc: number, item: any) => acc + item.price * item.quantity, 0)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Delivery Charge ({order.deliveryZone?.zoneName || "Standard"}):</span>
+                <span className="font-bold text-slate-800">৳{order.deliveryCharge}</span>
+              </div>
+              <div className="flex justify-between font-black text-sm text-slate-900 pt-2 border-t">
+                <span>Grand Total:</span>
+                <span className="text-emerald-700">৳{order.grandTotal}</span>
+              </div>
             </div>
           </div>
 
-          <div className="text-right">
-            <h3 className="font-extrabold text-slate-900 text-lg">INVOICE #{order.orderNumber}</h3>
-            <p className="text-xs text-slate-500">Date: {new Date(order.createdAt).toLocaleDateString()}</p>
-            <p className="text-xs text-slate-500 font-mono">ID: {order.id}</p>
-          </div>
-        </div>
+          {/* Payment Details */}
+          <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-xs space-y-3">
+            <h2 className="text-xs font-black uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+              <CreditCard className="w-3.5 h-3.5" />
+              <span>Payment Details</span>
+            </h2>
 
-        {/* Customer & Address Details Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs bg-[#F8FAFC] border border-[#E5E7EB] p-5 rounded-2xl">
-          <div>
-            <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider">Customer Details</span>
-            <p className="text-slate-900 font-extrabold text-sm mt-1">
-              {order.customer?.profile?.fullName || (order.guestInfo as any)?.fullName || order.senderNumber || "Guest Customer"}
-            </p>
-            <p className="text-slate-600 mt-0.5">{order.customer?.email || (order.guestInfo as any)?.email || "No Email (Cash on Delivery)"}</p>
-            <p className="text-slate-600 font-bold mt-0.5">
-              Phone: {order.customer?.profile?.phoneNumber || (order.guestInfo as any)?.phone || order.senderNumber || "N/A"}
-            </p>
-          </div>
-
-          <div>
-            <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider">Shipping Address</span>
-            {order.deliveryAddress ? (
-              <div className="text-slate-800 font-medium mt-1 space-y-0.5">
-                <p>{order.deliveryAddress.street}</p>
-                <p>
-                  {order.deliveryAddress.area}, {order.deliveryAddress.city}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div className="p-3 bg-slate-50 rounded-2xl space-y-1">
+                <p className="text-slate-400 font-bold">Payment Method</p>
+                <p className="font-black text-slate-900">
+                  {order.paymentMethod?.name || (isCOD ? "Cash on Delivery" : "Manual Payment")}
                 </p>
-                {order.deliveryAddress.postalCode && <p>ZIP: {order.deliveryAddress.postalCode}</p>}
               </div>
-            ) : order.guestInfo ? (
-              <div className="text-slate-800 font-medium mt-1 space-y-0.5">
-                <p className="font-bold text-slate-900">{(order.guestInfo as any).street}</p>
-                <p>{(order.guestInfo as any).city || "ঢাকা"}, Bangladesh</p>
-                {(order.guestInfo as any).orderNotes && (
-                  <p className="text-amber-700 italic text-[11px] pt-1">
-                    Note: {(order.guestInfo as any).orderNotes}
-                  </p>
-                )}
+
+              <div className="p-3 bg-slate-50 rounded-2xl space-y-1">
+                <p className="text-slate-400 font-bold">Payment Status</p>
+                <p className="font-black text-slate-900">
+                  {isCOD ? "Pay on Delivery (COD)" : order.transactionId ? "Proof Submitted" : "Pending"}
+                </p>
               </div>
-            ) : (
-              <p className="text-slate-500 mt-1">Standard Delivery</p>
-            )}
-          </div>
-        </div>
 
-        {/* Items Table */}
-        <div className="border border-[#E5E7EB] rounded-2xl overflow-hidden">
-          <table className="w-full text-left text-xs md:text-sm">
-            <thead>
-              <tr className="bg-slate-50 border-b border-[#E5E7EB] text-slate-500 uppercase text-[11px] font-bold">
-                <th className="py-3.5 px-4">Item Description</th>
-                <th className="py-3.5 px-4 text-center">Unit Price</th>
-                <th className="py-3.5 px-4 text-center">Quantity</th>
-                <th className="py-3.5 px-4 text-right">Subtotal</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#E5E7EB]">
-              {order.orderItems?.map((item: any) => (
-                <tr key={item.id}>
-                  <td className="py-4 px-4">
-                    <p className="font-bold text-slate-900">{item.product?.name}</p>
-                    <p className="text-slate-400 text-[10px] font-mono">SKU: {item.product?.sku || "N/A"}</p>
-                  </td>
-                  <td className="py-4 px-4 text-center text-slate-700 font-medium">৳{item.price.toLocaleString()}</td>
-                  <td className="py-4 px-4 text-center text-slate-900 font-bold">{item.quantity}</td>
-                  <td className="py-4 px-4 text-right font-extrabold text-slate-900">
-                    ৳{(item.quantity * item.price).toLocaleString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              {order.senderNumber && (
+                <div className="p-3 bg-slate-50 rounded-2xl space-y-1">
+                  <p className="text-slate-400 font-bold">Sender Number</p>
+                  <p className="font-mono font-bold text-slate-900">{order.senderNumber}</p>
+                </div>
+              )}
 
-        {/* Calculation Summary */}
-        <div className="flex justify-end pt-2">
-          <div className="w-full sm:w-72 space-y-2 text-xs">
-            <div className="flex justify-between text-slate-600">
-              <span>Subtotal</span>
-              <span className="font-bold text-slate-900">
-                ৳{(order.grandTotal - order.deliveryCharge).toLocaleString()}
-              </span>
-            </div>
-            <div className="flex justify-between text-slate-600">
-              <span>Shipping Fee</span>
-              <span className="font-bold text-slate-900">৳{order.deliveryCharge.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between text-base font-extrabold text-slate-900 pt-2 border-t border-[#E5E7EB]">
-              <span>Grand Total</span>
-              <span className="text-[#6C5CE7]">৳{order.grandTotal.toLocaleString()}</span>
+              {order.transactionId && (
+                <div className="p-3 bg-slate-50 rounded-2xl space-y-1">
+                  <p className="text-slate-400 font-bold">Transaction ID (TrxID)</p>
+                  <p className="font-mono font-bold text-emerald-700">{order.transactionId}</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Admin Action Controls (Hidden on print) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:hidden">
-        {/* Status Update Control */}
-        <div className="bg-white border border-[#E5E7EB] rounded-[24px] p-6 shadow-sm space-y-4">
-          <h2 className="font-extrabold text-slate-900 text-base flex items-center gap-2 border-b border-[#E5E7EB] pb-3">
-            <CheckCircle className="h-5 w-5 text-[#6C5CE7]" /> Update Order Status
-          </h2>
-          <div className="space-y-3">
-            <select
-              value={newStatus}
-              onChange={(e) => setNewStatus(e.target.value)}
-              className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-slate-900 rounded-xl px-3 py-2 text-xs md:text-sm font-semibold focus:outline-none"
-            >
-              {allStatuses.map((s) => (
-                <option key={s} value={s}>
-                  {s.replace(/_/g, " ")}
-                </option>
-              ))}
-            </select>
-            <textarea
-              value={statusNote}
-              onChange={(e) => setStatusNote(e.target.value)}
-              placeholder="Optional status update note..."
-              rows={2}
-              className="w-full bg-[#F8FAFC] border border-[#E5E7EB] text-slate-900 rounded-xl p-3 text-xs resize-none"
-            />
-            <Button
-              onClick={handleStatusUpdate}
-              disabled={updatingStatus || newStatus === order.status}
-              className="w-full bg-[#6C5CE7] hover:bg-[#5b4bc4] text-white text-xs font-semibold rounded-xl"
-            >
-              {updatingStatus ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Save New Order Status
-            </Button>
-          </div>
-        </div>
+        {/* Right Col: Customer, Address & Status Lifecycle */}
+        <div className="space-y-6">
+          {/* Customer & Address Details */}
+          <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4">
+            <h2 className="text-xs font-black uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5" />
+              <span>Customer Information</span>
+            </h2>
 
-        {/* Payment Summary */}
-        <div className="bg-white border border-[#E5E7EB] rounded-[24px] p-6 shadow-sm space-y-4">
-          <h2 className="font-extrabold text-slate-900 text-base flex items-center gap-2 border-b border-[#E5E7EB] pb-3">
-            <CreditCard className="h-5 w-5 text-[#6C5CE7]" /> Payment Gateway Records
-          </h2>
-          <div className="space-y-2 text-xs">
-            <div className="flex justify-between py-1 border-b border-[#E5E7EB]">
-              <span className="text-slate-500 font-medium">Gateway</span>
-              <span className="text-slate-900 font-bold">{order.paymentMethod?.name || "bKash / COD"}</span>
+            <div className="text-xs space-y-2">
+              <p className="font-extrabold text-sm text-slate-900">
+                {order.guestInfo?.fullName || order.customer?.profile?.fullName || "Guest Customer"}
+              </p>
+              <p className="text-slate-600 font-mono">
+                📞 {order.guestInfo?.phoneNumber || order.customer?.profile?.phoneNumber || "N/A"}
+              </p>
+              <div className="pt-2 border-t border-slate-100">
+                <p className="text-slate-400 font-bold mb-0.5">Delivery Address:</p>
+                <p className="text-slate-800 leading-relaxed">
+                  {order.guestInfo?.street || order.deliveryAddress?.street || "Address provided at checkout"}
+                </p>
+              </div>
             </div>
-            {order.transactionId && (
-              <div className="flex justify-between py-1 border-b border-[#E5E7EB]">
-                <span className="text-slate-500 font-medium">TrxID</span>
-                <span className="text-[#6C5CE7] font-mono font-bold">{order.transactionId}</span>
-              </div>
-            )}
-            {order.senderNumber && (
-              <div className="flex justify-between py-1 border-b border-[#E5E7EB]">
-                <span className="text-slate-500 font-medium">Sender Number</span>
-                <span className="text-slate-900 font-mono font-bold">{order.senderNumber}</span>
-              </div>
-            )}
-            {order.paidAmount && (
-              <div className="flex justify-between py-1">
-                <span className="text-slate-500 font-medium">Verified Paid</span>
-                <span className="text-emerald-600 font-extrabold">৳{order.paidAmount.toLocaleString()}</span>
-              </div>
-            )}
+          </div>
+
+          {/* Status Update Controls (Admin only) */}
+          <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4 print:hidden">
+            <h2 className="text-xs font-black uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5" />
+              <span>Update Order Lifecycle</span>
+            </h2>
+
+            <div className="space-y-2">
+              <select
+                value={newStatus}
+                onChange={(e) => setNewStatus(e.target.value)}
+                className="w-full h-10 px-3 rounded-xl border border-slate-200 text-xs font-bold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+              >
+                {allStatuses.map((st) => (
+                  <option key={st} value={st}>
+                    {st.replace(/_/g, " ")}
+                  </option>
+                ))}
+              </select>
+
+              <input
+                type="text"
+                placeholder="Optional status note..."
+                value={statusNote}
+                onChange={(e) => setStatusNote(e.target.value)}
+                className="w-full h-9 px-3 rounded-xl border border-slate-200 text-xs bg-white"
+              />
+
+              <Button
+                type="button"
+                onClick={handleStatusUpdate}
+                disabled={updatingStatus || newStatus === order.status}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold h-10"
+              >
+                {updatingStatus ? <Loader2 className="w-4 h-4 animate-spin" /> : "Update Status"}
+              </Button>
+            </div>
           </div>
         </div>
       </div>

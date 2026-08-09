@@ -1,3 +1,18 @@
+export interface IVariantInput {
+  id?: string;
+  name: string;
+  colorName?: string | null;
+  colorCode?: string | null;
+  imageUrl?: string | null;
+  sku?: string | null;
+  price?: number | null;
+  discountPrice?: number | null;
+  stockQty?: number;
+  size?: string | null;
+  isActive?: boolean;
+  sortOrder?: number;
+}
+
 export interface IProductCreateInput {
   name: string;
   sku: string;
@@ -21,6 +36,9 @@ export interface IProductCreateInput {
   isActive?: boolean;
   images?: string[];
   thumbnail?: string | null;
+  videoUrl?: string | null;
+  videoPosterUrl?: string | null;
+  variants?: IVariantInput[];
 }
 
 export interface IProductUpdateInput extends Partial<IProductCreateInput> {}
@@ -36,6 +54,10 @@ export interface IProductQuery {
   isFeatured?: string;
   isBestSeller?: string;
   isFlashSale?: string;
+  hasVideo?: string;
+  hasVariants?: string;
+  stock?: string;
+  status?: string;
   sortBy?: string;
   page?: string;
   limit?: string;
