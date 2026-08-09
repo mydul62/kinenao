@@ -26,8 +26,8 @@ export const Footer: React.FC = () => {
   };
 
   return (
-    <footer className="bg-muted/40 border-t py-12 px-4">
-      <div className="container mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
+    <footer className="w-full bg-muted/40 border-t py-12 px-[4px] sm:px-3">
+      <div className="w-full grid grid-cols-1 md:grid-cols-4 gap-6 sm:gap-8">
         {/* About Column */}
         <div className="space-y-4">
           <h3 className="text-xl font-bold text-primary">KineNao</h3>

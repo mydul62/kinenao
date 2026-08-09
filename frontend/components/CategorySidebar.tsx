@@ -19,10 +19,20 @@ import {
   ChevronRight,
   ShoppingBag,
 } from "lucide-react";
-import { Category } from "@/lib/mockData";
+export interface CategoryItem {
+  id: string;
+  name: string;
+  slug: string;
+  imageUrl?: string | null;
+  description?: string | null;
+  parentId?: string | null;
+  childCategories?: CategoryItem[];
+  itemCount?: number;
+  _count?: { products: number };
+}
 
 interface CategorySidebarProps {
-  categories: Category[];
+  categories: CategoryItem[];
   activeCategorySlug?: string;
   activeSubcategorySlug?: string | null;
   onSelectSubcategory?: (subSlug: string | null) => void;
@@ -39,7 +49,6 @@ export default function CategorySidebar({
   const router = useRouter();
   const [expandedCats, setExpandedCats] = useState<Record<string, boolean>>({
     [activeCategorySlug || ""]: true,
-    cooking: true,
   });
 
   const toggleExpand = (slug: string, e: React.MouseEvent) => {

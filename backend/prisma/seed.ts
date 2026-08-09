@@ -835,6 +835,157 @@ async function main() {
     },
   });
 
+  // Product 11: Fresh Fuji Apples
+  await prisma.product.create({
+    data: {
+      name: "Fresh Sweet Fuji Apples (তাজা মিষ্টি ফুজি আপেল)",
+      slug: "fresh-sweet-fuji-apples-1kg",
+      sku: "FRT-APP-001",
+      description: "<h3>তাজা ফুজি আপেল (১ কেজি)</h3><p>১০০% ফরমালিনমুক্ত, মিষ্টি ও রসালো প্রিমিয়াম কোয়ালিটি ফুজি আপেল। প্রতিদিন তাজা স্টক সংগ্রহ করা হয়।</p>",
+      categoryId: subFreshFruits.id,
+      brandId: brandNature.id,
+      price: 320.0,
+      discountPrice: 280.0,
+      weight: 1,
+      unit: "kg",
+      stockQty: 80,
+      isActive: true,
+      isFeatured: true,
+      isBestSeller: true,
+      customBadge: "🍎 ১০০% ফ্রেশ",
+      thumbnail: "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?q=80&w=800&auto=format&fit=crop",
+      images: [
+        "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?q=80&w=800&auto=format&fit=crop",
+      ],
+    },
+  });
+
+  // Product 12: Rajshahi Himsagar Mango
+  await prisma.product.create({
+    data: {
+      name: "Premium Rajshahi Himsagar Mango (হিমসাগর আম)",
+      slug: "premium-rajshahi-himsagar-mango-5kg",
+      sku: "FRT-MNG-002",
+      description: "<h3>রাজশাহীর বিখ্যাত হিমসাগর আম (৫ কেজি)</h3><p>গাছপাকা, রাসায়নিক ও কার্বাইড মুক্ত সুস্বাদু সুবাসিত হিমসাগর আম সরাসরি বাগান থেকে প্যাকিং।</p>",
+      categoryId: subFreshFruits.id,
+      brandId: brandNature.id,
+      price: 650.0,
+      discountPrice: 550.0,
+      weight: 5,
+      unit: "kg",
+      stockQty: 60,
+      isActive: true,
+      isFeatured: true,
+      isBestSeller: true,
+      customBadge: "🥭 রাজশাহীর আম",
+      thumbnail: "https://images.unsplash.com/photo-1553279768-865429fa0078?q=80&w=800&auto=format&fit=crop",
+      images: [
+        "https://images.unsplash.com/photo-1553279768-865429fa0078?q=80&w=800&auto=format&fit=crop",
+      ],
+    },
+  });
+
+  // Product 13: Fresh Red Tomatoes
+  await prisma.product.create({
+    data: {
+      name: "Farm Fresh Red Tomatoes (দেশি পাকা টমেটো)",
+      slug: "farm-fresh-red-tomatoes-1kg",
+      sku: "VEG-TOM-001",
+      description: "<h3>দেশি খামারের তাজা লাল টমেটো (১ কেজি)</h3><p>সম্পূর্ণ অর্গানিক উপায়ে উৎপাদিত রসালো টমেটো। সালাদ ও রান্নার জন্য পারফেক্ট।</p>",
+      categoryId: subFreshVeg.id,
+      brandId: brandNature.id,
+      price: 90.0,
+      discountPrice: 75.0,
+      weight: 1,
+      unit: "kg",
+      stockQty: 100,
+      isActive: true,
+      isFeatured: false,
+      isBestSeller: true,
+      customBadge: "🍅 খামার ফ্রেশ",
+      thumbnail: "https://images.unsplash.com/photo-1540420773420-3366772f4999?q=80&w=800&auto=format&fit=crop",
+      images: [
+        "https://images.unsplash.com/photo-1540420773420-3366772f4999?q=80&w=800&auto=format&fit=crop",
+      ],
+    },
+  });
+
+  // Product 14: Organic Green Spinach
+  await prisma.product.create({
+    data: {
+      name: "Organic Green Spinach (তাজা সবুজ পালং শাক)",
+      slug: "organic-green-spinach-bundle",
+      sku: "VEG-SPN-002",
+      description: "<h3>অর্গানিক সবুজ পালং শাক (১ আঁটি)</h3><p>পুষ্টিগুণে ভরপুর কীটনাশকমুক্ত তাজা পালং শাক। প্রতিদিন ভোরে জমি থেকে তোলা।</p>",
+      categoryId: subFreshVeg.id,
+      brandId: brandNature.id,
+      price: 45.0,
+      discountPrice: 35.0,
+      weight: 1,
+      unit: "bundle",
+      stockQty: 50,
+      isActive: true,
+      isFeatured: false,
+      isBestSeller: true,
+      customBadge: "🥬 অর্গানিক শাক",
+      thumbnail: "https://images.unsplash.com/photo-1576045057995-568f588f82fb?q=80&w=800&auto=format&fit=crop",
+      images: [
+        "https://images.unsplash.com/photo-1576045057995-568f588f82fb?q=80&w=800&auto=format&fit=crop",
+      ],
+    },
+  });
+
+  // Product 15: Crisp Green Lettuce Salad Mix
+  await prisma.product.create({
+    data: {
+      name: "Crisp Green Lettuce & Salad Mix (লেটুস ও সালাদ মিক্স)",
+      slug: "crisp-green-lettuce-salad-mix",
+      sku: "SLD-LET-001",
+      description: "<h3>ফ্রেশ লেটুস পাতা ও প্রিমিয়াম সালাদ বক্স</h3><p>হাইড্রোফোনিক পদ্ধতিতে চাষ করা স্বাস্থ্যকর কুঁচকানো লেটুস ও পুদিনা পাতার ফ্রেশ মিক্স।</p>",
+      categoryId: subOrganicSalad.id,
+      brandId: brandNature.id,
+      price: 120.0,
+      discountPrice: 95.0,
+      weight: 250,
+      unit: "gm",
+      stockQty: 45,
+      isActive: true,
+      isFeatured: false,
+      isBestSeller: false,
+      customBadge: "🥗 ফ্রেশ সালাদ",
+      thumbnail: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=800&auto=format&fit=crop",
+      images: [
+        "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=800&auto=format&fit=crop",
+      ],
+    },
+  });
+
+  // Product 16: California Roasted Almonds
+  await prisma.product.create({
+    data: {
+      name: "California Roasted Almonds (আমন্ড বাদাম)",
+      slug: "california-roasted-almonds-500g",
+      sku: "NUT-ALM-001",
+      description: "<h3>ক্যালিফোর্নিয়া রোস্টেড আমন্ড বাদাম (৫০০ গ্রাম)</h3><p>পুষ্টিগুণ ও এনার্জিতে ভরপুর ক্রিস্পি আমন্ড। ১০০% আসল ও প্রিমিয়াম গ্রেড।</p>",
+      categoryId: subDryFruits.id,
+      brandId: brandNature.id,
+      price: 750.0,
+      discountPrice: 620.0,
+      weight: 500,
+      unit: "gm",
+      stockQty: 60,
+      isActive: true,
+      isFeatured: true,
+      isBestSeller: true,
+      customBadge: "🌰 প্রিমিয়াম নাটস",
+      thumbnail: "https://images.unsplash.com/photo-1508061253366-f7da158b6d46?q=80&w=800&auto=format&fit=crop",
+      images: [
+        "https://images.unsplash.com/photo-1508061253366-f7da158b6d46?q=80&w=800&auto=format&fit=crop",
+      ],
+    },
+  });
+
   // 8. Create Active Coupon
   await prisma.coupon.create({
     data: {
@@ -848,7 +999,91 @@ async function main() {
     },
   });
 
-  console.log("Coupons created.");
+  // 9. Create Hero Banners in DB
+  await prisma.banner.deleteMany({});
+  await prisma.banner.createMany({
+    data: [
+      {
+        title: "১০০% খাঁটি ও প্রিমিয়াম কালেকশন",
+        subtitle: "সারা দেশে ক্যাশ অন ডেলিভারি সহ ঘরে বসেই কেনাকাটা করুন সেরা দামে।",
+        imageUrl: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=1200&auto=format&fit=crop",
+        linkUrl: "/shop",
+        isActive: true,
+        sortOrder: 1,
+      },
+      {
+        title: "তাজা ফল ও অর্গানিক শাকসবজি",
+        subtitle: "ফরমালিনমুক্ত তাজা ফলের সমাহার সরাসরি বাগান থেকে আপনার দোরগোড়ায়।",
+        imageUrl: "https://images.unsplash.com/photo-1610832958506-aa56368176cf?q=80&w=1200&auto=format&fit=crop",
+        linkUrl: "/category/fruits-vegetables",
+        isActive: true,
+        sortOrder: 2,
+      },
+      {
+        title: "প্রিমিয়াম ফ্যাশন ও কসমেটিক্স",
+        subtitle: "নতুন ডিজাইনের এক্সক্লুসিভ কালেকশনে উপভোগ করুন আকর্ষণীয় ছাড়।",
+        imageUrl: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?q=80&w=1200&auto=format&fit=crop",
+        linkUrl: "/category/beauty-cosmetics",
+        isActive: true,
+        sortOrder: 3,
+      },
+    ],
+  });
+
+  // 10. Create FAQs in DB
+  await prisma.fAQ.deleteMany({});
+  await prisma.fAQ.createMany({
+    data: [
+      {
+        question: "অর্ডার ডেলিভারি হতে কত দিন সময় লাগে?",
+        answer: "ঢাকার ভেতরে ২৪-৪৮ ঘণ্টার মধ্যে এবং ঢাকার বাইরে ২-৩ কার্যদিবসের মধ্যে ডেলিভারি সম্পন্ন হয়।",
+        isActive: true,
+        sortOrder: 1,
+      },
+      {
+        question: "পণ্য হাতে পেয়ে চেক করে কি মূল্য পরিশোধ করা যাবে?",
+        answer: "হ্যাঁ, আমাদের সব অর্ডারে ১০০% ক্যাশ অন হোম ডেলিভারি সুবিধা রয়েছে। আপনি ডেলিভারিম্যানের সামনে পণ্য চেক করে নিতে পারবেন।",
+        isActive: true,
+        sortOrder: 2,
+      },
+      {
+        question: "পণ্য পছন্দ না হলে কি রিটার্ন করা সম্ভব?",
+        answer: "হ্যাঁ, ডেলিভারি পাওয়ার ৭ দিনের মধ্যে যেকোনো ত্রুটিযুক্ত বা অপ্রত্যাশিত পণ্য সহজে রিটার্ন বা এক্সচেঞ্জ করতে পারবেন।",
+        isActive: true,
+        sortOrder: 3,
+      },
+    ],
+  });
+
+  // 11. Create Testimonials in DB
+  await prisma.testimonial.deleteMany({});
+  await prisma.testimonial.createMany({
+    data: [
+      {
+        customerName: "তানজিলা আহমেদ",
+        message: "কিনেনাও থেকে কেনা ফলমূল ও শাকসবজি অত্যন্ত তাজা ও ভালো মানের ছিল। ডেলিভারিও খুব দ্রুত পেয়েছি।",
+        rating: 5,
+        isActive: true,
+        sortOrder: 1,
+      },
+      {
+        customerName: "মাহমুদুর রহমান",
+        message: "অর্ডার করার পরদিনই ঢাকার ভিতরে ডেলিভারি পেয়েছি। পণ্যের প্যাকেজিং অসাধারণ ছিল!",
+        rating: 5,
+        isActive: true,
+        sortOrder: 2,
+      },
+      {
+        customerName: "সুমাইয়া জান্নাত",
+        message: "ক্যাশ অন ডেলিভারিতে চেক করে নিতে পেরেছি। ১০০% আসল ও নির্ভরযোগ্য স্টোর।",
+        rating: 5,
+        isActive: true,
+        sortOrder: 3,
+      },
+    ],
+  });
+
+  console.log("Coupons, Banners, FAQs, and Testimonials created.");
   console.log("Database successfully seeded with complete Kinenao catalog!");
 }
 

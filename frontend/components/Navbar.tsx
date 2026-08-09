@@ -1,15 +1,26 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { mockCategories } from "@/lib/mockData";
+import { api } from "@/lib/api";
 import { useCart } from "../context/CartContext";
 import { ShoppingBag, ChevronDown, Menu, X } from "lucide-react";
 
 export const Navbar: React.FC = () => {
   const { cartCount } = useCart();
+  const [categories, setCategories] = useState<any[]>([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    api
+      .get("/categories?type=tree")
+      .then((res) => {
+        const cats = res.data?.data?.categories || [];
+        setCategories(cats);
+      })
+      .catch((err) => console.error("Error fetching categories:", err));
+  }, []);
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur-md">
@@ -48,9 +59,9 @@ export const Navbar: React.FC = () => {
                   className="absolute top-8 left-0 z-20 w-48 rounded-xl border bg-card p-2 shadow-lg"
                   onMouseLeave={() => setDropdownOpen(false)}
                 >
-                  {mockCategories.map((cat) => (
+                  {categories.map((cat) => (
                     <Link
-                      key={cat.id}
+                      key={cat.id || cat.slug}
                       href={`/category/${cat.slug}`}
                       onClick={() => setDropdownOpen(false)}
                       className="block rounded-lg px-3 py-2 text-xs font-semibold hover:bg-muted transition-colors"

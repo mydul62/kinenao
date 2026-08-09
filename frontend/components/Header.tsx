@@ -24,13 +24,14 @@ import {
   LogOut,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { mockCategories } from "@/lib/mockData";
 
 export const Header: React.FC = () => {
+  const router = useRouter();
   const { user, logout, isAuthenticated } = useAuth();
   const { cart, removeFromCart, updateQuantity, cartCount, cartSubtotal } = useCart();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [expandedCats, setExpandedCats] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [categories, setCategories] = useState<any[]>([]);
   const [announcementText, setAnnouncementText] = useState(
@@ -38,11 +39,11 @@ export const Header: React.FC = () => {
   );
 
   useEffect(() => {
-    // Fetch categories and website settings
+    // Fetch categories and website settings directly from database API
     Promise.all([api.get("/categories?type=tree"), api.get("/settings")])
       .then(([catRes, setRes]) => {
         const cats = catRes.data?.data?.categories || [];
-        setCategories(cats.length > 0 ? cats : mockCategories);
+        setCategories(cats);
 
         const settingsData = setRes.data?.data?.settings || {};
         const textVal = settingsData.announcementText?.value || settingsData.announcementText;
@@ -51,8 +52,7 @@ export const Header: React.FC = () => {
         }
       })
       .catch((err) => {
-        console.error("Error fetching header data:", err);
-        setCategories(mockCategories);
+        console.error("Error fetching header data from DB:", err);
       });
   }, []);
 
@@ -62,6 +62,10 @@ export const Header: React.FC = () => {
       router.push(`/shop?search=${encodeURIComponent(searchQuery)}`);
       setIsMobileMenuOpen(false);
     }
+  };
+
+  const toggleCategoryExpand = (catId: string) => {
+    setExpandedCats((prev) => ({ ...prev, [catId]: !prev[catId] }));
   };
 
   return (
@@ -97,7 +101,7 @@ export const Header: React.FC = () => {
 
       {/* 2. Main Header Bar */}
       <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b">
-        <div className="container mx-auto flex h-20 items-center justify-between px-4">
+        <div className="w-full flex h-20 items-center justify-between px-[4px] sm:px-3">
           
           {/* Logo - Akira Typographic Style */}
           <Link href="/" className="flex items-center gap-1 font-black text-2xl tracking-widest text-foreground font-sans">
@@ -226,42 +230,176 @@ export const Header: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile Navigation Drawer */}
+      {/* Full-Screen / Slide-Out Mobile Navigation & Category Menu Drawer */}
       <AnimatePresence>
         {isMobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden border-t bg-background px-4 py-4 space-y-4 shadow-inner"
-          >
-            <form onSubmit={handleSearchSubmit} className="relative flex items-center">
-              <input
-                type="text"
-                placeholder="Search catalog..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-9 pl-4 pr-10 rounded border text-xs"
-              />
-              <button type="submit" className="absolute right-3 text-muted-foreground">
-                <Search className="h-4 w-4" />
-              </button>
-            </form>
-            <div className="flex flex-col gap-2 font-bold text-xs uppercase tracking-wider">
-              <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="py-2 border-b">
-                Home
-              </Link>
-              <Link href="/shop" onClick={() => setIsMobileMenuOpen(false)} className="py-2 border-b">
-                Shop Catalog
-              </Link>
-              <Link href="/blog" onClick={() => setIsMobileMenuOpen(false)} className="py-2 border-b">
-                Blog Journal
-              </Link>
-              <Link href="/#faqs" onClick={() => setIsMobileMenuOpen(false)} className="py-2 border-b">
-                Contact & FAQs
-              </Link>
-            </div>
-          </motion.div>
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.5 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs md:hidden"
+            />
+
+            {/* Slide-out Drawer */}
+            <motion.div
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 280 }}
+              className="fixed top-0 left-0 bottom-0 z-50 w-[85%] max-w-sm bg-white shadow-2xl flex flex-col md:hidden overflow-hidden border-r border-slate-200"
+            >
+              {/* Drawer Header */}
+              <div className="flex h-16 items-center justify-between border-b px-5 bg-slate-900 text-white">
+                <Link
+                  href="/"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="font-black text-lg tracking-widest text-white flex items-center gap-1.5"
+                >
+                  K I N E N A O
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 inline-block self-end mb-1" />
+                </Link>
+                <button
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="rounded-full p-1.5 text-white/80 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Drawer Scrollable Content */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {/* Search Bar */}
+                <form onSubmit={handleSearchSubmit} className="relative flex items-center">
+                  <input
+                    type="text"
+                    placeholder="Search all products..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full h-10 pl-4 pr-10 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  />
+                  <button type="submit" className="absolute right-3 text-slate-400 hover:text-emerald-600">
+                    <Search className="h-4 w-4" />
+                  </button>
+                </form>
+
+                {/* Primary Nav Links */}
+                <div className="grid grid-cols-2 gap-2 text-xs font-bold uppercase tracking-wider">
+                  <Link
+                    href="/"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="p-2.5 rounded-xl bg-slate-50 hover:bg-emerald-50 hover:text-emerald-700 text-center border border-slate-100 transition-colors"
+                  >
+                    Home
+                  </Link>
+                  <Link
+                    href="/shop"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="p-2.5 rounded-xl bg-emerald-600 text-white text-center shadow-xs font-black transition-colors"
+                  >
+                    Shop All
+                  </Link>
+                </div>
+
+                {/* Database Categories Accordion Tree */}
+                <div className="pt-2">
+                  <div className="flex items-center justify-between mb-2 px-1">
+                    <h3 className="text-[11px] font-black uppercase tracking-wider text-slate-400">
+                      ALL CATEGORIES ({categories.length})
+                    </h3>
+                  </div>
+
+                  <div className="space-y-1">
+                    {categories.map((cat) => {
+                      const hasChildren = cat.childCategories && cat.childCategories.length > 0;
+                      const isExpanded = Boolean(expandedCats[cat.id || cat.slug]);
+
+                      return (
+                        <div key={cat.id || cat.slug} className="border border-slate-100 rounded-xl overflow-hidden">
+                          <div className="flex items-center justify-between p-2.5 bg-white hover:bg-slate-50 transition-colors">
+                            <Link
+                              href={`/category/${cat.slug}`}
+                              onClick={() => setIsMobileMenuOpen(false)}
+                              className="flex-1 text-xs font-extrabold text-slate-800 hover:text-emerald-700 truncate"
+                            >
+                              {cat.name}
+                            </Link>
+
+                            {hasChildren && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  toggleCategoryExpand(cat.id || cat.slug);
+                                }}
+                                className="p-1 text-slate-400 hover:text-emerald-600 cursor-pointer"
+                              >
+                                <ChevronDown
+                                  className={`w-4 h-4 transition-transform duration-200 ${
+                                    isExpanded ? "rotate-180 text-emerald-600" : ""
+                                  }`}
+                                />
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Subcategories list */}
+                          {hasChildren && isExpanded && (
+                            <div className="bg-slate-50/80 px-3 py-1.5 space-y-1 border-t border-slate-100">
+                              {cat.childCategories.map((sub: any) => (
+                                <Link
+                                  key={sub.id || sub.slug}
+                                  href={`/category/${cat.slug}?sub=${sub.slug}`}
+                                  onClick={() => setIsMobileMenuOpen(false)}
+                                  className="block py-1.5 px-2 text-xs font-semibold text-slate-600 hover:text-emerald-700 hover:bg-white rounded-lg transition-colors"
+                                >
+                                  • {sub.name}
+                                </Link>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Drawer Bottom Actions */}
+              <div className="p-4 border-t border-slate-100 bg-slate-50 space-y-2">
+                {isAuthenticated ? (
+                  <div className="flex items-center justify-between">
+                    <Link
+                      href={user?.role === "CUSTOMER" ? "/dashboard" : "/admin/dashboard"}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center gap-1.5 text-xs font-extrabold text-emerald-700 hover:underline"
+                    >
+                      <LayoutDashboard className="w-4 h-4" /> My Dashboard
+                    </Link>
+                    <button
+                      onClick={() => {
+                        logout();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="text-xs font-bold text-rose-600 hover:underline cursor-pointer"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                ) : (
+                  <Link
+                    href="/login"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="block w-full py-2.5 bg-slate-900 text-white rounded-xl text-center text-xs font-bold uppercase tracking-wider hover:bg-slate-800 transition-colors"
+                  >
+                    Login / Register
+                  </Link>
+                )}
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
 
