@@ -2900,8 +2900,8 @@ async function main() {
     let pIdx = 1;
     for (const prod of subGroup.products) {
       totalProducts++;
-      const uniqueSlug = subGroup.subSlug + "-" + pIdx + "-" + Date.now().toString().slice(-4);
-      const uniqueSku = (subGroup.subSlug.substring(0, 4).toUpperCase() + "-" + String(pIdx).padStart(3, '0') + "-" + totalProducts);
+      const uniqueSlug = `${subGroup.subSlug}-${pIdx}`;
+      const uniqueSku = `SKU-${subGroup.subSlug.toUpperCase().replace(/[^A-Z0-9]/g, '')}-${pIdx}`;
 
       const brandId = brandIds[totalProducts % brandIds.length];
 
