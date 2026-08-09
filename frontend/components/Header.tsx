@@ -509,23 +509,23 @@ export const Header: React.FC = () => {
                             </p>
                           </div>
                           <div className="flex items-center justify-between mt-2">
-                            <div className="flex items-center border bg-muted/40">
+                            <div className="flex items-center border bg-muted/40 rounded-lg overflow-hidden">
                               <button
-                                onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                onClick={() => updateQuantity(item.cartItemId || item.id, item.quantity - 1)}
                                 className="p-1 hover:text-primary cursor-pointer"
                               >
                                 <Minus className="h-3 w-3" />
                               </button>
                               <span className="px-2 text-xs font-semibold">{item.quantity}</span>
                               <button
-                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                onClick={() => updateQuantity(item.cartItemId || item.id, item.quantity + 1)}
                                 className="p-1 hover:text-primary cursor-pointer"
                               >
                                 <Plus className="h-3 w-3" />
                               </button>
                             </div>
                             <button
-                              onClick={() => removeFromCart(item.id)}
+                              onClick={() => removeFromCart(item.cartItemId || item.id)}
                               className="text-destructive hover:text-destructive/80 p-1 cursor-pointer"
                             >
                               <Trash2 className="h-4 w-4" />

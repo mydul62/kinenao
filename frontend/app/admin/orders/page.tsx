@@ -176,10 +176,10 @@ export default function AdminOrdersPage() {
                     </td>
                     <td className="py-4 px-4">
                       <p className="text-slate-900 font-bold text-xs md:text-sm">
-                        {order.customer?.profile?.fullName || (order as any).guestInfo?.fullName || order.senderNumber || "Guest Customer"}
+                        {order.customer?.profile?.fullName || (order as any).guestInfo?.fullName || (order as any).senderNumber || "Guest Customer"}
                       </p>
                       <p className="text-slate-400 text-[11px]">
-                        {order.customer?.email || (order as any).guestInfo?.phone || order.senderNumber || "No Email (COD)"}
+                        {order.customer?.email || (order as any).guestInfo?.phone || (order as any).senderNumber || "No Email (COD)"}
                       </p>
                     </td>
                     <td className="py-4 px-4 text-slate-700 font-medium">

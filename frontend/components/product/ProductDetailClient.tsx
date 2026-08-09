@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ProductGallery from "@/components/ProductGallery";
 import ProductVideoPlayer from "@/components/ProductVideoPlayer";
-import ColorVariantSelector, { VariantItem } from "@/components/ColorVariantSelector";
+import CustomerVariantSelector, { VariantItem } from "@/components/product/CustomerVariantSelector";
 import RichTextContent from "@/components/RichTextContent";
 import ProductCard from "@/components/ProductCard";
 import { useCart } from "@/context/CartContext";
@@ -563,9 +563,10 @@ export default function ProductDetailClient({
               )}
             </div>
 
-            {/* Variant Selector (Colors / Sizes / Weights) */}
+            {/* Dynamic Multi-Attribute Customer Variant Selector */}
             {product.variants && product.variants.length > 0 && (
-              <ColorVariantSelector
+              <CustomerVariantSelector
+                attributes={product.attributes}
                 variants={product.variants}
                 selectedVariant={selectedVariant}
                 onSelectVariant={setSelectedVariant}

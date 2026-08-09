@@ -45,7 +45,7 @@ export interface Product {
   isActive: boolean;
   isFeatured: boolean;
   isBestSeller: boolean;
-  isFlashSale: boolean;
+  isFlashSale?: boolean;
   isNewArrival?: boolean;
   isTrending?: boolean;
   isRecommended?: boolean;

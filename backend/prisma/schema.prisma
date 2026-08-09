@@ -120,6 +120,7 @@ model Product {
   thumbnail         String?
   videoUrl          String?
   videoPosterUrl    String?
+  attributes        Json?
   variants          ProductVariant[]
   orderItems        OrderItem[]
   reviews           Review[]
@@ -133,6 +134,7 @@ model ProductVariant {
   productId        String
   product          Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
   name             String
+  combination      Json?
   colorName        String?
   colorCode        String?
   imageUrl         String?
@@ -142,6 +144,7 @@ model ProductVariant {
   stockQty         Int         @default(0)
   reservedStockQty Int         @default(0)
   size             String?
+  weight           String?
   isActive         Boolean     @default(true)
   sortOrder        Int         @default(0)
   createdAt        DateTime    @default(now())
@@ -201,9 +204,11 @@ model OrderItem {
   variantId    String?
   variant      ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
   variantName  String?
+  combination  Json?
   colorName    String?
   colorCode    String?
   size         String?
+  weight       String?
   quantity     Int
   price        Float
 }

@@ -33,20 +33,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import RichTextEditor from "@/components/RichTextEditor";
 import ProductVideoPlayer, { extractYouTubeId } from "@/components/ProductVideoPlayer";
-
-interface VariantFormItem {
-  id?: string;
-  name: string;
-  colorName: string;
-  colorCode: string;
-  size: string;
-  imageUrl: string;
-  sku: string;
-  price: string;
-  discountPrice: string;
-  stockQty: string;
-  isActive: boolean;
-}
+import ProductVariantManager from "@/components/admin/ProductVariantManager";
 
 export default function EditProductPage() {
   const router = useRouter();
@@ -67,9 +54,19 @@ export default function EditProductPage() {
   const [videoUrl, setVideoUrl] = useState("");
   const [videoPosterUrl, setVideoPosterUrl] = useState("");
 
-  // Universal Multi-Attribute Variants
-  const [enableVariants, setEnableVariants] = useState(false);
-  const [variants, setVariants] = useState<VariantFormItem[]>([]);
+  // Raw Product Data for Initializing Variant Manager
+  const [initialProductData, setInitialProductData] = useState<any>(null);
+
+  // Multi-Attribute Variants State
+  const [variantData, setVariantData] = useState<{
+    enableVariants: boolean;
+    attributes: any[];
+    variants: any[];
+  }>({
+    enableVariants: false,
+    attributes: [],
+    variants: [],
+  });
 
   // Promotional Badges
   const [promotionalBadges, setPromotionalBadges] = useState<string[]>([]);
@@ -149,28 +146,7 @@ export default function EditProductPage() {
           setVideoUrl(product.videoUrl || "");
           setVideoPosterUrl(product.videoPosterUrl || "");
           setPromotionalBadges(product.promotionalBadges || []);
-
-          if (product.variants && product.variants.length > 0) {
-            setEnableVariants(true);
-            setVariants(
-              product.variants.map((v: any) => ({
-                id: v.id,
-                name: v.name || "",
-                colorName: v.colorName || "",
-                colorCode: v.colorCode || "",
-                size: v.size || "",
-                imageUrl: v.imageUrl || "",
-                sku: v.sku || "",
-                price: v.price !== null && v.price !== undefined ? String(v.price) : "",
-                discountPrice:
-                  v.discountPrice !== null && v.discountPrice !== undefined
-                    ? String(v.discountPrice)
-                    : "",
-                stockQty: v.stockQty !== undefined ? String(v.stockQty) : "0",
-                isActive: v.isActive !== undefined ? v.isActive : true,
-              }))
-            );
-          }
+          setInitialProductData(product);
         }
       } catch (err: any) {
         console.error("Fetch product error:", err);
@@ -257,38 +233,6 @@ export default function EditProductPage() {
     }
   };
 
-  const handleAddVariant = (customDefaults?: Partial<VariantFormItem>) => {
-    const newIdx = variants.length + 1;
-    const baseSku = form.sku ? `${form.sku}-V${newIdx}` : `VAR-${Date.now().toString().slice(-4)}-${newIdx}`;
-    setVariants((prev) => [
-      ...prev,
-      {
-        name: customDefaults?.name || `Variant ${newIdx}`,
-        colorName: customDefaults?.colorName || "",
-        colorCode: customDefaults?.colorCode || "",
-        size: customDefaults?.size || "",
-        imageUrl: customDefaults?.imageUrl || thumbnail || "",
-        sku: customDefaults?.sku || baseSku,
-        price: customDefaults?.price || form.price || "",
-        discountPrice: customDefaults?.discountPrice || form.discountPrice || "",
-        stockQty: customDefaults?.stockQty || "15",
-        isActive: true,
-      },
-    ]);
-  };
-
-  const removeVariant = (index: number) => {
-    setVariants((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const updateVariant = (index: number, key: keyof VariantFormItem, val: any) => {
-    setVariants((prev) => {
-      const copy = [...prev];
-      copy[index] = { ...copy[index], [key]: val };
-      return copy;
-    });
-  };
-
   const handleUpdate = async (publish?: boolean) => {
     if (!form.name.trim()) {
       toast.error("Product name is required");
@@ -339,21 +283,8 @@ export default function EditProductPage() {
         thumbnail: thumbnail || uploadedImages[0] || "",
         videoUrl: videoUrl.trim() || null,
         videoPosterUrl: videoPosterUrl.trim() || null,
-        variants: enableVariants
-          ? variants.map((v, i) => ({
-              id: v.id,
-              name: v.name,
-              colorName: v.colorName || null,
-              colorCode: v.colorCode || null,
-              size: v.size || null,
-              imageUrl: v.imageUrl || null,
-              sku: v.sku || `${form.sku}-V${i + 1}`,
-              price: v.price ? parseFloat(v.price) : null,
-              discountPrice: v.discountPrice ? parseFloat(v.discountPrice) : null,
-              stockQty: parseInt(v.stockQty || "0", 10),
-              isActive: v.isActive,
-            }))
-          : [],
+        attributes: variantData.enableVariants ? variantData.attributes : null,
+        variants: variantData.enableVariants ? variantData.variants : [],
       };
 
       await api.put(`/products/${id}`, payload);
@@ -821,103 +752,15 @@ export default function EditProductPage() {
           </div>
         </div>
 
-        {/* SECTION F: Product Variants */}
-        <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-7 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div className="flex items-center gap-2">
-              <Layers className="w-4 h-4 text-purple-600" />
-              <div>
-                <h2 className="text-sm font-black uppercase text-slate-800 tracking-wider">
-                  Section F: Product Variants & Attributes
-                </h2>
-                <p className="text-[11px] text-slate-500">
-                  Manage variants with dedicated stock and price overrides.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={enableVariants}
-                onCheckedChange={(c) => {
-                  setEnableVariants(c);
-                  if (c && variants.length === 0) handleAddVariant();
-                }}
-              />
-              <span className="text-xs font-bold text-slate-800">Enable Variants</span>
-            </div>
-          </div>
-
-          {enableVariants && (
-            <div className="space-y-3 pt-1">
-              {variants.map((v, idx) => (
-                <div
-                  key={idx}
-                  className="p-4 bg-slate-50 border border-slate-200 rounded-2xl grid grid-cols-1 sm:grid-cols-6 gap-3 items-end"
-                >
-                  <div className="sm:col-span-2 space-y-1">
-                    <Label className="text-[11px] font-bold text-slate-700">Variant Name</Label>
-                    <Input
-                      value={v.name}
-                      onChange={(e) => updateVariant(idx, "name", e.target.value)}
-                      className="rounded-xl text-xs h-9 bg-white"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <Label className="text-[11px] font-bold text-slate-700">Size / Weight</Label>
-                    <Input
-                      value={v.size}
-                      onChange={(e) => updateVariant(idx, "size", e.target.value)}
-                      className="rounded-xl text-xs h-9 bg-white"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <Label className="text-[11px] font-bold text-slate-700">Price (৳)</Label>
-                    <Input
-                      type="number"
-                      value={v.price}
-                      onChange={(e) => updateVariant(idx, "price", e.target.value)}
-                      className="rounded-xl text-xs h-9 bg-white font-bold"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <Label className="text-[11px] font-bold text-slate-700">Stock Qty</Label>
-                    <Input
-                      type="number"
-                      value={v.stockQty}
-                      onChange={(e) => updateVariant(idx, "stockQty", e.target.value)}
-                      className="rounded-xl text-xs h-9 bg-white font-bold"
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeVariant(idx)}
-                      className="text-rose-600 hover:bg-rose-50 rounded-xl h-9 px-2.5 cursor-pointer"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => handleAddVariant()}
-                className="rounded-xl font-bold text-xs h-10 border-slate-300 hover:bg-slate-50"
-              >
-                <Plus className="w-4 h-4 mr-1" /> Add Another Variant
-              </Button>
-            </div>
-          )}
-        </div>
+        {/* SECTION F: Product Variants & Attributes Manager */}
+        <ProductVariantManager
+          baseSku={form.sku || "PROD"}
+          basePrice={form.price ? parseFloat(form.price) : ""}
+          baseDiscountPrice={form.discountPrice ? parseFloat(form.discountPrice) : ""}
+          initialAttributes={initialProductData?.attributes || undefined}
+          initialVariants={initialProductData?.variants || undefined}
+          onChange={setVariantData}
+        />
 
         {/* SECTION G: SEO & URL */}
         <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-7 shadow-xs space-y-4">

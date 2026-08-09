@@ -377,7 +377,7 @@ export default function CheckoutPage() {
                 {/* Cart Items List */}
                 <div className="space-y-3 max-h-60 overflow-y-auto pr-1 divide-y divide-slate-100">
                   {cart.map((item) => (
-                    <div key={item.id} className="pt-2 first:pt-0 flex items-center justify-between gap-3">
+                    <div key={item.cartItemId || item.id} className="pt-2 first:pt-0 flex items-center justify-between gap-3">
                       <img
                         src={item.thumbnail || "/file.svg"}
                         alt={item.name}
