@@ -296,7 +296,20 @@ export default function ProductDetailClient({
         <div className="lg:col-span-7 space-y-6">
           {/* Main Photo Gallery */}
           <ProductGallery
-            images={product.images && product.images.length > 0 ? product.images : [product.thumbnail]}
+            images={(() => {
+              const baseImages =
+                product.images && product.images.length > 0
+                  ? product.images
+                  : [product.thumbnail].filter(Boolean);
+              // If selected variant has its own image, put it first
+              if (selectedVariant?.imageUrl) {
+                const withoutDuplicate = baseImages.filter(
+                  (img: string) => img !== selectedVariant.imageUrl
+                );
+                return [selectedVariant.imageUrl, ...withoutDuplicate];
+              }
+              return baseImages;
+            })()}
             productName={product.name}
           />
 

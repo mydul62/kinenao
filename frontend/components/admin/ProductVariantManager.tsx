@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Layers,
   Sparkles,
@@ -12,17 +12,17 @@ import {
   Scale,
   Cpu,
   Box,
-  Copy,
-  ArrowRight,
-  Info,
   X,
+  Upload,
   Image as ImageIcon,
-  CheckCircle2,
+  Loader2,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { api } from "@/lib/api";
+import { toast } from "sonner";
 
 export interface AttributeValue {
   name: string;
@@ -191,6 +191,36 @@ export default function ProductVariantManager({
   // Inputs for adding custom values
   const [newValInputs, setNewValInputs] = useState<Record<string, string>>({});
   const [newColorCode, setNewColorCode] = useState("#DC2626");
+
+  // Per-row image upload state: index → loading
+  const [uploadingVariantIdx, setUploadingVariantIdx] = useState<number | null>(null);
+  const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Upload image for a specific variant row
+  const handleVariantImageUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    idx: number
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingVariantIdx(idx);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const { data } = await api.post("/upload/image", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const url = data.data.url;
+      updateVariantRow(idx, "imageUrl", url);
+      toast.success("ছবি আপলোড সফল হয়েছে!");
+    } catch {
+      toast.error("ছবি আপলোড ব্যর্থ হয়েছে। আবার চেষ্টা করুন।");
+    } finally {
+      setUploadingVariantIdx(null);
+      // Reset input so same file can be re-uploaded
+      if (fileInputRefs.current[idx]) fileInputRefs.current[idx]!.value = "";
+    }
+  };
 
   // Bulk Edit Inputs
   const [bulkPrice, setBulkPrice] = useState<string>("");
@@ -827,7 +857,7 @@ export default function ProductVariantManager({
                       <th className="py-2.5 px-3">Price (৳)</th>
                       <th className="py-2.5 px-3">Discount (৳)</th>
                       <th className="py-2.5 px-3">Stock Qty</th>
-                      <th className="py-2.5 px-3">Variant Image URL</th>
+                      <th className="py-2.5 px-3">ছবি (Image)</th>
                       <th className="py-2.5 px-3 text-center">Action</th>
                     </tr>
                   </thead>
@@ -892,22 +922,65 @@ export default function ProductVariantManager({
                           />
                         </td>
 
-                        {/* Variant Image URL */}
+                        {/* Variant Image Uploader */}
                         <td className="py-2.5 px-3">
-                          <div className="flex items-center gap-1.5">
-                            {v.imageUrl && (
-                              <img
-                                src={v.imageUrl}
-                                alt="thumb"
-                                className="w-7 h-7 rounded-lg object-cover border"
-                              />
-                            )}
-                            <Input
-                              placeholder="https://..."
-                              value={v.imageUrl || ""}
-                              onChange={(e) => updateVariantRow(idx, "imageUrl", e.target.value)}
-                              className="h-8 text-[11px] rounded-lg bg-slate-50 w-36"
+                          <div className="flex items-center gap-2">
+                            {/* Hidden file input */}
+                            <input
+                              ref={(el) => { fileInputRefs.current[idx] = el; }}
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => handleVariantImageUpload(e, idx)}
                             />
+
+                            {v.imageUrl ? (
+                              /* Image Preview with remove button */
+                              <div className="relative group shrink-0">
+                                <img
+                                  src={v.imageUrl}
+                                  alt={v.name}
+                                  className="w-12 h-12 rounded-xl object-cover border-2 border-slate-200 shadow-sm cursor-pointer hover:opacity-80 transition-opacity"
+                                  onClick={() => fileInputRefs.current[idx]?.click()}
+                                  title="ক্লিক করে ছবি পরিবর্তন করুন"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => updateVariantRow(idx, "imageUrl", "")}
+                                  className="absolute -top-1.5 -right-1.5 w-4.5 h-4.5 bg-rose-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shadow"
+                                  title="ছবি সরান"
+                                >
+                                  <X className="w-2.5 h-2.5 stroke-[3]" />
+                                </button>
+                              </div>
+                            ) : (
+                              /* Upload Button */
+                              <button
+                                type="button"
+                                onClick={() => fileInputRefs.current[idx]?.click()}
+                                disabled={uploadingVariantIdx === idx}
+                                className="flex flex-col items-center justify-center w-12 h-12 rounded-xl border-2 border-dashed border-slate-300 hover:border-purple-400 hover:bg-purple-50/40 transition-all cursor-pointer bg-slate-50 shrink-0 group"
+                                title="ছবি আপলোড করুন"
+                              >
+                                {uploadingVariantIdx === idx ? (
+                                  <Loader2 className="w-4 h-4 text-purple-500 animate-spin" />
+                                ) : (
+                                  <>
+                                    <Upload className="w-3.5 h-3.5 text-slate-400 group-hover:text-purple-500 transition-colors" />
+                                    <span className="text-[9px] text-slate-400 group-hover:text-purple-600 font-bold mt-0.5">আপলোড</span>
+                                  </>
+                                )}
+                              </button>
+                            )}
+
+                            {/* Status text */}
+                            <span className="text-[10px] text-slate-500 font-medium leading-tight max-w-[60px]">
+                              {uploadingVariantIdx === idx
+                                ? "আপলোড হচ্ছে..."
+                                : v.imageUrl
+                                ? "ক্লিক করুন পরিবর্তনের জন্য"
+                                : "ছবি আপলোড করুন"}
+                            </span>
                           </div>
                         </td>
 
