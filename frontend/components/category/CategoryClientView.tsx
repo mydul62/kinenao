@@ -217,158 +217,148 @@ export default function CategoryClientView({
   };
 
   return (
-    <div className="min-h-screen bg-[#f6f3ec] text-slate-900 pb-20 md:pb-12">
+    <div className="min-h-screen bg-[#f6f3ec] text-slate-900 pb-20 md:pb-12 font-['Inter',sans-serif]">
       {/* ========================================================================= */}
-      {/* 1. DEEP FOREST GREEN HEADER & CATEGORY THUMBNAIL RAIL (#123524)          */}
+      {/* CATEGORY HEADER BANNER & SUBCATEGORIES FILTER RAIL                        */}
       {/* ========================================================================= */}
-      <div className="bg-[#123524] text-white">
-        {/* Sticky Mobile/Desktop Top Bar */}
-        <div className="sticky top-0 z-30 bg-[#123524] border-b border-white/10 px-3 md:px-6 py-2.5">
-          <div className="w-full flex items-center justify-between gap-3">
-            {/* Left: Hamburger Menu Button (opens Category Drawer) */}
-            <button
-              type="button"
-              onClick={() => setIsCategoryDrawerOpen(true)}
-              className="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer shrink-0"
-              aria-label="সব ক্যাটাগরি দেখুন"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
+      <div className="w-full px-3 md:px-6 pt-4 pb-1">
+        {/* Breadcrumbs & Title Card */}
+        <div className="bg-white border border-[#E4E8E4] rounded-2xl p-4 sm:p-5 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              {/* Breadcrumbs */}
+              <div className="flex items-center gap-1.5 text-xs text-[#5C685F] font-semibold mb-1">
+                <Link href="/" className="hover:text-[#123524] transition-colors">
+                  হোম
+                </Link>
+                <span>/</span>
+                <Link href="/shop" className="hover:text-[#123524] transition-colors">
+                  ক্যাটাগরি
+                </Link>
+                <span>/</span>
+                <span className="text-[#131914] font-bold">{category?.name}</span>
+              </div>
 
-            {/* Middle: Brand Title & Category Subtitle */}
-            <div className="flex-1 min-w-0">
-              <Link href="/" className="block">
-                <h2 className="text-sm sm:text-base font-black tracking-wide text-white truncate leading-tight">
-                  কিনেনাও ফ্যাশন
-                </h2>
-                <p className="text-[11px] font-bold text-emerald-200/90 truncate">
-                  {category?.name || "ক্যাটাগরি"} · {displayedProducts.length}টি পণ্য
+              {/* Title & Count */}
+              <div className="flex items-center gap-2.5">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-[#131914] tracking-tight font-['Manrope',sans-serif]">
+                  {category?.name}
+                </h1>
+                <span className="bg-[#E4EEE7] text-[#123524] text-xs font-bold px-2.5 py-0.5 rounded-full font-['Manrope']">
+                  {displayedProducts.length}টি পণ্য
+                </span>
+              </div>
+              {category?.description && (
+                <p className="text-[#5C685F] text-xs sm:text-sm mt-1 max-w-2xl">
+                  {category.description}
                 </p>
-              </Link>
+              )}
             </div>
 
-            {/* Right: Wishlist & Cart Icons */}
-            <div className="flex items-center gap-2 shrink-0">
-              {/* Wishlist Link */}
-              <Link
-                href="/dashboard/wishlist"
-                className="w-9 h-9 rounded-xl hover:bg-white/10 flex items-center justify-center text-white/90 hover:text-white transition-colors"
-                title="উইশলিস্ট"
-              >
-                <Heart className="w-5 h-5" />
-              </Link>
-
-              {/* Cart Trigger with Amber Badge */}
-              <button
-                type="button"
-                onClick={() => setIsCartOpen(true)}
-                className="relative w-9 h-9 rounded-xl hover:bg-white/10 flex items-center justify-center text-white transition-colors cursor-pointer"
-                title="শপিং কার্ট"
-              >
-                <ShoppingBag className="w-5 h-5" />
-                {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#f59e0b] text-[#123524] font-black text-[10px] flex items-center justify-center border-2 border-[#123524] shadow-xs">
-                    {cartCount}
-                  </span>
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* Search Input Bar (Inside Forest Green Header) */}
-          <div className="w-full mt-2.5">
-            <div className="relative flex items-center">
-              <Search className="w-4 h-4 text-emerald-300/80 absolute left-3.5 pointer-events-none" />
+            {/* In-page Category Search Input */}
+            <div className="relative w-full sm:w-72">
+              <Search className="w-4 h-4 text-[#8B958D] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={`${category?.name || "পণ্য"}, ওয়ালেট, ব্যাকপ্যাক খুঁজুন...`}
-                className="w-full h-10 pl-10 pr-9 rounded-xl bg-[#1b4330] text-xs font-semibold text-white placeholder-emerald-200/60 border border-emerald-600/30 focus:outline-none focus:ring-1 focus:ring-amber-400 focus:border-amber-400 transition-all"
+                placeholder={`${category?.name || "পণ্য"} খুঁজুন...`}
+                className="w-full h-9 pl-9 pr-8 rounded-xl bg-[#F5F7F5] text-xs font-semibold text-[#131914] placeholder-[#8B958D] border border-[#E4E8E4] focus:outline-none focus:border-[#123524] transition-all"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-3 text-emerald-300 hover:text-white p-0.5"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#8B958D] hover:text-[#131914] p-0.5 cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
           </div>
-        </div>
 
-        {/* Horizontal Category Thumbnail Rail (Below Header in Forest Green) */}
-        <div className="px-3 md:px-6 py-3 border-t border-white/10 overflow-hidden">
-          <div className="w-full flex items-center gap-3.5 overflow-x-auto scrollbar-none py-1">
-            {/* "সবগুলো" (All) Button */}
-            <button
-              type="button"
-              onClick={() => setActiveSubcat(null)}
-              className={`flex flex-col items-center gap-1.5 shrink-0 cursor-pointer transition-all group ${
-                activeSubcat === null ? "scale-102" : "opacity-85 hover:opacity-100"
-              }`}
-            >
-              <div
-                className={`w-14 h-14 rounded-2xl flex items-center justify-center bg-[#1b4330] text-emerald-200 shadow-sm transition-all ${
-                  activeSubcat === null
-                    ? "border-2 border-[#a9762a] ring-2 ring-[#a9762a]/40 bg-[#22573e] text-white"
-                    : "border border-white/15 group-hover:border-white/40"
-                }`}
-              >
-                <LayoutGrid className="w-6 h-6" />
-              </div>
-              <span
-                className={`text-[11px] text-center font-bold tracking-tight ${
-                  activeSubcat === null ? "text-amber-300 font-black" : "text-white/90"
-                }`}
-              >
-                সবগুলো
-              </span>
-            </button>
-
-            {/* Dynamic Subcategories Thumbnail Items */}
-            {subcategories.map((sub: any) => {
-              const isActive = activeSubcat === sub.slug || activeSubcat === sub.id;
-              const thumb =
-                sub.imageUrl ||
-                category?.imageUrl ||
-                "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=200";
-
-              return (
+          {/* Subcategories Card Rail */}
+          {subcategories.length > 0 && (
+            <div className="mt-4 pt-3.5 border-t border-[#E4E8E4] overflow-hidden">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[#5C685F] mb-3 font-['Manrope']">
+                সাবক্যাটাগরি সমূহ:
+              </p>
+              <div className="w-full flex items-center gap-3.5 sm:gap-4 overflow-x-auto scrollbar-none pb-2 pt-1">
+                {/* "সবগুলো" (All) Card */}
                 <button
-                  key={sub.id || sub.slug}
                   type="button"
-                  onClick={() => setActiveSubcat(isActive ? null : sub.slug)}
+                  onClick={() => setActiveSubcat(null)}
                   className={`flex flex-col items-center gap-1.5 shrink-0 cursor-pointer transition-all group ${
-                    isActive ? "scale-102" : "opacity-85 hover:opacity-100"
+                    activeSubcat === null ? "scale-105" : "opacity-85 hover:opacity-100"
                   }`}
                 >
                   <div
-                    className={`w-14 h-14 rounded-2xl overflow-hidden bg-[#1b4330] transition-all relative ${
-                      isActive
-                        ? "border-2 border-[#a9762a] ring-2 ring-[#a9762a]/40 shadow-md"
-                        : "border border-white/15 group-hover:border-white/40"
+                    className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center shadow-xs transition-all ${
+                      activeSubcat === null
+                        ? "border-2 border-[#a9762a] ring-2 ring-[#a9762a]/40 bg-[#123524] text-white"
+                        : "bg-[#F5F7F5] border border-[#E4E8E4] text-[#123524] group-hover:border-[#123524]/40"
                     }`}
                   >
-                    <img
-                      src={thumb}
-                      alt={sub.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                    />
+                    <LayoutGrid className="w-6 h-6" />
                   </div>
                   <span
-                    className={`text-[11px] text-center font-bold max-w-[76px] truncate ${
-                      isActive ? "text-amber-300 font-black" : "text-white/90"
+                    className={`text-[11px] sm:text-xs text-center font-bold tracking-tight ${
+                      activeSubcat === null ? "text-[#123524] font-black" : "text-[#5C685F]"
                     }`}
                   >
-                    {sub.name}
+                    সবগুলো
                   </span>
                 </button>
-              );
-            })}
-          </div>
+
+                {/* Subcategories Card Items */}
+                {subcategories.map((sub: any) => {
+                  const isActive = activeSubcat === sub.slug || activeSubcat === sub.id;
+                  const thumb =
+                    sub.imageUrl ||
+                    category?.imageUrl ||
+                    "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=200";
+                  const count = getCategoryProductCount(sub);
+
+                  return (
+                    <button
+                      key={sub.id || sub.slug}
+                      type="button"
+                      onClick={() => setActiveSubcat(isActive ? null : sub.slug)}
+                      className={`flex flex-col items-center gap-1.5 shrink-0 cursor-pointer transition-all group ${
+                        isActive ? "scale-105" : "opacity-85 hover:opacity-100"
+                      }`}
+                    >
+                      <div
+                        className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl overflow-hidden transition-all relative shadow-xs ${
+                          isActive
+                            ? "border-2 border-[#a9762a] ring-2 ring-[#a9762a]/40 shadow-md"
+                            : "border border-[#E4E8E4] bg-[#F5F7F5] group-hover:border-[#123524]/40"
+                        }`}
+                      >
+                        <img
+                          src={thumb}
+                          alt={sub.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                        />
+                        {count > 0 && (
+                          <span className="absolute top-1 right-1 bg-[#123524] text-white text-[9px] font-black px-1.5 py-0.2 rounded-full border border-white/60 shadow-xs">
+                            {count}
+                          </span>
+                        )}
+                      </div>
+                      <span
+                        className={`text-[11px] sm:text-xs text-center font-bold max-w-[84px] truncate ${
+                          isActive ? "text-[#123524] font-black" : "text-[#5C685F]"
+                        }`}
+                      >
+                        {sub.name}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

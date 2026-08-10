@@ -74,6 +74,8 @@ export default async function CategoryPage({
 
   return (
     <div className="flex flex-col min-h-screen bg-[#f6f3ec] text-slate-900 selection:bg-[#123524] selection:text-white">
+      <Header />
+
       <main className="flex-1">
         <CategoryClientView
           category={category}
