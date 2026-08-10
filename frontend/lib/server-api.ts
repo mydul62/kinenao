@@ -62,7 +62,8 @@ async function serverFetch<T>(
 export async function getAllCategoriesTree() {
   const data = await serverFetch<{ categories: any[] }>("/categories?type=tree", {
     tags: ["categories"],
-    revalidate: 60,
+    revalidate: 0,
+    cache: "no-store",
   });
   return data?.categories || [];
 }
@@ -73,7 +74,8 @@ export async function getCategoryBySlug(slug: string) {
   // Try slug endpoint first
   const data = await serverFetch<{ category: any }>(`/categories/slug/${encodeURIComponent(slug)}`, {
     tags: ["categories", `category-${slug}`],
-    revalidate: 60,
+    revalidate: 0,
+    cache: "no-store",
   });
 
   if (data?.category) return data.category;
@@ -81,7 +83,8 @@ export async function getCategoryBySlug(slug: string) {
   // Fallback to id endpoint
   const dataById = await serverFetch<{ category: any }>(`/categories/${encodeURIComponent(slug)}`, {
     tags: ["categories", `category-${slug}`],
-    revalidate: 60,
+    revalidate: 0,
+    cache: "no-store",
   });
 
   return dataById?.category || null;
