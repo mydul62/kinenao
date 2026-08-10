@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
@@ -23,11 +23,15 @@ import {
   Youtube,
   LogOut,
   Clock,
+  ArrowRight,
+  Package,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
+import CategoryMegaMenu, { getCategoryIcon } from "@/components/header/CategoryMegaMenu";
 
 export const Header: React.FC = () => {
   const router = useRouter();
+  const pathname = usePathname() || "/";
   const { user, logout, isAuthenticated } = useAuth();
   const {
     cart,
@@ -39,8 +43,11 @@ export const Header: React.FC = () => {
     isReservationExpired,
     resetReservationTimer,
   } = useCart();
+
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
+  const [isMobileCatsExpanded, setIsMobileCatsExpanded] = useState(true);
   const [expandedCats, setExpandedCats] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [categories, setCategories] = useState<any[]>([]);
@@ -48,11 +55,14 @@ export const Header: React.FC = () => {
     "FREE SHIPPING ON ALL ORDERS OF ৳1500 | 100% AUTHENTIC COSMETICS | ⚡ SPECIAL DISCOUNT ON ALL PRODUCTS!"
   );
 
+  const openTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     // Fetch categories and website settings directly from database API
     Promise.all([api.get("/categories?type=tree"), api.get("/settings")])
       .then(([catRes, setRes]) => {
-        const cats = catRes.data?.data?.categories || [];
+        const cats = catRes.data?.data?.categories || catRes.data?.data || [];
         setCategories(cats);
 
         const settingsData = setRes.data?.data?.settings || {};
@@ -65,6 +75,43 @@ export const Header: React.FC = () => {
         console.error("Error fetching header data from DB:", err);
       });
   }, []);
+
+  // Close menus on route change
+  useEffect(() => {
+    setIsCategoryMenuOpen(false);
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
+
+  // Global keydown (Escape to close menus)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsCategoryMenuOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  const handleCategoriesMouseEnter = () => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+    openTimeoutRef.current = setTimeout(() => {
+      setIsCategoryMenuOpen(true);
+    }, 100);
+  };
+
+  const handleCategoriesMouseLeave = () => {
+    if (openTimeoutRef.current) {
+      clearTimeout(openTimeoutRef.current);
+      openTimeoutRef.current = null;
+    }
+    closeTimeoutRef.current = setTimeout(() => {
+      setIsCategoryMenuOpen(false);
+    }, 200);
+  };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,7 +126,7 @@ export const Header: React.FC = () => {
   };
 
   return (
-    <header className="w-full bg-background">
+    <header className="w-full bg-background relative z-40">
       {/* 1. Red Top Bar with Slow Smooth Scrolling Promotional Ticker */}
       <div className="bg-primary text-primary-foreground text-[10px] font-bold h-9 flex items-center justify-between px-3 md:px-4 tracking-wider uppercase border-b relative overflow-hidden">
         {/* Center Dynamic Scrolling Promotional Marquee Ticker */}
@@ -120,13 +167,23 @@ export const Header: React.FC = () => {
 
           {/* Navigation Menu Links */}
           <nav className="hidden md:flex items-center gap-7 text-xs font-extrabold uppercase tracking-widest text-foreground">
-            <Link href="/" className="text-primary hover:text-primary transition-colors">
+            <Link
+              href="/"
+              className={`transition-colors ${
+                pathname === "/" ? "text-primary font-black" : "hover:text-primary"
+              }`}
+            >
               Home
             </Link>
             
             {/* Shop Link with HOT Badge */}
             <div className="relative">
-              <Link href="/shop" className="hover:text-primary transition-colors">
+              <Link
+                href="/shop"
+                className={`transition-colors ${
+                  pathname === "/shop" ? "text-primary font-black" : "hover:text-primary"
+                }`}
+              >
                 Shop
               </Link>
               <span className="absolute -top-3.5 -right-3 bg-primary text-[7px] font-bold text-white px-1 py-0.5 rounded uppercase leading-none">
@@ -134,12 +191,56 @@ export const Header: React.FC = () => {
               </span>
             </div>
 
-            <Link href="/blog" className="hover:text-primary transition-colors">
-              Blog
-            </Link>
+            {/* Categories Mega Menu Trigger with Rotating Chevron */}
+            <div
+              className="relative"
+              onMouseEnter={handleCategoriesMouseEnter}
+              onMouseLeave={handleCategoriesMouseLeave}
+            >
+              <button
+                type="button"
+                onClick={() => setIsCategoryMenuOpen((prev) => !prev)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setIsCategoryMenuOpen((prev) => !prev);
+                  } else if (e.key === "Escape") {
+                    setIsCategoryMenuOpen(false);
+                  }
+                }}
+                className={`flex items-center gap-1 uppercase tracking-widest transition-colors cursor-pointer py-2 ${
+                  pathname.startsWith("/category") || isCategoryMenuOpen
+                    ? "text-primary font-black"
+                    : "hover:text-primary"
+                }`}
+                aria-expanded={isCategoryMenuOpen}
+                aria-haspopup="true"
+              >
+                <span>Categories</span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                    isCategoryMenuOpen ? "rotate-180 text-primary" : "text-muted-foreground"
+                  }`}
+                />
+              </button>
 
-            <Link href="/#faqs" className="hover:text-primary transition-colors">
-              Pages
+              {/* Desktop Mega Menu Dropdown Window */}
+              <CategoryMegaMenu
+                categories={categories}
+                isOpen={isCategoryMenuOpen}
+                onClose={() => setIsCategoryMenuOpen(false)}
+                onMouseEnter={handleCategoriesMouseEnter}
+                onMouseLeave={handleCategoriesMouseLeave}
+              />
+            </div>
+
+            <Link
+              href="/blog"
+              className={`transition-colors ${
+                pathname.startsWith("/blog") ? "text-primary font-black" : "hover:text-primary"
+              }`}
+            >
+              Blog
             </Link>
 
             {/* Elementor Live Link with Blue Badge */}
@@ -269,7 +370,7 @@ export const Header: React.FC = () => {
                   className="font-black text-lg tracking-widest text-white flex items-center gap-1.5"
                 >
                   K I N E N A O
-                  <span className="h-2 w-2 rounded-full bg-emerald-400 inline-block self-end mb-1" />
+                  <span className="h-2 w-2 rounded-full bg-primary inline-block self-end mb-1" />
                 </Link>
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}
@@ -288,9 +389,9 @@ export const Header: React.FC = () => {
                     placeholder="Search all products..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full h-10 pl-4 pr-10 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    className="w-full h-10 pl-4 pr-10 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary"
                   />
-                  <button type="submit" className="absolute right-3 text-slate-400 hover:text-emerald-600">
+                  <button type="submit" className="absolute right-3 text-slate-400 hover:text-primary">
                     <Search className="h-4 w-4" />
                   </button>
                 </form>
@@ -300,80 +401,144 @@ export const Header: React.FC = () => {
                   <Link
                     href="/"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="p-2.5 rounded-xl bg-slate-50 hover:bg-emerald-50 hover:text-emerald-700 text-center border border-slate-100 transition-colors"
+                    className={`p-2.5 rounded-xl text-center border transition-colors ${
+                      pathname === "/"
+                        ? "bg-primary text-white border-primary font-black shadow-xs"
+                        : "bg-slate-50 hover:bg-rose-50 text-slate-800 border-slate-100"
+                    }`}
                   >
                     Home
                   </Link>
                   <Link
                     href="/shop"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="p-2.5 rounded-xl bg-emerald-600 text-white text-center shadow-xs font-black transition-colors"
+                    className={`p-2.5 rounded-xl text-center border transition-colors ${
+                      pathname === "/shop"
+                        ? "bg-primary text-white border-primary font-black shadow-xs"
+                        : "bg-slate-50 hover:bg-rose-50 text-slate-800 border-slate-100"
+                    }`}
                   >
                     Shop All
                   </Link>
+                  <Link
+                    href="/blog"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`p-2.5 rounded-xl text-center border transition-colors ${
+                      pathname.startsWith("/blog")
+                        ? "bg-primary text-white border-primary font-black shadow-xs"
+                        : "bg-slate-50 hover:bg-rose-50 text-slate-800 border-slate-100"
+                    }`}
+                  >
+                    Blog
+                  </Link>
+                  <Link
+                    href="/shop"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="p-2.5 rounded-xl bg-slate-50 hover:bg-blue-50 text-slate-800 hover:text-blue-600 text-center border border-slate-100 transition-colors"
+                  >
+                    Live Demo
+                  </Link>
                 </div>
 
-                {/* Database Categories Accordion Tree */}
+                {/* Categories Accordion Section */}
                 <div className="pt-2">
-                  <div className="flex items-center justify-between mb-2 px-1">
-                    <h3 className="text-[11px] font-black uppercase tracking-wider text-slate-400">
-                      ALL CATEGORIES ({categories.length})
-                    </h3>
+                  <div className="flex items-center justify-between mb-2.5 px-1">
+                    <button
+                      type="button"
+                      onClick={() => setIsMobileCatsExpanded((prev) => !prev)}
+                      className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-slate-700 hover:text-primary cursor-pointer"
+                    >
+                      <span>CATEGORIES ({categories.length})</span>
+                      <ChevronDown
+                        className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                          isMobileCatsExpanded ? "rotate-180 text-primary" : "text-slate-400"
+                        }`}
+                      />
+                    </button>
+                    <Link
+                      href="/shop"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="text-[10px] font-bold text-primary hover:underline"
+                    >
+                      View All →
+                    </Link>
                   </div>
 
-                  <div className="space-y-1">
-                    {categories.map((cat) => {
-                      const hasChildren = cat.childCategories && cat.childCategories.length > 0;
-                      const isExpanded = Boolean(expandedCats[cat.id || cat.slug]);
+                  {isMobileCatsExpanded && (
+                    <div className="space-y-1.5">
+                      {categories.map((cat) => {
+                        const Icon = getCategoryIcon(cat.name, cat.slug);
+                        const hasChildren =
+                          (cat.childCategories && cat.childCategories.length > 0) ||
+                          (cat.children && cat.children.length > 0);
+                        const childrenList = cat.childCategories || cat.children || [];
+                        const isExpanded = Boolean(expandedCats[cat.id || cat.slug]);
 
-                      return (
-                        <div key={cat.id || cat.slug} className="border border-slate-100 rounded-xl overflow-hidden">
-                          <div className="flex items-center justify-between p-2.5 bg-white hover:bg-slate-50 transition-colors">
-                            <Link
-                              href={`/category/${cat.slug}`}
-                              onClick={() => setIsMobileMenuOpen(false)}
-                              className="flex-1 text-xs font-extrabold text-slate-800 hover:text-emerald-700 truncate"
-                            >
-                              {cat.name}
-                            </Link>
-
-                            {hasChildren && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  toggleCategoryExpand(cat.id || cat.slug);
-                                }}
-                                className="p-1 text-slate-400 hover:text-emerald-600 cursor-pointer"
+                        return (
+                          <div
+                            key={cat.id || cat.slug}
+                            className="border border-slate-200/80 rounded-2xl overflow-hidden bg-white shadow-2xs"
+                          >
+                            <div className="flex items-center justify-between p-2.5 bg-white hover:bg-slate-50 transition-colors">
+                              <Link
+                                href={`/category/${cat.slug}`}
+                                onClick={() => setIsMobileMenuOpen(false)}
+                                className="flex items-center gap-2.5 min-w-0 flex-1"
                               >
-                                <ChevronDown
-                                  className={`w-4 h-4 transition-transform duration-200 ${
-                                    isExpanded ? "rotate-180 text-emerald-600" : ""
-                                  }`}
-                                />
-                              </button>
+                                <div className="w-7 h-7 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                                  <Icon className="w-3.5 h-3.5" />
+                                </div>
+                                <span className="text-xs font-extrabold text-slate-800 hover:text-primary truncate">
+                                  {cat.name}
+                                </span>
+                              </Link>
+
+                              {hasChildren && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    toggleCategoryExpand(cat.id || cat.slug);
+                                  }}
+                                  className="p-1.5 text-slate-400 hover:text-primary cursor-pointer rounded-lg hover:bg-slate-100"
+                                >
+                                  <ChevronDown
+                                    className={`w-4 h-4 transition-transform duration-200 ${
+                                      isExpanded ? "rotate-180 text-primary" : ""
+                                    }`}
+                                  />
+                                </button>
+                              )}
+                            </div>
+
+                            {/* Subcategories list */}
+                            {hasChildren && isExpanded && (
+                              <div className="bg-slate-50/90 px-3.5 py-2 space-y-1.5 border-t border-slate-100">
+                                {childrenList.map((sub: any) => (
+                                  <Link
+                                    key={sub.id || sub.slug}
+                                    href={`/category/${cat.slug}?sub=${sub.slug}`}
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                    className="flex items-center gap-2 py-1.5 px-2.5 text-xs font-bold text-slate-600 hover:text-primary hover:bg-white rounded-xl transition-colors"
+                                  >
+                                    <span className="w-1.5 h-1.5 rounded-full bg-primary/70" />
+                                    <span>{sub.name}</span>
+                                  </Link>
+                                ))}
+                                <Link
+                                  href={`/category/${cat.slug}`}
+                                  onClick={() => setIsMobileMenuOpen(false)}
+                                  className="block pt-1 px-2.5 text-[11px] font-black text-primary hover:underline"
+                                >
+                                  সকল {cat.name} দেখুন →
+                                </Link>
+                              </div>
                             )}
                           </div>
-
-                          {/* Subcategories list */}
-                          {hasChildren && isExpanded && (
-                            <div className="bg-slate-50/80 px-3 py-1.5 space-y-1 border-t border-slate-100">
-                              {cat.childCategories.map((sub: any) => (
-                                <Link
-                                  key={sub.id || sub.slug}
-                                  href={`/category/${cat.slug}?sub=${sub.slug}`}
-                                  onClick={() => setIsMobileMenuOpen(false)}
-                                  className="block py-1.5 px-2 text-xs font-semibold text-slate-600 hover:text-emerald-700 hover:bg-white rounded-lg transition-colors"
-                                >
-                                  • {sub.name}
-                                </Link>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
 
