@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { useSettings } from "@/context/SettingsContext";
 import {
   LayoutDashboard,
   ShoppingBag,
@@ -70,7 +71,7 @@ const navGroups: NavGroup[] = [
     label: "Orders",
     icon: ClipboardList,
     items: [
-      { href: "/admin/orders", label: "Orders List", icon: List },
+      { href: "/admin/orders", label: "Live Orders Desk", icon: ShoppingBag },
       { href: "/admin/payments", label: "Payment Receipts", icon: CreditCard },
     ],
   },
@@ -88,6 +89,7 @@ const navGroups: NavGroup[] = [
     items: [
       { href: "/admin/coupons", label: "Coupons List", icon: List },
       { href: "/admin/banners", label: "Homepage Banners", icon: ImageIcon },
+      { href: "/admin/faqs", label: "Customer FAQs", icon: FileText },
     ],
   },
   {
@@ -113,6 +115,7 @@ interface AdminSidebarProps {
 export function AdminSidebar({ mobileOpen = false, onCloseMobile }: AdminSidebarProps) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const { settings } = useSettings();
   const [collapsed, setCollapsed] = useState(false);
 
   // Accordion state for expanded submenus
@@ -173,16 +176,24 @@ export function AdminSidebar({ mobileOpen = false, onCloseMobile }: AdminSidebar
                 onClick={onCloseMobile}
                 className="flex items-center gap-2.5 overflow-hidden"
               >
-                <div className="w-9 h-9 rounded-xl bg-[#1B4A34] text-white flex items-center justify-center font-extrabold text-sm border border-emerald-400/20 shadow-sm shrink-0 font-['Manrope',sans-serif]">
-                  eB
-                </div>
+                {settings.logoUrl ? (
+                  <img
+                    src={settings.logoUrl}
+                    alt={settings.siteName || "KineNao"}
+                    className="w-9 h-9 object-contain rounded-xl bg-white/10 p-0.5 shrink-0"
+                  />
+                ) : (
+                  <div className="w-9 h-9 rounded-xl bg-[#1B4A34] text-white flex items-center justify-center font-extrabold text-sm border border-emerald-400/20 shadow-sm shrink-0 font-['Manrope',sans-serif]">
+                    {(settings.siteName || "KN").substring(0, 2).toUpperCase()}
+                  </div>
+                )}
                 {(!collapsed || mobileOpen) && (
-                  <div className="flex flex-col">
-                    <span className="font-extrabold text-base tracking-tight text-white leading-tight font-['Manrope',sans-serif]">
-                      eBazar
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-extrabold text-base tracking-tight text-white leading-tight font-['Manrope',sans-serif] truncate">
+                      {settings.siteName || "KineNao"}
                     </span>
-                    <span className="text-[9px] uppercase tracking-wider text-[#8B958D] font-bold">
-                      ENTERPRISE COMMERCE
+                    <span className="text-[9px] uppercase tracking-wider text-[#8B958D] font-bold truncate">
+                      ADMIN CONTROL PANEL
                     </span>
                   </div>
                 )}

@@ -4,6 +4,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
+import { SettingsProvider } from "@/context/SettingsContext";
 import { Toaster } from "@/components/ui/sonner";
 import ScrollToTop from "@/components/ScrollToTop";
 
@@ -26,12 +27,14 @@ export default function RootLayout({
     <html lang="en" className={cn("font-sans", outfit.variable)} suppressHydrationWarning>
       <body className="antialiased font-sans bg-background text-foreground min-h-screen" suppressHydrationWarning>
         <ScrollToTop />
-        <AuthProvider>
-          <CartProvider>
-            {children}
-            <Toaster position="top-right" richColors closeButton />
-          </CartProvider>
-        </AuthProvider>
+        <SettingsProvider>
+          <AuthProvider>
+            <CartProvider>
+              {children}
+              <Toaster position="top-right" richColors closeButton />
+            </CartProvider>
+          </AuthProvider>
+        </SettingsProvider>
       </body>
     </html>
   );

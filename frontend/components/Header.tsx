@@ -29,13 +29,15 @@ import {
   LayoutGrid,
   User,
 } from "lucide-react";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import CategoryMegaMenu, { getCategoryIcon } from "@/components/header/CategoryMegaMenu";
+import { useSettings } from "@/context/SettingsContext";
 
 export const Header: React.FC = () => {
   const router = useRouter();
   const pathname = usePathname() || "/";
   const { user, logout, isAuthenticated } = useAuth();
+  const { settings } = useSettings();
   const {
     cart,
     removeFromCart,
@@ -54,29 +56,19 @@ export const Header: React.FC = () => {
   const [expandedCats, setExpandedCats] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [categories, setCategories] = useState<any[]>([]);
-  const [announcementText, setAnnouncementText] = useState(
-    "FREE SHIPPING ON ALL ORDERS OF ৳1500 | 100% AUTHENTIC COSMETICS | ⚡ SPECIAL DISCOUNT ON ALL PRODUCTS!"
-  );
 
   const openTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    // Fetch categories and website settings directly from database API
-    Promise.all([api.get("/categories?type=tree"), api.get("/settings")])
-      .then(([catRes, setRes]) => {
-        const cats = catRes.data?.data?.categories || catRes.data?.data || [];
+    // Fetch categories
+    api
+      .get("/categories?type=tree")
+      .then((res) => {
+        const cats = res.data?.data?.categories || res.data?.data || [];
         setCategories(cats);
-
-        const settingsData = setRes.data?.data?.settings || {};
-        const textVal = settingsData.announcementText?.value || settingsData.announcementText;
-        if (textVal && typeof textVal === "string") {
-          setAnnouncementText(textVal);
-        }
       })
-      .catch((err) => {
-        console.error("Error fetching header data from DB:", err);
-      });
+      .catch(() => {});
   }, []);
 
   // Close menus on route change
@@ -96,76 +88,111 @@ export const Header: React.FC = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const handleCategoriesMouseEnter = () => {
-    if (closeTimeoutRef.current) {
-      clearTimeout(closeTimeoutRef.current);
-      closeTimeoutRef.current = null;
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/shop?search=${encodeURIComponent(searchQuery.trim())}`);
+      setIsMobileMenuOpen(false);
     }
+  };
+
+  const handleCategoriesMouseEnter = () => {
+    if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
     openTimeoutRef.current = setTimeout(() => {
       setIsCategoryMenuOpen(true);
-    }, 100);
+    }, 150);
   };
 
   const handleCategoriesMouseLeave = () => {
-    if (openTimeoutRef.current) {
-      clearTimeout(openTimeoutRef.current);
-      openTimeoutRef.current = null;
-    }
+    if (openTimeoutRef.current) clearTimeout(openTimeoutRef.current);
     closeTimeoutRef.current = setTimeout(() => {
       setIsCategoryMenuOpen(false);
     }, 200);
   };
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/shop?search=${encodeURIComponent(searchQuery)}`);
-      setIsMobileMenuOpen(false);
-    }
-  };
-
-  const toggleCategoryExpand = (catId: string) => {
+  const toggleMobileCat = (catId: string) => {
     setExpandedCats((prev) => ({ ...prev, [catId]: !prev[catId] }));
   };
 
+  const announcementText =
+    settings.announcementText ||
+    "FREE SHIPPING ON ALL ORDERS OF ৳1500 | 100% AUTHENTIC COSMETICS | ⚡ SPECIAL DISCOUNT ON ALL PRODUCTS!";
+
   return (
     <header className="w-full bg-background relative z-40">
-      {/* 1. Red Top Bar with Slow Smooth Scrolling Promotional Ticker */}
-      <div className="bg-primary text-primary-foreground text-[10px] font-bold h-9 flex items-center justify-between px-3 md:px-4 tracking-wider uppercase border-b relative overflow-hidden">
-        {/* Center Dynamic Scrolling Promotional Marquee Ticker */}
-        <div className="flex-1 overflow-hidden mx-3 relative flex items-center h-full">
-          <div className="whitespace-nowrap animate-marquee flex items-center gap-8 text-white font-extrabold text-[11px] tracking-widest">
-            <span>{announcementText}</span>
-            <span className="text-amber-300 font-bold">✦</span>
-            <span>{announcementText}</span>
-            <span className="text-amber-300 font-bold">✦</span>
-            <span>{announcementText}</span>
-            <span className="text-amber-300 font-bold">✦</span>
-            <span>{announcementText}</span>
+      {/* 1. Dynamic Top Bar with Scrolling Promotional Marquee Ticker */}
+      {settings.isAnnouncementEnabled && (
+        <div
+          className="bg-primary text-primary-foreground text-[10px] font-bold h-9 flex items-center justify-between px-3 md:px-4 tracking-wider uppercase border-b relative overflow-hidden"
+          style={{
+            backgroundColor: settings.announcementBgColor || "#123524",
+            color: settings.announcementTextColor || "#ffffff",
+          }}
+        >
+          {/* Center Dynamic Scrolling Promotional Marquee Ticker */}
+          <div className="flex-1 overflow-hidden mx-3 relative flex items-center h-full">
+            <div
+              className="whitespace-nowrap animate-marquee flex items-center gap-8 font-extrabold text-[11px] tracking-widest"
+              style={{ animationDuration: `${settings.announcementSpeed || 25}s` }}
+            >
+              <span>{announcementText}</span>
+              <span className="text-amber-300 font-bold">✦</span>
+              <span>{announcementText}</span>
+              <span className="text-amber-300 font-bold">✦</span>
+              <span>{announcementText}</span>
+            </div>
           </div>
-        </div>
 
-        {/* Right Social Icons & Links */}
-        <div className="flex items-center gap-3 z-10 bg-primary pl-2 shrink-0">
-          <div className="hidden sm:flex items-center gap-2">
-            <a href="#" className="hover:opacity-80 transition-opacity"><Facebook className="h-3.5 w-3.5" /></a>
-            <a href="#" className="hover:opacity-80 transition-opacity"><Twitter className="h-3.5 w-3.5" /></a>
-            <a href="#" className="hover:opacity-80 transition-opacity"><Instagram className="h-3.5 w-3.5" /></a>
-            <a href="#" className="hover:opacity-80 transition-opacity"><Youtube className="h-3.5 w-3.5" /></a>
+          {/* Right Social Icons & Links */}
+          <div className="flex items-center gap-3 z-10 bg-[#123524] pl-2 shrink-0">
+            <div className="hidden sm:flex items-center gap-2">
+              {settings.facebookUrl && (
+                <a href={settings.facebookUrl} target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
+                  <Facebook className="h-3.5 w-3.5" />
+                </a>
+              )}
+              {settings.twitterUrl && (
+                <a href={settings.twitterUrl} target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
+                  <Twitter className="h-3.5 w-3.5" />
+                </a>
+              )}
+              {settings.instagramUrl && (
+                <a href={settings.instagramUrl} target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
+                  <Instagram className="h-3.5 w-3.5" />
+                </a>
+              )}
+              {settings.youtubeUrl && (
+                <a href={settings.youtubeUrl} target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
+                  <Youtube className="h-3.5 w-3.5" />
+                </a>
+              )}
+            </div>
+            <span className="hidden sm:inline text-white/40">|</span>
+            <a href="/#faqs" className="hover:underline">Contact Us</a>
+            <a href="/#faqs" className="hover:underline">FAQS</a>
           </div>
-          <span className="hidden sm:inline text-white/40">|</span>
-          <a href="/#faqs" className="hover:underline">Contact Us</a>
-          <a href="/#faqs" className="hover:underline">FAQS</a>
         </div>
-      </div>
+      )}
 
       {/* 2. Main Header Bar */}
       <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b">
         <div className="w-full flex h-20 items-center justify-between px-3 md:px-6">
           
-          {/* Logo - Akira Typographic Style (Unbroken Single Line) */}
-          <Link href="/" className="flex items-center gap-1 font-black text-lg sm:text-2xl tracking-widest text-foreground font-sans whitespace-nowrap shrink-0">
-            K I N E N A O <span className="h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full bg-primary inline-block self-end mb-1 sm:mb-1.5 shrink-0" />
+          {/* Logo - Dynamic from Settings (Image, Text, or Both) */}
+          <Link href="/" className="flex items-center gap-2 font-black text-lg sm:text-2xl tracking-widest text-foreground font-sans whitespace-nowrap shrink-0">
+            {settings.logoUrl && (settings.logoType === "image" || settings.logoType === "both") && (
+              <img
+                src={settings.logoUrl}
+                alt={settings.siteName || "KineNao"}
+                className="h-8 sm:h-10 max-w-[160px] object-contain shrink-0"
+              />
+            )}
+            {(settings.logoType === "text" || settings.logoType === "both" || !settings.logoUrl) && (
+              <span className="flex items-center gap-1">
+                {settings.siteName || "K I N E N A O"}{" "}
+                <span className="h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full bg-primary inline-block self-end mb-1 sm:mb-1.5 shrink-0" />
+              </span>
+            )}
           </Link>
 
           {/* Navigation Menu Links */}
@@ -501,7 +528,7 @@ export const Header: React.FC = () => {
                                   type="button"
                                   onClick={(e) => {
                                     e.preventDefault();
-                                    toggleCategoryExpand(cat.id || cat.slug);
+                                    toggleMobileCat(cat.id || cat.slug);
                                   }}
                                   className="p-1.5 text-slate-400 hover:text-[#123524] cursor-pointer rounded-lg hover:bg-slate-100"
                                 >
