@@ -65,6 +65,7 @@ export const dbCreateProduct = async (input: IProductCreateInput) => {
     videoUrl,
     videoPosterUrl,
     variants,
+    attributes,
   } = input;
 
   let slug = generateSlug(name);
@@ -115,6 +116,7 @@ export const dbCreateProduct = async (input: IProductCreateInput) => {
     thumbnail: thumbnail || (images && images.length > 0 ? images[0] : null),
     videoUrl: videoUrl || null,
     videoPosterUrl: videoPosterUrl || null,
+    attributes: attributes || null,
   };
 
   if (customBadge !== undefined) data.customBadge = customBadge || null;
@@ -124,6 +126,7 @@ export const dbCreateProduct = async (input: IProductCreateInput) => {
     data.variants = {
       create: variants.map((v, idx) => ({
         name: v.name,
+        combination: v.combination || null,
         colorName: v.colorName || null,
         colorCode: v.colorCode || null,
         imageUrl: v.imageUrl || null,
@@ -132,6 +135,7 @@ export const dbCreateProduct = async (input: IProductCreateInput) => {
         discountPrice: v.discountPrice !== undefined && v.discountPrice !== null ? v.discountPrice : null,
         stockQty: v.stockQty !== undefined ? v.stockQty : 0,
         size: v.size || null,
+        weight: v.weight || null,
         isActive: v.isActive !== undefined ? v.isActive : true,
         sortOrder: v.sortOrder !== undefined ? v.sortOrder : idx,
       })),
@@ -492,6 +496,7 @@ export const dbUpdateProduct = async (id: string, input: IProductUpdateInput) =>
     videoUrl,
     videoPosterUrl,
     variants,
+    attributes,
   } = input;
 
   const data: any = {};
@@ -559,11 +564,12 @@ export const dbUpdateProduct = async (id: string, input: IProductUpdateInput) =>
   if (thumbnail !== undefined) data.thumbnail = thumbnail || null;
   if (videoUrl !== undefined) data.videoUrl = videoUrl || null;
   if (videoPosterUrl !== undefined) data.videoPosterUrl = videoPosterUrl || null;
+  if (attributes !== undefined) data.attributes = attributes || null;
 
   // Transaction for updating product + variants
   return prisma.$transaction(async (tx) => {
     if (variants && Array.isArray(variants)) {
-      // Delete previous variants
+      // Delete previous variants safely
       await tx.productVariant.deleteMany({ where: { productId: id } });
 
       if (variants.length > 0) {
@@ -571,6 +577,7 @@ export const dbUpdateProduct = async (id: string, input: IProductUpdateInput) =>
           data: variants.map((v, idx) => ({
             productId: id,
             name: v.name,
+            combination: v.combination || null,
             colorName: v.colorName || null,
             colorCode: v.colorCode || null,
             imageUrl: v.imageUrl || null,
@@ -579,6 +586,7 @@ export const dbUpdateProduct = async (id: string, input: IProductUpdateInput) =>
             discountPrice: v.discountPrice !== undefined && v.discountPrice !== null ? v.discountPrice : null,
             stockQty: v.stockQty !== undefined ? v.stockQty : 0,
             size: v.size || null,
+            weight: v.weight || null,
             isActive: v.isActive !== undefined ? v.isActive : true,
             sortOrder: v.sortOrder !== undefined ? v.sortOrder : idx,
           })),

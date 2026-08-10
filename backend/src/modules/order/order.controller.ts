@@ -180,9 +180,11 @@ export const createOrder = async (
             productImage: variant.imageUrl || product.thumbnail || (product.images && product.images[0]) || null,
             variantId: variant.id,
             variantName: variant.name,
+            combination: variant.combination || null,
             colorName: variant.colorName || null,
             colorCode: variant.colorCode || null,
             size: variant.size || null,
+            weight: variant.weight || null,
             quantity,
             price: purchasePrice,
           });
@@ -280,7 +282,7 @@ export const createOrder = async (
       }
 
       // 7. Determine initial order status & timeline note
-      let initialStatus = OrderStatus.PENDING_PAYMENT;
+      let initialStatus: OrderStatus = OrderStatus.PENDING_PAYMENT;
       let timelineNote = "Order created, waiting for payment.";
 
       if (isCashOnDelivery) {

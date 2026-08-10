@@ -1,27 +1,39 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import ProductCard from "@/components/ProductCard";
-import CategorySidebar from "@/components/CategorySidebar";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  Menu,
+  Heart,
+  ShoppingBag,
+  Search,
+  ChevronDown,
   ChevronRight,
-  Sparkles,
-  Layers,
-  Check,
   Filter,
-  X,
   Grid2X2,
-  List,
-  ShieldCheck,
-  Truck,
+  List as ListIcon,
+  X,
+  Play,
+  Zap,
   RotateCcw,
-  Tag,
-  CheckCircle2,
+  Check,
   ArrowUpDown,
+  Home,
+  User,
+  LayoutGrid,
+  Sparkles,
+  Plus,
+  Minus,
+  Trash2,
+  Clock,
+  CheckCircle2,
 } from "lucide-react";
+import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
+import { getCategoryIcon } from "@/components/header/CategoryMegaMenu";
+import { toast } from "sonner";
 
 interface CategoryClientViewProps {
   category: any;
@@ -33,32 +45,116 @@ interface CategoryClientViewProps {
 
 export default function CategoryClientView({
   category,
-  categories,
-  initialProducts,
+  categories = [],
+  initialProducts = [],
   initialSubcat = null,
   initialSort = "newest",
 }: CategoryClientViewProps) {
   const router = useRouter();
+  const { user, isAuthenticated } = useAuth();
+  const {
+    cart,
+    addToCart,
+    removeFromCart,
+    updateQuantity,
+    cartCount,
+    cartSubtotal,
+    formattedReservationTimer,
+    isReservationExpired,
+    resetReservationTimer,
+  } = useCart();
 
+  // State
+  const [searchQuery, setSearchQuery] = useState("");
   const [activeSubcat, setActiveSubcat] = useState<string | null>(initialSubcat);
   const [inStockOnly, setInStockOnly] = useState(false);
   const [sortBy, setSortBy] = useState(initialSort || "newest");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+  const [isCategoryDrawerOpen, setIsCategoryDrawerOpen] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [expandedDrawerCats, setExpandedDrawerCats] = useState<Record<string, boolean>>({
+    [category?.id || category?.slug || ""]: true,
+  });
+  const [wishlistIds, setWishlistIds] = useState<Record<string, boolean>>({});
 
-  const subcategories = category?.childCategories || [];
+  // Subcategories from category
+  const subcategories = useMemo(() => {
+    return category?.childCategories || category?.children || [];
+  }, [category]);
 
-  // Filter & Sort products instantly on client without refetch delay
+  // Wishlist toggle
+  const toggleWishlist = (productId: string, productName: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setWishlistIds((prev) => {
+      const isFav = Boolean(prev[productId]);
+      if (isFav) {
+        toast.info(`"${productName}" উইশলিস্ট থেকে সরানো হয়েছে`);
+      } else {
+        toast.success(`"${productName}" উইশলিস্টে যুক্ত হয়েছে!`);
+      }
+      return { ...prev, [productId]: !isFav };
+    });
+  };
+
+  // Drawer category accordion toggle
+  const toggleDrawerCategory = (catId: string) => {
+    setExpandedDrawerCats((prev) => ({ ...prev, [catId]: !prev[catId] }));
+  };
+
+  // Direct Order / Buy Now Action
+  const handleDirectOrder = (product: any, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    addToCart({
+      id: product.id,
+      name: product.name,
+      slug: product.slug,
+      price: product.price,
+      discountPrice: product.discountPrice,
+      thumbnail: product.thumbnail || (product.images && product.images[0]) || "",
+    });
+    router.push(`/product/${product.slug || product.id}#order-form`);
+  };
+
+  // Add to Cart with Toast
+  const handleAddToCart = (product: any, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    addToCart({
+      id: product.id,
+      name: product.name,
+      slug: product.slug,
+      price: product.price,
+      discountPrice: product.discountPrice,
+      thumbnail: product.thumbnail || (product.images && product.images[0]) || "",
+    });
+    toast.success(`"${product.name}" কার্টে যুক্ত হয়েছে!`);
+  };
+
+  // Filter & Sort Products
   const displayedProducts = useMemo(() => {
     let list = [...initialProducts];
+
+    // Search query filtering
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          (p.description && p.description.toLowerCase().includes(q)) ||
+          (p.tags && p.tags.toLowerCase().includes(q))
+      );
+    }
 
     // Subcategory filtering
     if (activeSubcat) {
       const selectedSub = subcategories.find(
         (s: any) => s.slug === activeSubcat || s.id === activeSubcat
       );
-      list = list.filter(
-        (p) =>
+      list = list.filter((p) => {
+        return (
           p.categoryId === activeSubcat ||
           (selectedSub && p.categoryId === selectedSub.id) ||
           p.category?.slug === activeSubcat ||
@@ -66,7 +162,8 @@ export default function CategoryClientView({
           (selectedSub && p.category?.name === selectedSub.name) ||
           (p.tags && p.tags.toLowerCase().includes(activeSubcat.toLowerCase())) ||
           (p.slug && p.slug.toLowerCase().includes(activeSubcat.toLowerCase()))
-      );
+        );
+      });
     }
 
     // In-stock filtering
@@ -79,12 +176,18 @@ export default function CategoryClientView({
       list.sort((a, b) => (a.discountPrice || a.price) - (b.discountPrice || b.price));
     } else if (sortBy === "price_desc") {
       list.sort((a, b) => (b.discountPrice || b.price) - (a.discountPrice || a.price));
+    } else if (sortBy === "discount_desc") {
+      list.sort((a, b) => {
+        const discA = a.discountPrice ? ((a.price - a.discountPrice) / a.price) * 100 : 0;
+        const discB = b.discountPrice ? ((b.price - b.discountPrice) / b.price) * 100 : 0;
+        return discB - discA;
+      });
     } else if (sortBy === "bestseller") {
       list.sort((a, b) => (b.isBestSeller ? 1 : 0) - (a.isBestSeller ? 1 : 0));
     }
 
     return list;
-  }, [initialProducts, activeSubcat, inStockOnly, sortBy]);
+  }, [initialProducts, searchQuery, activeSubcat, inStockOnly, sortBy, subcategories]);
 
   const activeFiltersCount =
     (activeSubcat ? 1 : 0) + (inStockOnly ? 1 : 0) + (sortBy !== "newest" ? 1 : 0);
@@ -93,366 +196,624 @@ export default function CategoryClientView({
     setActiveSubcat(null);
     setInStockOnly(false);
     setSortBy("newest");
+    setSearchQuery("");
     setIsMobileFilterOpen(false);
   };
 
   return (
-    <div className="w-full px-[4px] sm:px-2 py-3 space-y-4">
-      {/* Breadcrumb Navigation */}
-      <nav className="flex items-center gap-1.5 text-xs text-slate-500 mb-3 sm:mb-4 overflow-x-auto whitespace-nowrap scrollbar-none py-1">
-        <Link href="/" className="hover:text-emerald-700 font-semibold transition-colors">
-          Home
-        </Link>
-        <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-        <Link href="/shop" className="hover:text-emerald-700 font-semibold transition-colors">
-          Categories
-        </Link>
-        <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-        <span className="font-bold text-slate-900 truncate max-w-[150px] sm:max-w-none">
-          {category?.name || "Category"}
-        </span>
-        {activeSubcat && (
-          <>
-            <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-            <span className="font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
-              {subcategories.find((s: any) => s.slug === activeSubcat || s.id === activeSubcat)?.name ||
-                activeSubcat}
-            </span>
-          </>
-        )}
-      </nav>
+    <div className="min-h-screen bg-[#f6f3ec] text-slate-900 pb-20 md:pb-12">
+      {/* ========================================================================= */}
+      {/* 1. DEEP FOREST GREEN HEADER & CATEGORY THUMBNAIL RAIL (#123524)          */}
+      {/* ========================================================================= */}
+      <div className="bg-[#123524] text-white">
+        {/* Sticky Mobile/Desktop Top Bar */}
+        <div className="sticky top-0 z-30 bg-[#123524] border-b border-white/10 px-3 sm:px-6 py-2.5">
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
+            {/* Left: Hamburger Menu Button (opens Category Drawer) */}
+            <button
+              type="button"
+              onClick={() => setIsCategoryDrawerOpen(true)}
+              className="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer shrink-0"
+              aria-label="সব ক্যাটাগরি দেখুন"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
 
-      {/* Dynamic Category Hero Banner (Server Rendered Context) */}
-      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r from-emerald-900 via-teal-900 to-emerald-800 text-white p-4 sm:p-6 md:p-8 mb-4 sm:mb-6 shadow-md border border-emerald-800/40">
-        <div className="absolute -top-24 -right-24 w-72 h-72 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-20 -left-20 w-60 h-60 bg-teal-400/20 rounded-full blur-2xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1.5 sm:space-y-2 max-w-2xl">
-            <div className="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-md px-2.5 py-0.5 rounded-full text-[11px] font-bold text-emerald-200 uppercase tracking-wider">
-              <Sparkles className="w-3 h-3 text-amber-300" />
-              <span>Featured Category</span>
+            {/* Middle: Brand Title & Category Subtitle */}
+            <div className="flex-1 min-w-0">
+              <Link href="/" className="block">
+                <h2 className="text-sm sm:text-base font-black tracking-wide text-white truncate leading-tight">
+                  কিনেনাও ফ্যাশন
+                </h2>
+                <p className="text-[11px] font-bold text-emerald-200/90 truncate">
+                  {category?.name || "ক্যাটাগরি"} · {displayedProducts.length}টি পণ্য
+                </p>
+              </Link>
             </div>
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-white">
-              {category?.name || "Category"}
-            </h1>
-            <p className="text-xs sm:text-sm text-emerald-100/90 leading-relaxed font-medium line-clamp-2">
-              {category?.description ||
-                "১০০% খাঁটি ও সেরা মানের কালেকশন সরাসরি আমাদের স্টোর থেকে দ্রুত হোম ডেলিভারি"}
-            </p>
-          </div>
 
-          {/* Quick Stats Pill */}
-          <div className="flex items-center gap-3 self-start md:self-auto bg-black/20 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-white/10 shrink-0">
-            <div className="text-center">
-              <span className="block text-base sm:text-lg font-black text-emerald-300">
-                {displayedProducts.length}
-              </span>
-              <span className="text-[10px] text-emerald-100 font-medium">পণ্য উপলব্ধ</span>
-            </div>
-            <div className="w-px h-8 bg-white/20" />
-            <div className="text-center">
-              <span className="block text-base sm:text-lg font-black text-amber-300">
-                {subcategories.length}
-              </span>
-              <span className="text-[10px] text-emerald-100 font-medium">সাব-ক্যাটাগরি</span>
-            </div>
-          </div>
-        </div>
+            {/* Right: Wishlist & Cart Icons */}
+            <div className="flex items-center gap-2 shrink-0">
+              {/* Wishlist Link */}
+              <Link
+                href="/dashboard/wishlist"
+                className="w-9 h-9 rounded-xl hover:bg-white/10 flex items-center justify-center text-white/90 hover:text-white transition-colors"
+                title="উইশলিস্ট"
+              >
+                <Heart className="w-5 h-5" />
+              </Link>
 
-        {/* Freshness & Trust Badges Strip */}
-        <div className="relative z-10 mt-4 pt-3 border-t border-white/15 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px] sm:text-xs font-bold text-emerald-100">
-          <div className="flex items-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
-            <span>১০০% অথেনটিক পণ্য</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Truck className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
-            <span>সারা দেশে হোম ডেলিভারি</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
-            <span>ক্যাশ অন ডেলিভারি</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <RotateCcw className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
-            <span>সহজ রিটার্ন পলিসি</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Subcategories Visual Cards Grid */}
-      {subcategories.length > 0 && (
-        <div className="mb-5 sm:mb-7 space-y-3">
-          <div className="flex items-center justify-between px-1">
-            <h2 className="text-xs sm:text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-              <Layers className="w-4 h-4 text-emerald-600" />
-              <span>সাব-ক্যাটাগরি সমূহ</span>
-              <span className="text-slate-400 text-xs font-semibold">({subcategories.length})</span>
-            </h2>
-            {activeSubcat && (
+              {/* Cart Trigger with Amber Badge */}
               <button
                 type="button"
-                onClick={() => setActiveSubcat(null)}
-                className="text-xs font-bold text-emerald-700 hover:underline cursor-pointer"
+                onClick={() => setIsCartOpen(true)}
+                className="relative w-9 h-9 rounded-xl hover:bg-white/10 flex items-center justify-center text-white transition-colors cursor-pointer"
+                title="শপিং কার্ট"
               >
-                সবগুলো দেখুন (Reset Filter)
+                <ShoppingBag className="w-5 h-5" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#f59e0b] text-[#123524] font-black text-[10px] flex items-center justify-center border-2 border-[#123524] shadow-xs">
+                    {cartCount}
+                  </span>
+                )}
               </button>
-            )}
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5 sm:gap-3.5">
-            {/* All Products in Category Card */}
+          {/* Search Input Bar (Inside Forest Green Header) */}
+          <div className="max-w-7xl mx-auto mt-2.5">
+            <div className="relative flex items-center">
+              <Search className="w-4 h-4 text-emerald-300/80 absolute left-3.5 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={`${category?.name || "পণ্য"}, ওয়ালেট, ব্যাকপ্যাক খুঁজুন...`}
+                className="w-full h-10 pl-10 pr-9 rounded-xl bg-[#1b4330] text-xs font-semibold text-white placeholder-emerald-200/60 border border-emerald-600/30 focus:outline-none focus:ring-1 focus:ring-amber-400 focus:border-amber-400 transition-all"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 text-emerald-300 hover:text-white p-0.5"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Horizontal Category Thumbnail Rail (Below Header in Forest Green) */}
+        <div className="px-3 sm:px-6 py-3 border-t border-white/10 overflow-hidden">
+          <div className="max-w-7xl mx-auto flex items-center gap-3.5 overflow-x-auto scrollbar-none py-1">
+            {/* "সবগুলো" (All) Button */}
             <button
               type="button"
               onClick={() => setActiveSubcat(null)}
-              className={`group flex flex-col items-center justify-center p-3 rounded-2xl border transition-all text-center cursor-pointer ${
-                activeSubcat === null
-                  ? "bg-emerald-600 text-white border-emerald-600 ring-2 ring-emerald-300 shadow-md scale-102"
-                  : "bg-white hover:bg-slate-50 border-slate-200/90 text-slate-800 shadow-2xs hover:border-emerald-300"
+              className={`flex flex-col items-center gap-1.5 shrink-0 cursor-pointer transition-all group ${
+                activeSubcat === null ? "scale-102" : "opacity-85 hover:opacity-100"
               }`}
             >
               <div
-                className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center text-xl font-black mb-2 transition-transform group-hover:scale-105 ${
+                className={`w-14 h-14 rounded-2xl flex items-center justify-center bg-[#1b4330] text-emerald-200 shadow-sm transition-all ${
                   activeSubcat === null
-                    ? "bg-white/20 text-white"
-                    : "bg-emerald-50 text-emerald-700"
+                    ? "border-2 border-[#a9762a] ring-2 ring-[#a9762a]/40 bg-[#22573e] text-white"
+                    : "border border-white/15 group-hover:border-white/40"
                 }`}
               >
-                ✦
+                <LayoutGrid className="w-6 h-6" />
               </div>
-              <span className="text-xs sm:text-sm font-extrabold line-clamp-1">সবগুলো</span>
               <span
-                className={`text-[10px] font-medium mt-0.5 ${
-                  activeSubcat === null ? "text-emerald-100" : "text-slate-400"
+                className={`text-[11px] text-center font-bold tracking-tight ${
+                  activeSubcat === null ? "text-amber-300 font-black" : "text-white/90"
                 }`}
               >
-                {initialProducts.length} টি পণ্য
+                সবগুলো
               </span>
             </button>
 
-            {/* Subcategory Cards */}
+            {/* Dynamic Subcategories Thumbnail Items */}
             {subcategories.map((sub: any) => {
-              const isSelected = activeSubcat === sub.slug || activeSubcat === sub.id;
-              const subCount = initialProducts.filter(
-                (p: any) =>
-                  p.categoryId === sub.id ||
-                  p.categoryId === sub.slug ||
-                  p.category?.slug === sub.slug ||
-                  p.category?.id === sub.id ||
-                  (p.tags && p.tags.toLowerCase().includes(sub.name.toLowerCase()))
-              ).length;
-              const subImage =
+              const isActive = activeSubcat === sub.slug || activeSubcat === sub.id;
+              const thumb =
                 sub.imageUrl ||
                 category?.imageUrl ||
-                "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=400&auto=format&fit=crop";
+                "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=200";
 
               return (
                 <button
                   key={sub.id || sub.slug}
                   type="button"
-                  onClick={() => setActiveSubcat(isSelected ? null : sub.slug)}
-                  className={`group flex flex-col items-center p-2.5 sm:p-3 rounded-2xl border transition-all text-center cursor-pointer ${
-                    isSelected
-                      ? "bg-emerald-600 text-white border-emerald-600 ring-2 ring-emerald-300 shadow-md scale-102"
-                      : "bg-white hover:bg-slate-50 border-slate-200/90 text-slate-800 shadow-2xs hover:border-emerald-300"
+                  onClick={() => setActiveSubcat(isActive ? null : sub.slug)}
+                  className={`flex flex-col items-center gap-1.5 shrink-0 cursor-pointer transition-all group ${
+                    isActive ? "scale-102" : "opacity-85 hover:opacity-100"
                   }`}
                 >
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl overflow-hidden bg-slate-100 mb-2 border border-slate-100 transition-transform group-hover:scale-105 shadow-2xs">
-                    <img
-                      src={subImage}
-                      alt={sub.name}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                  </div>
-                  <span className="text-xs sm:text-sm font-extrabold line-clamp-1">{sub.name}</span>
-                  <span
-                    className={`text-[10px] font-medium mt-0.5 ${
-                      isSelected ? "text-emerald-100" : "text-slate-400"
+                  <div
+                    className={`w-14 h-14 rounded-2xl overflow-hidden bg-[#1b4330] transition-all relative ${
+                      isActive
+                        ? "border-2 border-[#a9762a] ring-2 ring-[#a9762a]/40 shadow-md"
+                        : "border border-white/15 group-hover:border-white/40"
                     }`}
                   >
-                    {subCount > 0 ? `${subCount} টি পণ্য` : "সাব-ক্যাটাগরি"}
+                    <img
+                      src={thumb}
+                      alt={sub.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    />
+                  </div>
+                  <span
+                    className={`text-[11px] text-center font-bold max-w-[76px] truncate ${
+                      isActive ? "text-amber-300 font-black" : "text-white/90"
+                    }`}
+                  >
+                    {sub.name}
                   </span>
                 </button>
               );
             })}
           </div>
         </div>
-      )}
+      </div>
 
-      {/* Main Content Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* DESKTOP SIDEBAR: Hidden on Mobile */}
-        <div className="hidden lg:block lg:col-span-3 sticky top-24">
-          <CategorySidebar
-            categories={categories}
-            activeCategorySlug={category?.slug}
-            activeSubcategorySlug={activeSubcat}
-            onSelectSubcategory={(subSlug) => setActiveSubcat(subSlug)}
-          />
-        </div>
+      {/* ========================================================================= */}
+      {/* 2. MAIN BODY SECTION ON WARM CREAM BACKGROUND (#f6f3ec)                 */}
+      {/* ========================================================================= */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 pt-4 space-y-4">
+        {/* Desktop Sidebar + Products Grid 2-Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* DESKTOP LEFT SIDEBAR (Screenshot 4) */}
+          <div className="hidden lg:block lg:col-span-3 space-y-3 sticky top-24">
+            <div className="bg-white rounded-3xl p-4 border border-[#e8e4db] shadow-xs space-y-3">
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 px-1">
+                ক্যাটাগরি
+              </h3>
 
-        {/* MAIN PRODUCT AREA */}
-        <div className="lg:col-span-9 space-y-4">
-          {/* Sticky Compact Mobile Control Bar */}
-          <div className="sticky top-16 z-20 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-2.5 sm:p-3 flex items-center justify-between gap-2 shadow-xs">
-            {/* Left: Mobile Drawer Trigger */}
-            <div className="flex items-center gap-2">
+              {/* All Categories & Subcategories Drawer Trigger Button */}
               <button
                 type="button"
-                onClick={() => setIsMobileFilterOpen(true)}
-                className="lg:hidden flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl text-xs font-extrabold shadow-2xs transition-all cursor-pointer"
+                onClick={() => setIsCategoryDrawerOpen(true)}
+                className="w-full flex items-center justify-between p-3 rounded-2xl bg-emerald-50 text-[#123524] hover:bg-emerald-100/80 font-extrabold text-xs transition-colors border border-emerald-200/80 cursor-pointer"
               >
-                <Filter className="w-3.5 h-3.5" />
-                <span>ক্যাটাগরি ও ফিল্টার</span>
-                {activeFiltersCount > 0 && (
-                  <span className="w-4 h-4 rounded-full bg-white text-emerald-700 text-[10px] font-black flex items-center justify-center">
-                    {activeFiltersCount}
-                  </span>
-                )}
+                <span>সব ক্যাটাগরি ও সাব-ক্যাটাগরি</span>
+                <ChevronRight className="w-4 h-4 text-emerald-700" />
               </button>
 
-              <p className="text-xs sm:text-sm font-bold text-slate-700 hidden xs:block">
-                মোট <span className="text-emerald-700 font-black">{displayedProducts.length}</span> টি
-                পণ্য
-              </p>
-            </div>
+              {/* Categories list */}
+              <div className="space-y-1 pt-1">
+                {categories.map((cat) => {
+                  const isCurrent = cat.slug === category?.slug || cat.id === category?.id;
+                  const Icon = getCategoryIcon(cat.name, cat.slug);
 
-            {/* Right: Controls (In Stock + Sort + View Toggle) */}
-            <div className="flex items-center gap-1.5 sm:gap-2.5">
-              <label className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-slate-50 border border-slate-200 px-2.5 py-1.5 rounded-xl cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={inStockOnly}
-                  onChange={(e) => setInStockOnly(e.target.checked)}
-                  className="w-3.5 h-3.5 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-                />
-                <span>স্টকে আছে</span>
-              </label>
-
-              <div className="flex items-center gap-1 bg-slate-50 border border-slate-200/90 rounded-xl px-2 sm:px-2.5 py-1.5">
-                <ArrowUpDown className="w-3 h-3 text-slate-400 shrink-0" />
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="bg-transparent text-[11px] sm:text-xs font-bold text-slate-800 focus:outline-none cursor-pointer pr-1"
-                >
-                  <option value="newest">নতুন পণ্য</option>
-                  <option value="bestseller">জনপ্রিয়</option>
-                  <option value="price_asc">দাম: কম থেকে বেশি</option>
-                  <option value="price_desc">দাম: বেশি থেকে কম</option>
-                </select>
-              </div>
-
-              <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setViewMode("grid")}
-                  className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                    viewMode === "grid"
-                      ? "bg-white text-emerald-700 shadow-2xs"
-                      : "text-slate-400 hover:text-slate-700"
-                  }`}
-                  title="Grid View"
-                >
-                  <Grid2X2 className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMode("list")}
-                  className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                    viewMode === "list"
-                      ? "bg-white text-emerald-700 shadow-2xs"
-                      : "text-slate-400 hover:text-slate-700"
-                  }`}
-                  title="List View"
-                >
-                  <List className="w-3.5 h-3.5" />
-                </button>
+                  return (
+                    <Link
+                      key={cat.id || cat.slug}
+                      href={`/category/${cat.slug}`}
+                      className={`flex items-center justify-between px-3 py-2.5 rounded-2xl text-xs font-bold transition-all ${
+                        isCurrent
+                          ? "bg-[#eaf4ee] text-[#123524] font-black border border-emerald-300/80 shadow-2xs"
+                          : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 truncate">
+                        <Icon className={`w-3.5 h-3.5 ${isCurrent ? "text-[#123524]" : "text-slate-400"}`} />
+                        <span className="truncate">{cat.name}</span>
+                      </div>
+                      {cat._count?.products !== undefined && (
+                        <span className="text-[10px] text-slate-400 font-semibold">
+                          {cat._count.products}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           </div>
 
-          {/* Active Filters Pill Bar */}
-          {activeFiltersCount > 0 && (
-            <div className="flex flex-wrap items-center gap-2 px-1">
-              <span className="text-[11px] font-bold text-slate-400">ফিল্টার:</span>
-              {activeSubcat && (
-                <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 text-xs font-bold px-2.5 py-1 rounded-xl border border-emerald-200">
-                  <span>
-                    {subcategories.find((s: any) => s.slug === activeSubcat || s.id === activeSubcat)
-                      ?.name || activeSubcat}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setActiveSubcat(null)}
-                    className="hover:bg-emerald-200/60 rounded-full p-0.5 cursor-pointer"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              )}
-              {inStockOnly && (
-                <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 text-xs font-bold px-2.5 py-1 rounded-xl border border-emerald-200">
-                  <span>স্টকে আছে</span>
-                  <button
-                    type="button"
-                    onClick={() => setInStockOnly(false)}
-                    className="hover:bg-emerald-200/60 rounded-full p-0.5 cursor-pointer"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              )}
-              <button
-                type="button"
-                onClick={resetAllFilters}
-                className="text-xs font-extrabold text-rose-600 hover:underline ml-1 cursor-pointer"
-              >
-                ক্লিয়ার করুন
-              </button>
-            </div>
-          )}
+          {/* MAIN PRODUCTS AREA */}
+          <div className="lg:col-span-9 space-y-4">
+            {/* Breadcrumb & Category Title Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <nav className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold">
+                  <Link href="/" className="hover:text-[#123524] transition-colors">
+                    হোম
+                  </Link>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <span className="text-slate-700">{category?.name || "ক্যাটাগরি"}</span>
+                  {activeSubcat && (
+                    <>
+                      <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span className="text-[#123524] font-black">
+                        {subcategories.find((s: any) => s.slug === activeSubcat || s.id === activeSubcat)?.name ||
+                          activeSubcat}
+                      </span>
+                    </>
+                  )}
+                </nav>
 
-          {/* Products Grid / List Display from Database */}
-          {displayedProducts.length === 0 ? (
-            <div className="bg-white border border-slate-200/90 rounded-3xl p-8 sm:p-12 text-center space-y-3 shadow-xs">
-              <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto">
-                <Tag className="w-7 h-7" />
+                <h1 className="text-xl sm:text-2xl font-black text-[#123524] tracking-tight mt-1">
+                  {activeSubcat
+                    ? subcategories.find((s: any) => s.slug === activeSubcat || s.id === activeSubcat)?.name ||
+                      category?.name
+                    : category?.name || "ব্যাগ ও পার্স"}
+                </h1>
               </div>
-              <h3 className="text-base font-extrabold text-slate-800">
-                এই ক্যাটাগরিতে বর্তমানে কোনো পণ্য নেই
-              </h3>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                ডাটাবেজে বর্তমানে এই সাব-ক্যাটাগরিতে কোনো পণ্য পাওয়া যায়নি। অন্য ক্যাটাগরি ব্রাউজ
-                করুন।
-              </p>
-              <button
-                type="button"
-                onClick={resetAllFilters}
-                className="inline-block bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-6 py-2.5 rounded-xl transition-all shadow-xs cursor-pointer"
-              >
-                সব ফিল্টার রিসেট করুন
-              </button>
+
+              {/* Product Count Pill */}
+              <div className="self-start sm:self-auto">
+                <span className="inline-block bg-white px-3.5 py-1.5 rounded-full border border-[#e8e4db] text-xs font-black text-slate-700 shadow-2xs">
+                  {displayedProducts.length} টি পণ্য
+                </span>
+              </div>
             </div>
-          ) : viewMode === "list" ? (
-            <div className="flex flex-col gap-3">
-              {displayedProducts.map((prod) => (
-                <ProductCard key={prod.id} product={prod} viewMode="list" />
-              ))}
+
+            {/* STICKY / INLINE TOOLBAR (Filter, Sort, View Toggle) */}
+            <div className="sticky top-[108px] sm:top-0 z-20 bg-[#f6f3ec]/95 backdrop-blur-xs py-1">
+              <div className="flex items-center gap-2">
+                {/* 1. Filter Button (Opens Bottom Sheet on Mobile / Sidebar toggle) */}
+                <button
+                  type="button"
+                  onClick={() => setIsMobileFilterOpen(true)}
+                  className={`flex-1 sm:flex-none flex items-center justify-center gap-2 h-11 px-4 rounded-2xl bg-white border text-xs font-black transition-all shadow-2xs cursor-pointer ${
+                    activeFiltersCount > 0
+                      ? "border-[#123524] text-[#123524] bg-emerald-50/60"
+                      : "border-[#e8e4db] text-slate-800 hover:border-slate-300"
+                  }`}
+                >
+                  <Filter className="w-3.5 h-3.5 text-[#123524]" />
+                  <span>ফিল্টার</span>
+                  {activeFiltersCount > 0 && (
+                    <span className="w-4.5 h-4.5 rounded-full bg-[#123524] text-white text-[10px] flex items-center justify-center">
+                      {activeFiltersCount}
+                    </span>
+                  )}
+                </button>
+
+                {/* 2. Sort Dropdown Pill */}
+                <div className="relative flex-1 sm:flex-none">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="w-full sm:w-44 h-11 pl-3.5 pr-8 rounded-2xl bg-white border border-[#e8e4db] text-xs font-black text-slate-800 appearance-none focus:outline-none focus:ring-1 focus:ring-[#123524] shadow-2xs cursor-pointer"
+                  >
+                    <option value="newest">নতুন আগে</option>
+                    <option value="price_asc">দাম: কম থেকে বেশি</option>
+                    <option value="price_desc">দাম: বেশি থেকে কম</option>
+                    <option value="discount_desc">সবচেয়ে বেশি ছাড়</option>
+                    <option value="bestseller">জনপ্রিয় পণ্য</option>
+                  </select>
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+
+                {/* 3. In-Stock Fast Toggle (Desktop) */}
+                <label className="hidden sm:flex items-center gap-2 h-11 px-3.5 rounded-2xl bg-white border border-[#e8e4db] text-xs font-bold text-slate-700 shadow-2xs cursor-pointer hover:border-slate-300 select-none">
+                  <input
+                    type="checkbox"
+                    checked={inStockOnly}
+                    onChange={(e) => setInStockOnly(e.target.checked)}
+                    className="rounded text-[#123524] focus:ring-[#123524] w-3.5 h-3.5 accent-[#123524]"
+                  />
+                  <span>✓ স্টকে আছে</span>
+                </label>
+
+                {/* 4. Grid / List View Mode Toggle */}
+                <div className="flex items-center bg-white border border-[#e8e4db] rounded-2xl p-1 shadow-2xs shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("grid")}
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors cursor-pointer ${
+                      viewMode === "grid"
+                        ? "bg-[#123524] text-white shadow-2xs"
+                        : "text-slate-400 hover:text-slate-700"
+                    }`}
+                    title="গ্রিড ভিউ"
+                  >
+                    <Grid2X2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("list")}
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors cursor-pointer ${
+                      viewMode === "list"
+                        ? "bg-[#123524] text-white shadow-2xs"
+                        : "text-slate-400 hover:text-slate-700"
+                    }`}
+                    title="লিস্ট ভিউ"
+                  >
+                    <ListIcon className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
             </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-4">
-              {displayedProducts.map((prod) => (
-                <ProductCard key={prod.id} product={prod} viewMode="grid" />
-              ))}
-            </div>
-          )}
+
+            {/* EMPTY PRODUCTS STATE */}
+            {displayedProducts.length === 0 && (
+              <div className="bg-white rounded-3xl border border-[#e8e4db] p-8 sm:p-12 text-center space-y-3 shadow-xs">
+                <div className="w-16 h-16 rounded-full bg-emerald-50 text-[#123524] flex items-center justify-center mx-auto">
+                  <ShoppingBag className="w-7 h-7" />
+                </div>
+                <h3 className="text-base font-black text-slate-800">
+                  কোনো পণ্য খুঁজে পাওয়া যায়নি
+                </h3>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                  আপনার নির্বাচিত ফিল্টার বা সার্চ অনুযায়ী কোনো পণ্য নেই। ফিল্টার রিসেট করে আবার চেষ্টা করুন।
+                </p>
+                <button
+                  type="button"
+                  onClick={resetAllFilters}
+                  className="px-5 py-2.5 rounded-xl bg-[#123524] hover:bg-[#1b4330] text-white text-xs font-black transition-colors cursor-pointer shadow-xs"
+                >
+                  ফিল্টার রিসেট করুন
+                </button>
+              </div>
+            )}
+
+            {/* ================================================================= */}
+            {/* PRODUCT CARDS (GRID VIEW: 2-Col Mobile, 3 Tablet, 4 Desktop)     */}
+            {/* ================================================================= */}
+            {displayedProducts.length > 0 && viewMode === "grid" && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+                {displayedProducts.map((product) => {
+                  const displayPrice =
+                    product.discountPrice !== null && product.discountPrice !== undefined
+                      ? product.discountPrice
+                      : product.price;
+                  const originalPrice = product.price;
+                  const hasDiscount =
+                    product.discountPrice !== null &&
+                    product.discountPrice !== undefined &&
+                    product.price > product.discountPrice;
+                  const discountPercent = hasDiscount
+                    ? Math.round(((originalPrice - displayPrice) / originalPrice) * 100)
+                    : 0;
+                  const thumb =
+                    product.thumbnail ||
+                    (product.images && product.images[0]) ||
+                    "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=400";
+                  const isWishlisted = Boolean(wishlistIds[product.id]);
+                  const hasVideo = Boolean(product.videoUrl);
+
+                  return (
+                    <div
+                      key={product.id}
+                      className="group bg-white rounded-2xl sm:rounded-3xl border border-[#e8e4db] shadow-2xs hover:shadow-md transition-all overflow-hidden flex flex-col justify-between hover:border-[#123524]/30"
+                    >
+                      {/* Image Area */}
+                      <div>
+                        <div className="relative aspect-square w-full bg-slate-100 overflow-hidden">
+                          {/* Wishlist Heart Button (Top-Left) */}
+                          <button
+                            type="button"
+                            onClick={(e) => toggleWishlist(product.id, product.name, e)}
+                            className="absolute top-2 left-2 z-10 w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-full bg-white/90 backdrop-blur-xs flex items-center justify-center text-slate-700 hover:text-rose-600 transition-transform active:scale-90 shadow-xs cursor-pointer"
+                            aria-label="উইশলিস্টে যুক্ত করুন"
+                          >
+                            <Heart
+                              className={`w-4 h-4 ${
+                                isWishlisted ? "fill-rose-500 text-rose-500" : ""
+                              }`}
+                            />
+                          </button>
+
+                          {/* Discount Tag Badge (Top-Right) */}
+                          {hasDiscount && (
+                            <span className="absolute top-0 right-0 z-10 bg-[#123524] text-white font-black text-[10px] sm:text-[11px] px-2 py-1 rounded-bl-xl shadow-xs">
+                              {discountPercent}% ছাড়
+                            </span>
+                          )}
+
+                          {/* Product Thumbnail */}
+                          <Link href={`/product/${product.slug || product.id}`} className="block w-full h-full">
+                            <img
+                              src={thumb}
+                              alt={product.name}
+                              className="w-full h-full object-cover group-hover:scale-104 transition-transform duration-300"
+                              loading="lazy"
+                            />
+                          </Link>
+
+                          {/* Video Tag (Bottom-Left) */}
+                          {hasVideo && (
+                            <div className="absolute bottom-2 left-2 z-10 bg-black/75 backdrop-blur-xs text-white text-[9px] sm:text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-xs">
+                              <Play className="w-2.5 h-2.5 fill-white" />
+                              <span>ভিডিও</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Dotted border separator */}
+                        <div className="border-b border-dashed border-slate-200" />
+
+                        {/* Content Area */}
+                        <div className="p-2.5 sm:p-3.5 space-y-1.5">
+                          {/* Subcategory / Tag Tagline */}
+                          <p className="text-[10px] font-extrabold text-emerald-800 truncate">
+                            {product.category?.name || category?.name || "ফ্যাশন"}
+                          </p>
+
+                          {/* Product Title */}
+                          <Link href={`/product/${product.slug || product.id}`} className="block">
+                            <h3 className="text-xs sm:text-sm font-black text-slate-900 line-clamp-2 leading-tight group-hover:text-[#123524] transition-colors min-h-[32px]">
+                              {product.name}
+                            </h3>
+                          </Link>
+
+                          {/* Price & Original Strikethrough */}
+                          <div className="flex items-baseline gap-1.5 pt-0.5">
+                            <span className="text-sm sm:text-base font-black text-[#123524]">
+                              ৳{displayPrice.toLocaleString()}
+                            </span>
+                            {hasDiscount && (
+                              <span className="text-[11px] text-slate-400 font-semibold line-through">
+                                ৳{originalPrice.toLocaleString()}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Savings Badge Pill */}
+                          {hasDiscount && (
+                            <div className="pt-0.5">
+                              <span className="inline-block bg-[#fef3c7] text-[#92400e] border border-[#fde68a] text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 rounded-md">
+                                {discountPercent}% ছাড়
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Bottom Actions Row (Cart + Order Now Button) */}
+                      <div className="p-2.5 sm:p-3.5 pt-0 flex items-center gap-1.5">
+                        {/* Cart Button */}
+                        <button
+                          type="button"
+                          onClick={(e) => handleAddToCart(product, e)}
+                          className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 flex items-center justify-center text-slate-700 hover:text-slate-900 transition-colors cursor-pointer shrink-0"
+                          title="কার্টে যোগ করুন"
+                        >
+                          <ShoppingBag className="w-4 h-4" />
+                        </button>
+
+                        {/* Order Now Button */}
+                        <button
+                          type="button"
+                          onClick={(e) => handleDirectOrder(product, e)}
+                          className="flex-1 h-9 sm:h-10 rounded-xl bg-[#123524] hover:bg-[#1b4d36] active:scale-[0.98] text-white text-[11px] sm:text-xs font-black flex items-center justify-center gap-1 transition-all shadow-xs cursor-pointer"
+                        >
+                          <Zap className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
+                          <span>অর্ডার করুন</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* ================================================================= */}
+            {/* PRODUCT CARDS (LIST VIEW: Horizontal Cards - Screenshot 2)       */}
+            {/* ================================================================= */}
+            {displayedProducts.length > 0 && viewMode === "list" && (
+              <div className="space-y-3">
+                {displayedProducts.map((product) => {
+                  const displayPrice =
+                    product.discountPrice !== null && product.discountPrice !== undefined
+                      ? product.discountPrice
+                      : product.price;
+                  const originalPrice = product.price;
+                  const hasDiscount =
+                    product.discountPrice !== null &&
+                    product.discountPrice !== undefined &&
+                    product.price > product.discountPrice;
+                  const discountPercent = hasDiscount
+                    ? Math.round(((originalPrice - displayPrice) / originalPrice) * 100)
+                    : 0;
+                  const thumb =
+                    product.thumbnail ||
+                    (product.images && product.images[0]) ||
+                    "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=400";
+                  const isWishlisted = Boolean(wishlistIds[product.id]);
+                  const hasVideo = Boolean(product.videoUrl);
+
+                  return (
+                    <div
+                      key={product.id}
+                      className="group bg-white rounded-3xl border border-[#e8e4db] shadow-2xs hover:shadow-md transition-all p-3 flex gap-3.5 sm:gap-5 items-center hover:border-[#123524]/30"
+                    >
+                      {/* Left: Square Thumbnail */}
+                      <div className="relative w-28 h-28 sm:w-36 sm:h-36 rounded-2xl bg-slate-100 overflow-hidden shrink-0">
+                        <button
+                          type="button"
+                          onClick={(e) => toggleWishlist(product.id, product.name, e)}
+                          className="absolute top-2 left-2 z-10 w-7 h-7 rounded-full bg-white/90 flex items-center justify-center text-slate-700 hover:text-rose-600 shadow-xs cursor-pointer"
+                        >
+                          <Heart className={`w-3.5 h-3.5 ${isWishlisted ? "fill-rose-500 text-rose-500" : ""}`} />
+                        </button>
+
+                        {hasDiscount && (
+                          <span className="absolute top-0 right-0 z-10 bg-[#123524] text-white font-black text-[9px] px-1.5 py-0.5 rounded-bl-lg">
+                            {discountPercent}% ছাড়
+                          </span>
+                        )}
+
+                        <Link href={`/product/${product.slug || product.id}`} className="block w-full h-full">
+                          <img
+                            src={thumb}
+                            alt={product.name}
+                            className="w-full h-full object-cover group-hover:scale-104 transition-transform"
+                          />
+                        </Link>
+
+                        {hasVideo && (
+                          <div className="absolute bottom-1.5 left-1.5 z-10 bg-black/75 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                            <Play className="w-2 h-2 fill-white" />
+                            <span>ভিডিও</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Right: Info & Actions */}
+                      <div className="flex-1 min-w-0 space-y-1.5">
+                        <p className="text-[10px] font-extrabold text-emerald-800 truncate">
+                          {product.category?.name || category?.name || "ফ্যাশন"}
+                        </p>
+
+                        <Link href={`/product/${product.slug || product.id}`}>
+                          <h3 className="text-xs sm:text-base font-black text-slate-900 line-clamp-2 leading-tight group-hover:text-[#123524] transition-colors">
+                            {product.name}
+                          </h3>
+                        </Link>
+
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-sm sm:text-lg font-black text-[#123524]">
+                            ৳{displayPrice.toLocaleString()}
+                          </span>
+                          {hasDiscount && (
+                            <span className="text-xs text-slate-400 font-semibold line-through">
+                              ৳{originalPrice.toLocaleString()}
+                            </span>
+                          )}
+                        </div>
+
+                        {hasDiscount && (
+                          <span className="inline-block bg-[#fef3c7] text-[#92400e] border border-[#fde68a] text-[9px] font-black px-1.5 py-0.5 rounded-md">
+                            {discountPercent}% ছাড়
+                          </span>
+                        )}
+
+                        <div className="flex items-center gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={(e) => handleAddToCart(product, e)}
+                            className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 flex items-center justify-center text-slate-700 cursor-pointer shrink-0"
+                            title="কার্টে যোগ করুন"
+                          >
+                            <ShoppingBag className="w-4 h-4" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => handleDirectOrder(product, e)}
+                            className="h-9 px-4 rounded-xl bg-[#123524] hover:bg-[#1b4d36] text-white text-xs font-black flex items-center justify-center gap-1 shadow-xs cursor-pointer"
+                          >
+                            <Zap className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
+                            <span>অর্ডার করুন</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Slide-Up Mobile Filter & Category Drawer */}
+      {/* ========================================================================= */}
+      {/* 3. SLIDE-UP BOTTOM SHEET FOR FILTERS & SORT (Screenshot 3)               */}
+      {/* ========================================================================= */}
       <AnimatePresence>
         {isMobileFilterOpen && (
           <>
@@ -461,186 +822,492 @@ export default function CategoryClientView({
               animate={{ opacity: 0.5 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsMobileFilterOpen(false)}
-              className="fixed inset-0 z-50 bg-black backdrop-blur-xs"
+              className="fixed inset-0 z-50 bg-black"
             />
-
             <motion.div
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 280 }}
-              className="fixed bottom-0 left-0 right-0 z-50 max-h-[85vh] bg-white rounded-t-[28px] shadow-2xl flex flex-col overflow-hidden border-t border-slate-200"
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl max-h-[85vh] flex flex-col shadow-2xl border-t border-slate-200 overflow-hidden"
             >
-              {/* Sheet Header */}
-              <div className="p-4 border-b border-slate-100 flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
-                    <Filter className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="font-black text-sm text-slate-900">ক্যাটাগরি ও ফিল্টার মেনু</h3>
-                    <p className="text-[10px] text-slate-400 font-medium">
-                      সাব-ক্যাটাগরি বা অন্য ক্যাটাগরি ব্রাউজ করুন
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {activeFiltersCount > 0 && (
+              {/* Sheet Top Drag Bar & Header */}
+              <div className="p-4 pb-3 border-b border-slate-100 flex items-center justify-between">
+                <div className="w-full flex flex-col items-center">
+                  <div className="w-12 h-1.5 rounded-full bg-slate-300 mb-3" />
+                  <div className="w-full flex items-center justify-between">
+                    <h3 className="text-sm font-black text-slate-900">ফিল্টার ও সর্ট</h3>
                     <button
                       type="button"
-                      onClick={resetAllFilters}
-                      className="text-xs font-bold text-rose-600 hover:underline px-2 py-1 cursor-pointer"
+                      onClick={() => setIsMobileFilterOpen(false)}
+                      className="p-1 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
                     >
-                      ক্লিয়ার
+                      <X className="w-5 h-5" />
                     </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setIsMobileFilterOpen(false)}
-                    className="p-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+                  </div>
                 </div>
               </div>
 
-              {/* Sheet Body */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-5">
-                {/* 1. Subcategories Quick Selector */}
-                {subcategories.length > 0 && (
-                  <div>
-                    <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider mb-2.5">
-                      বর্তমান ক্যাটাগরির সাব-ক্যাটাগরি
-                    </h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setActiveSubcat(null)}
-                        className={`p-2.5 rounded-xl text-xs font-bold flex items-center justify-between border cursor-pointer ${
-                          activeSubcat === null
-                            ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
-                            : "bg-slate-50 text-slate-700 border-slate-200"
-                        }`}
+              {/* Scrollable Filter Options */}
+              <div className="flex-1 overflow-y-auto p-5 space-y-6">
+                {/* 1. Sort Options (Radio buttons) */}
+                <div className="space-y-3">
+                  <h4 className="text-xs font-black text-slate-700 uppercase tracking-wider">
+                    সর্ট করুন
+                  </h4>
+                  <div className="space-y-2.5">
+                    {[
+                      { id: "newest", label: "নতুন পণ্য আগে" },
+                      { id: "price_asc", label: "দাম: কম থেকে বেশি" },
+                      { id: "price_desc", label: "দাম: বেশি থেকে কম" },
+                      { id: "discount_desc", label: "সবচেয়ে বেশি ছাড়" },
+                      { id: "bestseller", label: "জনপ্রিয় পণ্য" },
+                    ].map((opt) => (
+                      <label
+                        key={opt.id}
+                        className="flex items-center gap-3 text-xs font-bold text-slate-800 cursor-pointer"
                       >
-                        <span>সবগুলো পণ্য</span>
-                        {activeSubcat === null && <Check className="w-3.5 h-3.5" />}
-                      </button>
+                        <input
+                          type="radio"
+                          name="sortGroup"
+                          value={opt.id}
+                          checked={sortBy === opt.id}
+                          onChange={() => setSortBy(opt.id)}
+                          className="w-4 h-4 text-[#123524] accent-[#123524] cursor-pointer"
+                        />
+                        <span>{opt.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
 
+                {/* 2. Subcategories List (Checkboxes) */}
+                {subcategories.length > 0 && (
+                  <div className="space-y-3 pt-4 border-t border-slate-100">
+                    <h4 className="text-xs font-black text-slate-700 uppercase tracking-wider">
+                      উপ-ক্যাটাগরি
+                    </h4>
+                    <div className="space-y-2.5">
                       {subcategories.map((sub: any) => {
-                        const isSelected = activeSubcat === sub.slug || activeSubcat === sub.id;
+                        const isChecked = activeSubcat === sub.slug;
                         return (
-                          <button
+                          <label
                             key={sub.id || sub.slug}
-                            type="button"
-                            onClick={() => setActiveSubcat(isSelected ? null : sub.slug)}
-                            className={`p-2.5 rounded-xl text-xs font-bold flex items-center justify-between border cursor-pointer ${
-                              isSelected
-                                ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
-                                : "bg-slate-50 text-slate-700 border-slate-200"
-                            }`}
+                            className="flex items-center justify-between text-xs font-bold text-slate-800 cursor-pointer"
                           >
-                            <span className="truncate">{sub.name}</span>
-                            {isSelected && <Check className="w-3.5 h-3.5 shrink-0" />}
-                          </button>
+                            <span>{sub.name}</span>
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => setActiveSubcat(isChecked ? null : sub.slug)}
+                              className="w-4 h-4 rounded text-[#123524] accent-[#123524] cursor-pointer"
+                            />
+                          </label>
                         );
                       })}
                     </div>
                   </div>
                 )}
 
-                {/* 2. Stock Filter Toggle */}
-                <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-3 flex items-center justify-between">
-                  <div>
-                    <span className="text-xs font-bold text-slate-800 block">
-                      ইন-স্টক পণ্য শুধু দেখুন
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-medium">
-                      যেগুলো স্টকে আছে সেগুলো দেখাবে
-                    </span>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
+                {/* 3. Stock Filter */}
+                <div className="space-y-3 pt-4 border-t border-slate-100">
+                  <h4 className="text-xs font-black text-slate-700 uppercase tracking-wider">
+                    স্টক
+                  </h4>
+                  <label className="flex items-center justify-between text-xs font-bold text-slate-800 cursor-pointer">
+                    <span>শুধু স্টকে আছে</span>
                     <input
                       type="checkbox"
                       checked={inStockOnly}
                       onChange={(e) => setInStockOnly(e.target.checked)}
-                      className="sr-only peer"
+                      className="w-4 h-4 rounded text-[#123524] accent-[#123524] cursor-pointer"
                     />
-                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
                   </label>
-                </div>
-
-                {/* 3. Sort Options */}
-                <div>
-                  <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider mb-2.5">
-                    সর্টিং ক্রম
-                  </h4>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { id: "newest", label: "নতুন পণ্য" },
-                      { id: "bestseller", label: "বেস্ট সেলার" },
-                      { id: "price_asc", label: "দাম: কম থেকে বেশি" },
-                      { id: "price_desc", label: "দাম: বেশি থেকে কম" },
-                    ].map((opt) => (
-                      <button
-                        key={opt.id}
-                        type="button"
-                        onClick={() => setSortBy(opt.id)}
-                        className={`p-2.5 rounded-xl text-xs font-bold flex items-center justify-between border cursor-pointer ${
-                          sortBy === opt.id
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-400 font-black"
-                            : "bg-white text-slate-700 border-slate-200"
-                        }`}
-                      >
-                        <span>{opt.label}</span>
-                        {sortBy === opt.id && <Check className="w-3.5 h-3.5 text-emerald-700" />}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 4. Switch to other Database Categories */}
-                <div>
-                  <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider mb-2.5">
-                    অন্যান্য ক্যাটাগরি ব্রাউজ করুন ({categories.length})
-                  </h4>
-                  <div className="space-y-1">
-                    {categories.map((cat) => {
-                      const isActive = cat.slug === category?.slug || cat.id === category?.id;
-                      return (
-                        <Link
-                          key={cat.id || cat.slug}
-                          href={`/category/${cat.slug}`}
-                          onClick={() => setIsMobileFilterOpen(false)}
-                          className={`flex items-center justify-between p-2.5 rounded-xl text-xs font-bold transition-colors ${
-                            isActive
-                              ? "bg-emerald-600 text-white font-extrabold"
-                              : "bg-slate-50 text-slate-700 hover:bg-slate-100"
-                          }`}
-                        >
-                          <span className="truncate">{cat.name}</span>
-                          <ChevronRight className="w-3.5 h-3.5 opacity-60 shrink-0" />
-                        </Link>
-                      );
-                    })}
-                  </div>
                 </div>
               </div>
 
-              {/* Sheet Apply Footer */}
-              <div className="p-4 border-t border-slate-100 bg-slate-50 shrink-0">
+              {/* Bottom Action Buttons */}
+              <div className="p-4 border-t border-slate-100 bg-slate-50/80 flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={resetAllFilters}
+                  className="flex-1 py-3 rounded-2xl bg-white border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-100 transition-colors cursor-pointer"
+                >
+                  রিসেট
+                </button>
                 <button
                   type="button"
                   onClick={() => setIsMobileFilterOpen(false)}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer"
+                  className="flex-1 py-3 rounded-2xl bg-[#123524] hover:bg-[#1b4330] text-white font-black text-xs transition-colors shadow-sm cursor-pointer"
                 >
-                  ফিল্টার প্রয়োগ করুন ({displayedProducts.length} টি পণ্য)
+                  ফিল্টার প্রয়োগ করুন
                 </button>
               </div>
             </motion.div>
           </>
         )}
       </AnimatePresence>
+
+      {/* ========================================================================= */}
+      {/* 4. SLIDE-IN LEFT DRAWER FOR ALL CATEGORIES (Screenshot 5)                */}
+      {/* ========================================================================= */}
+      <AnimatePresence>
+        {isCategoryDrawerOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.5 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsCategoryDrawerOpen(false)}
+              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs"
+            />
+            <motion.div
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 280 }}
+              className="fixed top-0 left-0 bottom-0 z-50 w-[85%] max-w-sm bg-white shadow-2xl flex flex-col overflow-hidden border-r border-slate-200"
+            >
+              {/* Drawer Top Header (Forest Green) */}
+              <div className="flex h-16 items-center justify-between px-5 bg-[#123524] text-white">
+                <div>
+                  <h3 className="font-black text-base tracking-wide text-white leading-tight">
+                    সব ক্যাটাগরি
+                  </h3>
+                  <p className="text-[10px] text-emerald-200 font-semibold">
+                    {categories.length}টি মূল ক্যাটাগরি
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsCategoryDrawerOpen(false)}
+                    className="p-1.5 rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Accordion Categories List */}
+              <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
+                {categories.map((cat) => {
+                  const Icon = getCategoryIcon(cat.name, cat.slug);
+                  const isCurrent = cat.slug === category?.slug || cat.id === category?.id;
+                  const hasChildren = (cat.childCategories && cat.childCategories.length > 0) || (cat.children && cat.children.length > 0);
+                  const childrenList = cat.childCategories || cat.children || [];
+                  const isExpanded = Boolean(expandedDrawerCats[cat.id || cat.slug]);
+
+                  return (
+                    <div
+                      key={cat.id || cat.slug}
+                      className={`border rounded-2xl overflow-hidden transition-all ${
+                        isCurrent ? "border-emerald-300 bg-[#eaf4ee]/60" : "border-slate-200/80 bg-white"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between p-2.5 hover:bg-slate-50 transition-colors">
+                        <Link
+                          href={`/category/${cat.slug}`}
+                          onClick={() => setIsCategoryDrawerOpen(false)}
+                          className="flex items-center gap-2.5 min-w-0 flex-1"
+                        >
+                          <div
+                            className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${
+                              isCurrent ? "bg-[#123524] text-white" : "bg-slate-100 text-slate-700"
+                            }`}
+                          >
+                            <Icon className="w-3.5 h-3.5" />
+                          </div>
+                          <span
+                            className={`text-xs truncate ${
+                              isCurrent ? "font-black text-[#123524]" : "font-extrabold text-slate-800"
+                            }`}
+                          >
+                            {cat.name}
+                          </span>
+                        </Link>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {cat._count?.products !== undefined && (
+                            <span className="text-[10px] text-slate-400 font-bold">
+                              {cat._count.products} পণ্য
+                            </span>
+                          )}
+                          {hasChildren && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                toggleDrawerCategory(cat.id || cat.slug);
+                              }}
+                              className="p-1 text-slate-400 hover:text-[#123524] cursor-pointer"
+                            >
+                              <ChevronDown
+                                className={`w-4 h-4 transition-transform duration-200 ${
+                                  isExpanded ? "rotate-180 text-[#123524]" : ""
+                                }`}
+                              />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Subcategories list */}
+                      {hasChildren && isExpanded && (
+                        <div className="bg-slate-50/90 px-3.5 py-2 space-y-1 border-t border-slate-100">
+                          {childrenList.map((sub: any) => {
+                            const isSubActive = activeSubcat === sub.slug;
+                            return (
+                              <Link
+                                key={sub.id || sub.slug}
+                                href={`/category/${cat.slug}?sub=${sub.slug}`}
+                                onClick={() => setIsCategoryDrawerOpen(false)}
+                                className={`flex items-center justify-between py-1.5 px-2.5 rounded-xl text-xs font-bold transition-colors ${
+                                  isSubActive
+                                    ? "bg-[#123524] text-white font-black"
+                                    : "text-slate-600 hover:text-[#123524] hover:bg-white"
+                                }`}
+                              >
+                                <span>• {sub.name}</span>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Drawer Bottom Actions */}
+              <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between text-xs font-bold">
+                <Link
+                  href="/shop"
+                  onClick={() => setIsCategoryDrawerOpen(false)}
+                  className="text-[#123524] font-black hover:underline"
+                >
+                  সকল পণ্য দেখুন →
+                </Link>
+                <Link
+                  href="/dashboard"
+                  onClick={() => setIsCategoryDrawerOpen(false)}
+                  className="text-slate-600 hover:text-slate-900"
+                >
+                  আমার একাউন্ট
+                </Link>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ========================================================================= */}
+      {/* 5. SLIDING CART DRAWER                                                   */}
+      {/* ========================================================================= */}
+      <AnimatePresence>
+        {isCartOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.5 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsCartOpen(false)}
+              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs"
+            />
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "tween", duration: 0.3 }}
+              className="fixed top-0 right-0 z-50 h-full w-full max-w-sm bg-white shadow-2xl flex flex-col border-l border-slate-200"
+            >
+              {/* Drawer Header */}
+              <div className="flex h-16 items-center justify-between border-b px-5 bg-[#123524] text-white">
+                <h2 className="text-sm font-black uppercase tracking-wider flex items-center gap-2">
+                  <ShoppingBag className="w-4.5 h-4.5 text-emerald-300" /> শপিং কার্ট ({cartCount})
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setIsCartOpen(false)}
+                  className="rounded-full p-1.5 hover:bg-white/10 text-white cursor-pointer transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Cart Items List */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                {cart.length > 0 && (
+                  <div
+                    className={`flex items-center justify-between px-3 py-2 rounded-xl border text-xs font-bold ${
+                      isReservationExpired
+                        ? "bg-rose-50 border-rose-200 text-rose-800"
+                        : "bg-emerald-50 border-emerald-200 text-emerald-900"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-emerald-700" />
+                      <span>
+                        {isReservationExpired
+                          ? "কার্ট রিজার্ভেশনের সময় শেষ!"
+                          : `কার্ট সংরক্ষিত: ${formattedReservationTimer}`}
+                      </span>
+                    </div>
+                    {isReservationExpired && (
+                      <button
+                        type="button"
+                        onClick={resetReservationTimer}
+                        className="text-[11px] font-bold text-rose-700 underline cursor-pointer"
+                      >
+                        রিনিউ
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {cart.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-center space-y-3 py-16">
+                    <ShoppingBag className="w-12 h-12 text-slate-300" />
+                    <p className="font-bold text-xs uppercase tracking-wider text-slate-500">
+                      আপনার কার্ট খালি রয়েছে
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setIsCartOpen(false)}
+                      className="mt-2 bg-[#123524] text-white font-bold px-5 py-2.5 rounded-xl text-xs hover:bg-[#1b4d36] transition-all cursor-pointer shadow-xs"
+                    >
+                      পণ্য ব্রাউজ করুন
+                    </button>
+                  </div>
+                ) : (
+                  cart.map((item) => {
+                    const price = item.discountPrice !== null ? item.discountPrice : item.price;
+                    return (
+                      <div
+                        key={item.cartItemId || item.id}
+                        className="flex gap-3 border border-slate-100 p-2.5 rounded-2xl bg-slate-50/50"
+                      >
+                        <img
+                          src={item.thumbnail || "/placeholder.jpg"}
+                          alt={item.name}
+                          className="h-16 w-16 rounded-xl object-cover border bg-white shrink-0"
+                        />
+                        <div className="flex-1 flex flex-col justify-between min-w-0">
+                          <div>
+                            <h4 className="font-black text-xs text-slate-900 line-clamp-1 truncate">
+                              {item.name}
+                            </h4>
+                            {item.variantName && (
+                              <span className="inline-block text-[9px] font-bold text-purple-800 bg-purple-50 px-1.5 py-0.2 rounded mt-0.5 border border-purple-200">
+                                {item.variantName}
+                              </span>
+                            )}
+                            <p className="text-[11px] font-black text-[#123524] mt-0.5">
+                              ৳{price.toLocaleString()} x {item.quantity}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center justify-between mt-2">
+                            <div className="flex items-center border border-slate-200 bg-white rounded-lg overflow-hidden">
+                              <button
+                                type="button"
+                                onClick={() => updateQuantity(item.cartItemId || item.id, item.quantity - 1)}
+                                className="p-1 hover:bg-slate-100 cursor-pointer text-slate-600"
+                              >
+                                <Minus className="w-3 h-3" />
+                              </button>
+                              <span className="px-2 text-xs font-black">{item.quantity}</span>
+                              <button
+                                type="button"
+                                onClick={() => updateQuantity(item.cartItemId || item.id, item.quantity + 1)}
+                                className="p-1 hover:bg-slate-100 cursor-pointer text-slate-600"
+                              >
+                                <Plus className="w-3 h-3" />
+                              </button>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeFromCart(item.cartItemId || item.id)}
+                              className="text-rose-500 hover:text-rose-700 p-1 cursor-pointer"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Cart Footer */}
+              {cart.length > 0 && (
+                <div className="border-t border-slate-200 p-4 space-y-3 bg-slate-50">
+                  <div className="flex items-center justify-between font-black text-xs uppercase tracking-wider">
+                    <span>মোট মূল্য:</span>
+                    <span className="text-[#123524] text-base">৳{cartSubtotal.toLocaleString()}</span>
+                  </div>
+                  <Link
+                    href="/checkout"
+                    onClick={() => setIsCartOpen(false)}
+                    className="w-full block bg-[#123524] hover:bg-[#1b4d36] text-white font-black py-3.5 rounded-2xl text-center text-xs uppercase tracking-wider shadow-md transition-all cursor-pointer"
+                  >
+                    অর্ডার সম্পন্ন করুন (Checkout)
+                  </Link>
+                </div>
+              )}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ========================================================================= */}
+      {/* 6. BOTTOM MOBILE NAVIGATION BAR (Home / Categories / Cart / Account)     */}
+      {/* ========================================================================= */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200/90 shadow-xl md:hidden px-2 py-1.5 flex items-center justify-around">
+        {/* Home */}
+        <Link
+          href="/"
+          className="flex flex-col items-center justify-center gap-0.5 text-slate-600 hover:text-[#123524] transition-colors py-1 px-3"
+        >
+          <Home className="w-5 h-5" />
+          <span className="text-[10px] font-bold">হোম</span>
+        </Link>
+
+        {/* Categories Drawer Trigger */}
+        <button
+          type="button"
+          onClick={() => setIsCategoryDrawerOpen(true)}
+          className="flex flex-col items-center justify-center gap-0.5 text-slate-600 hover:text-[#123524] transition-colors py-1 px-3 cursor-pointer"
+        >
+          <LayoutGrid className="w-5 h-5" />
+          <span className="text-[10px] font-bold">ক্যাটাগরি</span>
+        </button>
+
+        {/* Cart Trigger */}
+        <button
+          type="button"
+          onClick={() => setIsCartOpen(true)}
+          className="relative flex flex-col items-center justify-center gap-0.5 text-slate-600 hover:text-[#123524] transition-colors py-1 px-3 cursor-pointer"
+        >
+          <ShoppingBag className="w-5 h-5" />
+          {cartCount > 0 && (
+            <span className="absolute 0 top-0.5 right-2 w-4.5 h-4.5 rounded-full bg-[#f59e0b] text-[#123524] font-black text-[9px] flex items-center justify-center border border-white">
+              {cartCount}
+            </span>
+          )}
+          <span className="text-[10px] font-bold">কার্ট</span>
+        </button>
+
+        {/* Account */}
+        <Link
+          href={isAuthenticated ? (user?.role === "CUSTOMER" ? "/dashboard" : "/admin/dashboard") : "/login"}
+          className="flex flex-col items-center justify-center gap-0.5 text-slate-600 hover:text-[#123524] transition-colors py-1 px-3"
+        >
+          <User className="w-5 h-5" />
+          <span className="text-[10px] font-bold">একাউন্ট</span>
+        </Link>
+      </nav>
     </div>
   );
 }

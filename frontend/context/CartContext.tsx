@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from "r
 
 export interface CartItem {
   id: string; // Product ID
+  cartItemId: string; // Unique cart line ID: productId or productId_variantId
   name: string;
   slug: string;
   price: number;
@@ -14,13 +15,18 @@ export interface CartItem {
   reservedStockQty: number;
   variantId?: string;
   variantName?: string;
+  combination?: Record<string, string>;
+  colorName?: string | null;
+  colorCode?: string | null;
+  size?: string | null;
+  weight?: string | null;
 }
 
 interface CartContextType {
   cart: CartItem[];
   addToCart: (product: any, quantity?: number) => void;
-  removeFromCart: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  removeFromCart: (cartItemIdOrId: string) => void;
+  updateQuantity: (cartItemIdOrId: string, quantity: number) => void;
   clearCart: () => void;
   cartCount: number;
   cartSubtotal: number;
@@ -45,7 +51,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (storedCart) {
       try {
         const parsed = JSON.parse(storedCart);
-        setCart(parsed);
+        // Ensure every item has a cartItemId
+        const normalized = parsed.map((item: any) => ({
+          ...item,
+          cartItemId: item.cartItemId || (item.variantId ? `${item.id}_${item.variantId}` : item.id),
+        }));
+        setCart(normalized);
       } catch (error) {
         console.error("Failed to parse cart items:", error);
       }
@@ -113,10 +124,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const addToCart = (product: any, quantity = 1) => {
     resetReservationTimer();
     setCart((prevCart) => {
-      const itemKey = product.variantId ? `${product.id}-${product.variantId}` : product.id;
-      const existingItemIndex = prevCart.findIndex((item) =>
-        item.variantId ? `${item.id}-${item.variantId}` === itemKey : item.id === product.id
-      );
+      const lineId = product.variantId ? `${product.id}_${product.variantId}` : product.id;
+      const existingItemIndex = prevCart.findIndex((item) => item.cartItemId === lineId);
 
       const availableStock = (product.stockQty ?? 99) - (product.reservedStockQty ?? 0);
 
@@ -139,35 +148,56 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           ...prevCart,
           {
             id: product.id,
+            cartItemId: lineId,
             name: product.name,
             slug: product.slug,
             price: product.price,
             discountPrice: product.discountPrice ?? null,
-            thumbnail: product.thumbnail || (product.images && product.images[0]) || null,
+            thumbnail:
+              product.imageUrl ||
+              product.thumbnail ||
+              (product.images && product.images[0]) ||
+              null,
             quantity,
             stockQty: product.stockQty ?? 50,
             reservedStockQty: product.reservedStockQty ?? 0,
             variantId: product.variantId,
             variantName: product.variantName,
+            combination: product.combination,
+            colorName: product.colorName,
+            colorCode: product.colorCode,
+            size: product.size,
+            weight: product.weight,
           },
         ];
       }
     });
   };
 
-  const removeFromCart = (productId: string) => {
-    setCart((prevCart) => prevCart.filter((item) => item.id !== productId && item.variantId !== productId));
+  const removeFromCart = (cartItemIdOrId: string) => {
+    setCart((prevCart) =>
+      prevCart.filter(
+        (item) =>
+          item.cartItemId !== cartItemIdOrId &&
+          item.id !== cartItemIdOrId &&
+          item.variantId !== cartItemIdOrId
+      )
+    );
   };
 
-  const updateQuantity = (productId: string, quantity: number) => {
+  const updateQuantity = (cartItemIdOrId: string, quantity: number) => {
     if (quantity <= 0) {
-      removeFromCart(productId);
+      removeFromCart(cartItemIdOrId);
       return;
     }
 
     setCart((prevCart) =>
       prevCart.map((item) => {
-        if (item.id === productId || item.variantId === productId) {
+        if (
+          item.cartItemId === cartItemIdOrId ||
+          item.id === cartItemIdOrId ||
+          item.variantId === cartItemIdOrId
+        ) {
           const availableStock = item.stockQty - item.reservedStockQty;
           if (quantity > availableStock) {
             return item;

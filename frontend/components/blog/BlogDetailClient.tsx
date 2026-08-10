@@ -95,7 +95,7 @@ export default function BlogDetailClient({ post, relatedPosts }: BlogDetailClien
         <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-neutral-400">
           <div className="flex items-center gap-2">
             <img
-              src={post.author.avatar}
+              src={post.author.avatarUrl}
               alt={post.author.name}
               className="h-7 w-7 rounded-full border border-neutral-700 object-cover"
             />
@@ -114,7 +114,7 @@ export default function BlogDetailClient({ post, relatedPosts }: BlogDetailClien
 
       {/* Hero Image */}
       <div className="relative aspect-16/9 rounded-3xl overflow-hidden border border-neutral-800 shadow-2xl">
-        <img src={post.image} alt={post.title} className="w-full h-full object-cover" />
+        <img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover" />
       </div>
 
       {/* Content */}
@@ -229,7 +229,7 @@ export default function BlogDetailClient({ post, relatedPosts }: BlogDetailClien
               >
                 <div className="aspect-16/10 rounded-xl overflow-hidden">
                   <img
-                    src={rp.image}
+                    src={rp.imageUrl}
                     alt={rp.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                   />

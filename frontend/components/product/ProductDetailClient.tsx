@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ProductGallery from "@/components/ProductGallery";
 import ProductVideoPlayer from "@/components/ProductVideoPlayer";
-import ColorVariantSelector, { VariantItem } from "@/components/ColorVariantSelector";
+import CustomerVariantSelector, { VariantItem } from "@/components/product/CustomerVariantSelector";
 import RichTextContent from "@/components/RichTextContent";
 import ProductCard from "@/components/ProductCard";
 import { useCart } from "@/context/CartContext";
@@ -296,7 +296,20 @@ export default function ProductDetailClient({
         <div className="lg:col-span-7 space-y-6">
           {/* Main Photo Gallery */}
           <ProductGallery
-            images={product.images && product.images.length > 0 ? product.images : [product.thumbnail]}
+            images={(() => {
+              const baseImages =
+                product.images && product.images.length > 0
+                  ? product.images
+                  : [product.thumbnail].filter(Boolean);
+              // If selected variant has its own image, put it first
+              if (selectedVariant?.imageUrl) {
+                const withoutDuplicate = baseImages.filter(
+                  (img: string) => img !== selectedVariant.imageUrl
+                );
+                return [selectedVariant.imageUrl, ...withoutDuplicate];
+              }
+              return baseImages;
+            })()}
             productName={product.name}
           />
 
@@ -563,9 +576,10 @@ export default function ProductDetailClient({
               )}
             </div>
 
-            {/* Variant Selector (Colors / Sizes / Weights) */}
+            {/* Dynamic Multi-Attribute Customer Variant Selector */}
             {product.variants && product.variants.length > 0 && (
-              <ColorVariantSelector
+              <CustomerVariantSelector
+                attributes={product.attributes}
                 variants={product.variants}
                 selectedVariant={selectedVariant}
                 onSelectVariant={setSelectedVariant}

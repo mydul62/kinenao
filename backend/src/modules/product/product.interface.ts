@@ -1,6 +1,7 @@
 export interface IVariantInput {
   id?: string;
   name: string;
+  combination?: Record<string, string> | any;
   colorName?: string | null;
   colorCode?: string | null;
   imageUrl?: string | null;
@@ -9,6 +10,7 @@ export interface IVariantInput {
   discountPrice?: number | null;
   stockQty?: number;
   size?: string | null;
+  weight?: string | null;
   isActive?: boolean;
   sortOrder?: number;
 }
@@ -38,6 +40,7 @@ export interface IProductCreateInput {
   thumbnail?: string | null;
   videoUrl?: string | null;
   videoPosterUrl?: string | null;
+  attributes?: any;
   variants?: IVariantInput[];
 }
 

@@ -2905,128 +2905,147 @@ async function main() {
 
       const brandId = brandIds[totalProducts % brandIds.length];
 
-      // Category-Aware Realistic Variants
+      // Multi-Attribute & Combination Matrix Seeding
+      let attributeConfigData: any = null;
       let variantCreateData: any = undefined;
 
-      if (subGroup.parentSlug === "sari" || subGroup.parentSlug === "three-piece") {
-        // Fashion Items -> Real Color Variants
+      if (subGroup.parentSlug === "three-piece") {
+        // Three-Piece: Size (M, L, XL) × Color (Red, Blue, Green) = 9 Combinations
+        const sizes = ["M", "L", "XL"];
+        const colors = [
+          { name: "Crimson Red", code: "#DC2626", suffix: "RED" },
+          { name: "Royal Blue", code: "#1D4ED8", suffix: "BLU" },
+          { name: "Emerald Green", code: "#047857", suffix: "GRN" },
+        ];
+
+        attributeConfigData = [
+          { id: "size", name: "Size", label: "সাইজ (Size)", values: sizes.map((s) => ({ name: s })) },
+          { id: "color", name: "Color", label: "কালার (Color)", values: colors.map((c) => ({ name: c.name, code: c.code })) },
+        ];
+
+        const comboRows: any[] = [];
+        sizes.forEach((sz) => {
+          colors.forEach((col) => {
+            comboRows.push({
+              name: `${sz} / ${col.name}`,
+              combination: { size: sz, color: col.name },
+              size: sz,
+              colorName: col.name,
+              colorCode: col.code,
+              sku: `${uniqueSku}-${sz}-${col.suffix}`,
+              price: prod.discount || prod.price,
+              stockQty: 8 + (totalProducts % 15),
+              isActive: true,
+            });
+          });
+        });
+
+        variantCreateData = { create: comboRows };
+      } else if (subGroup.parentSlug === "sari") {
+        // Saree: Color Only (4 Color Swatches)
+        const sareeColors = [
+          { name: "রানি গোলাপি (Magenta Pink)", code: "#EC4899", suffix: "PNK" },
+          { name: "রয়েল ব্লু (Royal Blue)", code: "#1D4ED8", suffix: "BLU" },
+          { name: "মরুন লাল (Maroon Red)", code: "#991B1B", suffix: "RED" },
+          { name: "পান্না সবুজ (Emerald Green)", code: "#047857", suffix: "GRN" },
+        ];
+
+        attributeConfigData = [
+          { id: "color", name: "Color", label: "কালার (Color)", values: sareeColors.map((c) => ({ name: c.name, code: c.code })) },
+        ];
+
         variantCreateData = {
-          create: [
-            {
-              name: "রানি গোলাপি (Magenta Pink)",
-              colorName: "Magenta Pink",
-              colorCode: "#EC4899",
-              sku: uniqueSku + "-PNK",
-              price: prod.discount || prod.price,
-              stockQty: 12,
-              isActive: true,
-            },
-            {
-              name: "রয়েল ব্লু (Royal Blue)",
-              colorName: "Royal Blue",
-              colorCode: "#1D4ED8",
-              sku: uniqueSku + "-BLU",
-              price: prod.discount || prod.price,
-              stockQty: 10,
-              isActive: true,
-            },
-            {
-              name: "মরুন লাল (Maroon Red)",
-              colorName: "Maroon Red",
-              colorCode: "#991B1B",
-              sku: uniqueSku + "-RED",
-              price: prod.discount || prod.price,
-              stockQty: 8,
-              isActive: true,
-            },
-          ],
+          create: sareeColors.map((c) => ({
+            name: c.name,
+            combination: { color: c.name },
+            colorName: c.name,
+            colorCode: c.code,
+            sku: `${uniqueSku}-${c.suffix}`,
+            price: prod.discount || prod.price,
+            stockQty: 10 + (totalProducts % 12),
+            isActive: true,
+          })),
         };
       } else if (subGroup.parentSlug === "kids") {
-        // Kids Clothing -> Real Size Variants
-        variantCreateData = {
-          create: [
-            {
-              name: "১-২ বছর (Size 20)",
-              size: "1-2 Years",
-              sku: uniqueSku + "-SZ20",
+        // Kids Clothing: Age (1-2y, 3-4y) × Color (Baby Pink, Sky Blue) = 4 Combinations
+        const ageSizes = ["১-২ বছর", "৩-৪ বছর"];
+        const kidColors = [
+          { name: "Baby Pink", code: "#F472B6", suffix: "PNK" },
+          { name: "Sky Blue", code: "#38BDF8", suffix: "BLU" },
+        ];
+
+        attributeConfigData = [
+          { id: "size", name: "Size", label: "বয়স / সাইজ (Age Group)", values: ageSizes.map((a) => ({ name: a })) },
+          { id: "color", name: "Color", label: "কালার (Color)", values: kidColors.map((c) => ({ name: c.name, code: c.code })) },
+        ];
+
+        const comboRows: any[] = [];
+        ageSizes.forEach((sz, sIdx) => {
+          kidColors.forEach((col) => {
+            comboRows.push({
+              name: `${sz} / ${col.name}`,
+              combination: { size: sz, color: col.name },
+              size: sz,
+              colorName: col.name,
+              colorCode: col.code,
+              sku: `${uniqueSku}-A${sIdx + 1}-${col.suffix}`,
               price: prod.discount || prod.price,
               stockQty: 10,
               isActive: true,
-            },
-            {
-              name: "৩-৪ বছর (Size 24)",
-              size: "3-4 Years",
-              sku: uniqueSku + "-SZ24",
-              price: prod.discount || prod.price,
-              stockQty: 12,
-              isActive: true,
-            },
-            {
-              name: "৫-৬ বছর (Size 28)",
-              size: "5-6 Years",
-              sku: uniqueSku + "-SZ28",
-              price: prod.discount || prod.price,
-              stockQty: 8,
-              isActive: true,
-            },
-          ],
-        };
+            });
+          });
+        });
+
+        variantCreateData = { create: comboRows };
       } else if (subGroup.parentSlug === "organic-products") {
-        // Organic Products -> Real Weight Variants
+        // Organic Products: Weight Only (250g, 500g, 1kg)
+        const weights = [
+          { name: "২৫০ গ্রাম", val: "250g", priceMultiplier: 0.55, suffix: "250G", stock: 20 },
+          { name: "৫০০ গ্রাম", val: "500g", priceMultiplier: 1.0, suffix: "500G", stock: 25 },
+          { name: "১ কেজি", val: "1kg", priceMultiplier: 1.9, suffix: "1KG", stock: 15 },
+        ];
+
+        attributeConfigData = [
+          { id: "weight", name: "Weight", label: "ওজন / পরিমাপ (Weight)", values: weights.map((w) => ({ name: w.name })) },
+        ];
+
         variantCreateData = {
-          create: [
-            {
-              name: "২৫০ গ্রাম",
-              size: "250g",
-              sku: uniqueSku + "-250G",
-              price: Math.round((prod.discount || prod.price) * 0.55),
-              stockQty: 20,
-              isActive: true,
-            },
-            {
-              name: "৫০০ গ্রাম",
-              size: "500g",
-              sku: uniqueSku + "-500G",
-              price: prod.discount || prod.price,
-              stockQty: 25,
-              isActive: true,
-            },
-            {
-              name: "১ কেজি",
-              size: "1kg",
-              sku: uniqueSku + "-1KG",
-              price: Math.round((prod.discount || prod.price) * 1.9),
-              stockQty: 15,
-              isActive: true,
-            },
-          ],
+          create: weights.map((w) => ({
+            name: w.name,
+            combination: { weight: w.name },
+            weight: w.name,
+            size: w.val,
+            sku: `${uniqueSku}-${w.suffix}`,
+            price: Math.round((prod.discount || prod.price) * w.priceMultiplier),
+            stockQty: w.stock,
+            isActive: true,
+          })),
         };
       } else if (subGroup.parentSlug === "electronics-and-gadgets" || subGroup.parentSlug === "watch-and-bagel") {
-        // Gadgets & Watches -> Real Color Options
+        // Gadgets & Watches: Color Only (Midnight Black, Silver Metal)
+        const gadgetColors = [
+          { name: "Midnight Black", code: "#0F172A", suffix: "BLK" },
+          { name: "Silver Metal", code: "#94A3B8", suffix: "SLV" },
+        ];
+
+        attributeConfigData = [
+          { id: "color", name: "Color", label: "কালার (Color)", values: gadgetColors.map((c) => ({ name: c.name, code: c.code })) },
+        ];
+
         variantCreateData = {
-          create: [
-            {
-              name: "Midnight Black",
-              colorName: "Midnight Black",
-              colorCode: "#0F172A",
-              sku: uniqueSku + "-BLK",
-              price: prod.discount || prod.price,
-              stockQty: 15,
-              isActive: true,
-            },
-            {
-              name: "Silver Metal",
-              colorName: "Silver Metal",
-              colorCode: "#94A3B8",
-              sku: uniqueSku + "-SLV",
-              price: prod.discount || prod.price,
-              stockQty: 10,
-              isActive: true,
-            },
-          ],
+          create: gadgetColors.map((c) => ({
+            name: c.name,
+            combination: { color: c.name },
+            colorName: c.name,
+            colorCode: c.code,
+            sku: `${uniqueSku}-${c.suffix}`,
+            price: prod.discount || prod.price,
+            stockQty: 12,
+            isActive: true,
+          })),
         };
       }
-      // Kitchen Items, Home Decor, Bags, Jewelry, Couple items have NO fake variants!
+      // Simple Products (Kitchen Items, Home Decor, Bags, Jewelry): attributes = null, variants = undefined
 
       await prisma.product.create({
         data: {
@@ -3048,6 +3067,7 @@ async function main() {
           thumbnail: prod.images[0],
           videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
           isActive: true,
+          attributes: attributeConfigData,
           variants: variantCreateData,
         },
       });

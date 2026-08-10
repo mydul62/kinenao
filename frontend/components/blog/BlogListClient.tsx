@@ -70,7 +70,7 @@ export default function BlogListClient({ posts }: BlogListClientProps) {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
               <div className="relative aspect-16/10 lg:aspect-auto lg:col-span-7 overflow-hidden">
                 <img
-                  src={featuredPost.image}
+                  src={featuredPost.imageUrl}
                   alt={featuredPost.title}
                   className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
@@ -94,7 +94,7 @@ export default function BlogListClient({ posts }: BlogListClientProps) {
                 <div className="pt-2 flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <img
-                      src={featuredPost.author.avatar}
+                      src={featuredPost.author.avatarUrl}
                       alt={featuredPost.author.name}
                       className="h-8 w-8 rounded-full border border-neutral-700 object-cover"
                     />
@@ -126,7 +126,7 @@ export default function BlogListClient({ posts }: BlogListClientProps) {
             >
               <Link href={`/blog/${post.id}`} className="relative aspect-16/10 overflow-hidden block">
                 <img
-                  src={post.image}
+                  src={post.imageUrl}
                   alt={post.title}
                   className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                   loading="lazy"
@@ -156,7 +156,7 @@ export default function BlogListClient({ posts }: BlogListClientProps) {
                 <div className="flex items-center justify-between pt-3 border-t border-neutral-800/60">
                   <div className="flex items-center gap-2">
                     <img
-                      src={post.author.avatar}
+                      src={post.author.avatarUrl}
                       alt={post.author.name}
                       className="h-6 w-6 rounded-full object-cover border border-neutral-700"
                     />
