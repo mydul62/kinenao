@@ -20,14 +20,14 @@ interface Order {
 }
 
 const statusColors: Record<string, string> = {
-  PENDING_PAYMENT: "bg-amber-100 text-amber-700 border-amber-200",
-  PENDING_PAYMENT_VERIFICATION: "bg-orange-100 text-orange-700 border-orange-200",
-  CONFIRMED: "bg-blue-100 text-blue-700 border-blue-200",
-  PACKED: "bg-indigo-100 text-indigo-700 border-indigo-200",
-  SHIPPED: "bg-purple-100 text-purple-700 border-purple-200",
-  OUT_FOR_DELIVERY: "bg-sky-100 text-sky-700 border-sky-200",
-  DELIVERED: "bg-emerald-100 text-emerald-700 border-emerald-200",
-  CANCELLED: "bg-rose-100 text-rose-700 border-rose-200",
+  PENDING_PAYMENT: "bg-[#FBEEE0] text-[#B5601A]",
+  PENDING_PAYMENT_VERIFICATION: "bg-[#FBEEE0] text-[#B5601A]",
+  CONFIRMED: "bg-[#E4EEE7] text-[#123524]",
+  PACKED: "bg-[#E4EEE7] text-[#123524]",
+  SHIPPED: "bg-[#E4EEE7] text-[#123524]",
+  OUT_FOR_DELIVERY: "bg-[#E4EEE7] text-[#123524]",
+  DELIVERED: "bg-[#E6F5EB] text-[#1F8A4C]",
+  CANCELLED: "bg-[#FBEAEA] text-[#C23B3B]",
 };
 
 const allStatuses = [
@@ -71,142 +71,229 @@ export default function AdminOrdersPage() {
     fetchOrders();
   }, [fetchOrders]);
 
+  const deliveredCount = orders.filter((o) => o.status === "DELIVERED").length;
+  const pendingCount = orders.filter((o) => o.status.includes("PENDING")).length;
+  const totalRevenue = orders.reduce((sum, o) => sum + (o.grandTotal || 0), 0);
+  const revenueStr = totalRevenue >= 100000 ? `৳${(totalRevenue / 100000).toFixed(1)}L` : `৳${totalRevenue.toLocaleString()}`;
+
   return (
-    <div className="space-y-6 max-w-[1600px] mx-auto">
-      {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-5 max-w-[1600px] mx-auto font-['Inter',sans-serif]">
+      {/* 1. Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl md:text-3xl font-extrabold text-[#111827] tracking-tight">
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#131914] tracking-tight font-['Manrope',sans-serif]">
               Customer Orders
             </h1>
-            <span className="bg-[#6C5CE7]/10 text-[#6C5CE7] text-xs font-bold px-2.5 py-0.5 rounded-full border border-[#6C5CE7]/20">
-              {total} Orders
+            <span className="bg-[#E4EEE7] text-[#123524] text-xs font-bold px-2.5 py-0.5 rounded-full font-['Manrope']">
+              {total || orders.length} orders
             </span>
           </div>
-          <p className="text-slate-500 text-xs md:text-sm mt-1">
+          <p className="text-[#5C685F] text-xs sm:text-sm mt-0.5">
             Track order fulfillment, payment status, customer details, and invoice records.
           </p>
         </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={fetchOrders}
+            size="sm"
+            className="rounded-xl border-[#E4E8E4] bg-white text-[#131914] hover:bg-[#F1F6F2] font-semibold text-xs h-9 px-3.5 shadow-2xs cursor-pointer"
+          >
+            <RefreshCw className="h-3.5 w-3.5 mr-1.5 text-[#5C685F]" />
+            Refresh
+          </Button>
+        </div>
       </div>
 
-      {/* Search & Filter Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-[#E5E7EB] shadow-sm">
-        <div className="flex flex-1 items-center gap-3 w-full sm:w-auto">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              placeholder="Search by order # or customer email..."
-              className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl pl-10 pr-4 py-2 text-xs md:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#6C5CE7]/30 focus:border-[#6C5CE7] transition-all"
-            />
+      {/* 2. Row of 4 KPI Summary Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white border border-[#E4E8E4] rounded-2xl p-4 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-[#5C685F]">Total Orders</span>
+            <div className="w-6 h-6 rounded-md bg-[#F1F6F2] text-[#123524] flex items-center justify-center border border-[#E4EEE7]">
+              <ShoppingBag className="w-3.5 h-3.5" />
+            </div>
           </div>
-
-          <select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setPage(1);
-            }}
-            className="bg-[#F8FAFC] border border-[#E5E7EB] text-slate-800 rounded-xl px-3 py-2 text-xs md:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#6C5CE7]/30"
-          >
-            <option value="">All Statuses</option>
-            {allStatuses.map((s) => (
-              <option key={s} value={s}>
-                {s.replace(/_/g, " ")}
-              </option>
-            ))}
-          </select>
+          <div className="mt-2.5">
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-[#131914] font-['Manrope',sans-serif] tracking-tight leading-none">
+              {total || orders.length}
+            </h3>
+            <p className="text-[11px] font-bold text-[#1F8A4C] mt-1.5 flex items-center gap-1">
+              <span>↑</span> Active pipeline
+            </p>
+          </div>
         </div>
 
-        <Button
-          variant="outline"
-          onClick={fetchOrders}
-          size="sm"
-          className="border-[#E5E7EB] text-slate-700 hover:bg-slate-50 text-xs font-semibold rounded-xl gap-2"
-        >
-          <RefreshCw className="h-3.5 w-3.5 text-slate-500" />
-          Refresh
-        </Button>
+        <div className="bg-white border border-[#E4E8E4] rounded-2xl p-4 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-[#5C685F]">Delivered</span>
+            <div className="w-6 h-6 rounded-md bg-[#E6F5EB] text-[#1F8A4C] flex items-center justify-center border border-emerald-200/50">
+              <span className="w-2 h-2 rounded-full bg-[#1F8A4C]" />
+            </div>
+          </div>
+          <div className="mt-2.5">
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-[#131914] font-['Manrope',sans-serif] tracking-tight leading-none">
+              {deliveredCount}
+            </h3>
+            <p className="text-[11px] font-semibold text-[#5C685F] mt-1.5">
+              Fulfilled successfully
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white border border-[#E4E8E4] rounded-2xl p-4 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-[#5C685F]">Pending</span>
+            <div className="w-6 h-6 rounded-md bg-[#FBEEE0] text-[#B5601A] flex items-center justify-center border border-amber-200/50 font-black text-xs">
+              ▲
+            </div>
+          </div>
+          <div className="mt-2.5">
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-[#131914] font-['Manrope',sans-serif] tracking-tight leading-none">
+              {pendingCount}
+            </h3>
+            <p className="text-[11px] font-semibold text-[#B5601A] mt-1.5">
+              Requires processing
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white border border-[#E4E8E4] rounded-2xl p-4 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-[#5C685F]">Volume Value</span>
+            <div className="w-6 h-6 rounded-md bg-[#F1F6F2] text-[#123524] flex items-center justify-center border border-[#E4EEE7] font-bold text-xs font-['Manrope']">
+              ৳
+            </div>
+          </div>
+          <div className="mt-2.5">
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-[#131914] font-['Manrope',sans-serif] tracking-tight leading-none">
+              {revenueStr}
+            </h3>
+            <p className="text-[11px] font-semibold text-[#5C685F] mt-1.5">
+              Total transaction total
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Orders Table Container */}
-      <div className="bg-white border border-[#E5E7EB] rounded-[24px] shadow-sm overflow-hidden">
+      {/* 3. Search & Filter Bar */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 bg-white p-2 sm:p-2.5 rounded-2xl border border-[#E4E8E4] shadow-xs">
+        <div className="flex items-center gap-2 bg-[#F5F7F5] px-3.5 py-2 rounded-xl border border-[#E4E8E4] w-full sm:flex-1">
+          <Search className="w-4 h-4 text-[#8B958D] shrink-0" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            placeholder="Search by order # or customer email..."
+            className="w-full text-xs text-[#131914] placeholder:text-[#8B958D] bg-transparent border-0 focus:outline-none"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="text-xs text-[#8B958D] hover:text-[#131914] cursor-pointer"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
+        <select
+          value={statusFilter}
+          onChange={(e) => {
+            setStatusFilter(e.target.value);
+            setPage(1);
+          }}
+          className="h-9 px-3 bg-[#F5F7F5] border border-[#E4E8E4] rounded-xl text-xs font-semibold text-[#131914] focus:outline-none cursor-pointer w-full sm:w-auto"
+        >
+          <option value="">All statuses</option>
+          {allStatuses.map((s) => (
+            <option key={s} value={s}>
+              {s.replace(/_/g, " ")}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* 4. Orders Table Container */}
+      <div className="bg-white border border-[#E4E8E4] rounded-2xl shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           {loading ? (
             <div className="flex items-center justify-center h-64">
-              <Loader2 className="h-8 w-8 animate-spin text-[#6C5CE7]" />
+              <Loader2 className="h-8 w-8 animate-spin text-[#123524]" />
             </div>
           ) : orders.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-12 text-center text-slate-500">
-              <ShoppingBag className="h-12 w-12 mb-3 text-slate-300" />
-              <p className="font-bold text-slate-800 text-base">No orders found</p>
-              <p className="text-xs text-slate-400 mt-1">
+            <div className="flex flex-col items-center justify-center p-12 text-center text-[#5C685F]">
+              <ShoppingBag className="h-12 w-12 mb-3 text-[#8B958D]" />
+              <p className="font-bold text-[#131914] text-base">No orders found</p>
+              <p className="text-xs text-[#5C685F] mt-1">
                 Try clearing your search or status filters.
               </p>
             </div>
           ) : (
-            <table className="w-full text-left text-xs md:text-sm">
+            <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-[#E5E7EB] bg-slate-50/80 text-slate-500 uppercase tracking-wider text-[11px] font-bold">
-                  <th className="py-4 px-6">Order</th>
-                  <th className="py-4 px-4">Customer</th>
-                  <th className="py-4 px-4">Payment Method</th>
-                  <th className="py-4 px-4">Status</th>
-                  <th className="py-4 px-4">Grand Total</th>
-                  <th className="py-4 px-4">Date</th>
-                  <th className="py-4 px-6 text-center">Action</th>
+                <tr className="border-b border-[#E4E8E4] bg-[#F1F6F2] text-[#5C685F] uppercase tracking-wider text-[10px] font-bold">
+                  <th className="py-3 px-4">ORDER</th>
+                  <th className="py-3 px-4">CUSTOMER</th>
+                  <th className="py-3 px-4">PAYMENT METHOD</th>
+                  <th className="py-3 px-4">STATUS</th>
+                  <th className="py-3 px-4">GRAND TOTAL</th>
+                  <th className="py-3 px-4">DATE</th>
+                  <th className="py-3 px-4 text-right">ACTION</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#E5E7EB]">
+              <tbody className="divide-y divide-[#E4E8E4]/60 font-medium text-[#131914]">
                 {orders.map((order) => (
-                  <tr key={order.id} className="hover:bg-purple-50/40 transition-colors">
-                    <td className="py-4 px-6">
+                  <tr key={order.id} className="hover:bg-[#F1F6F2]/70 transition-colors">
+                    <td className="py-3 px-4">
                       <Link
                         href={`/admin/orders/${order.id}`}
-                        className="text-[#6C5CE7] font-bold font-mono text-xs hover:underline"
+                        className="text-[#123524] font-extrabold font-mono text-xs hover:underline"
                       >
                         #{order.orderNumber}
                       </Link>
                     </td>
-                    <td className="py-4 px-4">
-                      <p className="text-slate-900 font-bold text-xs md:text-sm">
-                        {order.customer?.profile?.fullName || (order as any).guestInfo?.fullName || (order as any).senderNumber || "Guest Customer"}
+                    <td className="py-3 px-4">
+                      <p className="text-[#131914] font-bold text-xs">
+                        {order.customer?.profile?.fullName || (order as any).guestInfo?.fullName || (order as any).senderNumber || "Customer"}
                       </p>
-                      <p className="text-slate-400 text-[11px]">
-                        {order.customer?.email || (order as any).guestInfo?.phone || (order as any).senderNumber || "No Email (COD)"}
+                      <p className="text-[#8B958D] text-[10px] mt-0.5">
+                        {order.customer?.email || (order as any).guestInfo?.phone || (order as any).senderNumber || "COD"}
                       </p>
                     </td>
-                    <td className="py-4 px-4 text-slate-700 font-medium">
-                      {order.paymentMethod?.name || "Cash on Delivery"}
+                    <td className="py-3 px-4 text-[#5C685F]">
+                      <span className="bg-[#F5F7F5] border border-[#E4E8E4] px-2.5 py-0.5 rounded-lg text-[11px] font-semibold text-[#131914]">
+                        {order.paymentMethod?.name || "Cash on Delivery"}
+                      </span>
                     </td>
-                    <td className="py-4 px-4">
+                    <td className="py-3 px-4">
                       <span
-                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${
-                          statusColors[order.status] || "bg-slate-100 text-slate-600 border-slate-200"
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                          statusColors[order.status] || "bg-[#F5F7F5] text-[#5C685F]"
                         }`}
                       >
+                        <span className="w-1.5 h-1.5 rounded-full bg-current" />
                         {order.status.replace(/_/g, " ")}
                       </span>
                     </td>
-                    <td className="py-4 px-4 font-extrabold text-slate-900">
+                    <td className="py-3 px-4 font-extrabold text-[#131914] font-['Manrope']">
                       ৳{order.grandTotal.toLocaleString()}
                     </td>
-                    <td className="py-4 px-4 text-slate-500 text-xs">
+                    <td className="py-3 px-4 text-[#5C685F] text-xs">
                       {new Date(order.createdAt).toLocaleDateString()}
                     </td>
-                    <td className="py-4 px-6 text-center">
+                    <td className="py-3 px-4 text-right">
                       <Link
                         href={`/admin/orders/${order.id}`}
-                        className="p-2 rounded-xl bg-slate-100 hover:bg-[#6C5CE7]/10 text-slate-600 hover:text-[#6C5CE7] transition-all inline-flex"
+                        className="p-1.5 rounded-lg border border-[#E4E8E4] bg-white text-[#5C685F] hover:text-[#123524] hover:bg-[#F1F6F2] transition-colors inline-flex"
                         title="View order details"
                       >
-                        <Eye className="h-4 w-4" />
+                        <Eye className="h-3.5 w-3.5" />
                       </Link>
                     </td>
                   </tr>
@@ -218,7 +305,7 @@ export default function AdminOrdersPage() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="p-4 border-t border-[#E5E7EB] bg-slate-50/50 flex items-center justify-between text-xs text-slate-500">
+          <div className="px-5 py-3 border-t border-[#E4E8E4] bg-[#F5F7F5]/50 flex items-center justify-between text-xs text-[#5C685F]">
             <span>
               Page {page} of {totalPages}
             </span>
@@ -228,7 +315,7 @@ export default function AdminOrdersPage() {
                 size="sm"
                 disabled={page === 1}
                 onClick={() => setPage((p) => p - 1)}
-                className="border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-semibold rounded-lg"
+                className="rounded-xl h-8 px-3 text-xs border-[#E4E8E4] bg-white text-[#131914] hover:bg-[#F1F6F2] cursor-pointer"
               >
                 Previous
               </Button>
@@ -237,7 +324,7 @@ export default function AdminOrdersPage() {
                 size="sm"
                 disabled={page === totalPages}
                 onClick={() => setPage((p) => p + 1)}
-                className="border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-semibold rounded-lg"
+                className="rounded-xl h-8 px-3 text-xs border-[#E4E8E4] bg-white text-[#131914] hover:bg-[#F1F6F2] cursor-pointer"
               >
                 Next
               </Button>

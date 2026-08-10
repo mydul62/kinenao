@@ -108,20 +108,23 @@ export default function AdminBannersPage() {
     }
   };
 
+  const activeBannersCount = banners.filter((b) => b.isActive).length;
+  const withCtaCount = banners.filter((b) => b.linkUrl).length;
+
   return (
-    <div className="space-y-6 max-w-[1600px] mx-auto">
-      {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-5 max-w-[1600px] mx-auto font-['Inter',sans-serif]">
+      {/* 1. Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl md:text-3xl font-extrabold text-[#111827] tracking-tight">
-              Homepage Banners
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#131914] tracking-tight font-['Manrope',sans-serif]">
+              Marketing Banners
             </h1>
-            <span className="bg-[#6C5CE7]/10 text-[#6C5CE7] text-xs font-bold px-2.5 py-0.5 rounded-full border border-[#6C5CE7]/20">
-              {banners.length} Active Slides
+            <span className="bg-[#E4EEE7] text-[#123524] text-xs font-bold px-2.5 py-0.5 rounded-full font-['Manrope']">
+              {banners.length} slides
             </span>
           </div>
-          <p className="text-slate-500 text-xs md:text-sm mt-1">
+          <p className="text-[#5C685F] text-xs sm:text-sm mt-0.5">
             Manage main promotional sliders, banner text overlays, and call-to-action link targets.
           </p>
         </div>
@@ -139,60 +142,131 @@ export default function AdminBannersPage() {
             setEditTarget(null);
             setShowForm(true);
           }}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#6C5CE7] to-[#8B5CF6] text-white text-xs md:text-sm font-semibold rounded-xl shadow-md shadow-[#6C5CE7]/20 hover:opacity-95 transition-all"
+          className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-[#123524] hover:bg-[#1B4A34] text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer"
         >
           <Plus className="h-4 w-4" /> Add New Banner
         </button>
       </div>
 
-      {/* Grid of Banners */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* 2. Row of 4 KPI Summary Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white border border-[#E4E8E4] rounded-2xl p-4 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-[#5C685F]">Total Banners</span>
+            <div className="w-6 h-6 rounded-md bg-[#F1F6F2] text-[#123524] flex items-center justify-center border border-[#E4EEE7]">
+              <ImageIcon className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <div className="mt-2.5">
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-[#131914] font-['Manrope',sans-serif] tracking-tight leading-none">
+              {banners.length}
+            </h3>
+            <p className="text-[11px] font-bold text-[#1F8A4C] mt-1.5 flex items-center gap-1">
+              <span>✓</span> Hero slides configured
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white border border-[#E4E8E4] rounded-2xl p-4 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-[#5C685F]">Live Active Slides</span>
+            <div className="w-6 h-6 rounded-md bg-[#E6F5EB] text-[#1F8A4C] flex items-center justify-center border border-emerald-200/50">
+              <span className="w-2 h-2 rounded-full bg-[#1F8A4C]" />
+            </div>
+          </div>
+          <div className="mt-2.5">
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-[#131914] font-['Manrope',sans-serif] tracking-tight leading-none">
+              {activeBannersCount}
+            </h3>
+            <p className="text-[11px] font-semibold text-[#5C685F] mt-1.5">
+              Visible on homepage
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white border border-[#E4E8E4] rounded-2xl p-4 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-[#5C685F]">Target Links</span>
+            <div className="w-6 h-6 rounded-md bg-[#F1F6F2] text-[#123524] flex items-center justify-center border border-[#E4EEE7]">
+              <span className="font-extrabold text-[10px]">🔗</span>
+            </div>
+          </div>
+          <div className="mt-2.5">
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-[#131914] font-['Manrope',sans-serif] tracking-tight leading-none">
+              {withCtaCount}
+            </h3>
+            <p className="text-[11px] font-semibold text-[#1F8A4C] mt-1.5">
+              Directing traffic
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white border border-[#E4E8E4] rounded-2xl p-4 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-[#5C685F]">Carousel Status</span>
+            <div className="w-6 h-6 rounded-md bg-[#FBEEE0] text-[#B5601A] flex items-center justify-center border border-amber-200/50">
+              <RefreshCw className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <div className="mt-2.5">
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-[#131914] font-['Manrope',sans-serif] tracking-tight leading-none">
+              {banners.length > 0 ? "Enabled" : "Empty"}
+            </h3>
+            <p className="text-[11px] font-semibold text-[#B5601A] mt-1.5">
+              Auto-cycling
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Grid of Banners */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
         {loading ? (
           <div className="col-span-full flex items-center justify-center h-64">
-            <Loader2 className="h-8 w-8 animate-spin text-[#6C5CE7]" />
+            <Loader2 className="h-8 w-8 animate-spin text-[#123524]" />
           </div>
         ) : banners.length === 0 ? (
-          <div className="col-span-full flex flex-col items-center justify-center p-12 text-center text-slate-500 bg-white rounded-[24px] border border-[#E5E7EB]">
-            <ImageIcon className="h-12 w-12 mb-3 text-slate-300" />
-            <p className="font-bold text-slate-800 text-base">No banners created yet</p>
+          <div className="col-span-full flex flex-col items-center justify-center p-12 text-center text-[#5C685F] bg-white rounded-2xl border border-[#E4E8E4]">
+            <ImageIcon className="h-12 w-12 mb-3 text-[#8B958D]" />
+            <p className="font-bold text-[#131914] text-base">No banners created yet</p>
           </div>
         ) : (
           banners.map((banner) => (
             <div
               key={banner.id}
-              className="bg-white border border-[#E5E7EB] rounded-[24px] overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col"
+              className="bg-white border border-[#E4E8E4] rounded-2xl overflow-hidden shadow-xs hover:border-[#123524]/40 transition-all flex flex-col"
             >
               <div className="relative aspect-[21/9] bg-slate-900 overflow-hidden">
                 <img src={banner.imageUrl} alt={banner.title} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent" />
-                <div className="absolute bottom-4 left-4 right-4">
-                  <p className="text-white font-extrabold text-base md:text-lg">{banner.title}</p>
-                  {banner.subtitle && <p className="text-purple-200 text-xs mt-0.5">{banner.subtitle}</p>}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                <div className="absolute bottom-3 left-4 right-4">
+                  <p className="text-white font-extrabold text-sm sm:text-base font-['Manrope']">{banner.title}</p>
+                  {banner.subtitle && <p className="text-[#E4EEE7] text-xs mt-0.5">{banner.subtitle}</p>}
                 </div>
-                <div className="absolute top-3 right-3">
+                <div className="absolute top-2.5 right-2.5">
                   <span
-                    className={`text-[10px] font-extrabold px-3 py-1 rounded-full border shadow-sm ${
+                    className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border shadow-xs ${
                       banner.isActive
-                        ? "bg-emerald-500 text-white border-emerald-400"
-                        : "bg-rose-500 text-white border-rose-400"
+                        ? "bg-[#E6F5EB] text-[#1F8A4C] border-emerald-200"
+                        : "bg-[#FBEAEA] text-[#C23B3B] border-rose-200"
                     }`}
                   >
-                    {banner.isActive ? "Active" : "Inactive"}
+                    {banner.isActive ? "• Live" : "Inactive"}
                   </span>
                 </div>
               </div>
 
-              <div className="p-4 flex items-center justify-between bg-slate-50/50">
+              <div className="p-3 sm:p-4 flex items-center justify-between bg-[#F1F6F2]">
                 <div>
-                  <span className="text-xs font-bold text-slate-500">Sort Priority: #{banner.sortOrder}</span>
+                  <span className="text-xs font-bold text-[#5C685F]">Sort Priority: #{banner.sortOrder}</span>
                   {banner.linkUrl && (
-                    <p className="text-[#6C5CE7] text-xs font-mono truncate max-w-xs mt-0.5">
+                    <p className="text-[#123524] text-xs font-mono truncate max-w-xs mt-0.5 font-semibold">
                       Target: {banner.linkUrl}
                     </p>
                   )}
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <button
                     onClick={() => {
                       setForm({
@@ -206,17 +280,17 @@ export default function AdminBannersPage() {
                       setEditTarget(banner);
                       setShowForm(true);
                     }}
-                    className="p-2 rounded-xl bg-white border border-[#E5E7EB] text-slate-600 hover:text-[#6C5CE7] transition-all shadow-sm"
+                    className="p-1.5 rounded-lg bg-white border border-[#E4E8E4] text-[#5C685F] hover:text-[#123524] hover:bg-white transition-all cursor-pointer"
                     title="Edit banner"
                   >
-                    <Edit className="h-4 w-4" />
+                    <Edit className="h-3.5 w-3.5" />
                   </button>
                   <button
                     onClick={() => setDeleteTarget(banner)}
-                    className="p-2 rounded-xl bg-white border border-[#E5E7EB] text-slate-600 hover:text-rose-600 transition-all shadow-sm"
+                    className="p-1.5 rounded-lg bg-white border border-[#E4E8E4] text-[#5C685F] hover:text-[#C23B3B] hover:bg-[#FBEAEA] transition-all cursor-pointer"
                     title="Delete banner"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>
               </div>
@@ -227,70 +301,70 @@ export default function AdminBannersPage() {
 
       {/* Form Dialog */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="bg-white border-[#E5E7EB] text-slate-900 rounded-2xl p-6 max-w-lg">
+        <DialogContent className="bg-white border-[#E4E8E4] text-[#131914] rounded-2xl p-6 max-w-lg">
           <DialogHeader>
-            <DialogTitle className="text-slate-900 font-bold text-lg">
+            <DialogTitle className="text-[#131914] font-bold text-lg font-['Manrope']">
               {editTarget ? "Edit Banner" : "Create New Banner"}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4 mt-2">
             <div className="space-y-1.5">
-              <Label className="text-slate-700 text-xs font-bold uppercase">Banner Headline Title *</Label>
+              <Label className="text-[#131914] text-xs font-bold">Banner Headline Title *</Label>
               <Input
                 value={form.title}
                 onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                 placeholder="e.g. Glowing Luxury Skincare Sale"
-                className="bg-[#F8FAFC] border-[#E5E7EB] text-slate-900 rounded-xl"
+                className="bg-[#F5F7F5] border-[#E4E8E4] text-[#131914] rounded-xl"
                 required
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-slate-700 text-xs font-bold uppercase">Subtitle Text</Label>
+              <Label className="text-[#131914] text-xs font-bold">Subtitle Text</Label>
               <Input
                 value={form.subtitle}
                 onChange={(e) => setForm((f) => ({ ...f, subtitle: e.target.value }))}
                 placeholder="Get up to 30% off on all organic serums"
-                className="bg-[#F8FAFC] border-[#E5E7EB] text-slate-900 rounded-xl"
+                className="bg-[#F5F7F5] border-[#E4E8E4] text-[#131914] rounded-xl"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-slate-700 text-xs font-bold uppercase">Call-to-Action Link URL</Label>
+              <Label className="text-[#131914] text-xs font-bold">Call-to-Action Link URL</Label>
               <Input
                 value={form.linkUrl}
                 onChange={(e) => setForm((f) => ({ ...f, linkUrl: e.target.value }))}
                 placeholder="/shop?category=skincare"
-                className="bg-[#F8FAFC] border-[#E5E7EB] text-slate-900 rounded-xl font-mono text-xs"
+                className="bg-[#F5F7F5] border-[#E4E8E4] text-[#131914] rounded-xl font-mono text-xs"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-slate-700 text-xs font-bold uppercase">Sort Order</Label>
+              <Label className="text-[#131914] text-xs font-bold">Sort Order</Label>
               <Input
                 type="number"
                 value={form.sortOrder}
                 onChange={(e) => setForm((f) => ({ ...f, sortOrder: parseInt(e.target.value) || 0 }))}
-                className="bg-[#F8FAFC] border-[#E5E7EB] text-slate-900 rounded-xl"
+                className="bg-[#F5F7F5] border-[#E4E8E4] text-[#131914] rounded-xl"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-slate-700 text-xs font-bold uppercase">Banner Image *</Label>
+              <Label className="text-[#131914] text-xs font-bold">Banner Image *</Label>
               {form.imageUrl && (
-                <div className="relative aspect-[21/9] bg-slate-100 rounded-xl overflow-hidden mb-2 border border-slate-200">
+                <div className="relative aspect-[21/9] bg-[#F5F7F5] rounded-xl overflow-hidden mb-2 border border-[#E4E8E4]">
                   <img src={form.imageUrl} alt="" className="w-full h-full object-cover" />
                   <button
                     type="button"
                     onClick={() => setForm((f) => ({ ...f, imageUrl: "" }))}
-                    className="absolute top-2 right-2 p-1.5 bg-rose-500 rounded-lg text-white"
+                    className="absolute top-2 right-2 p-1.5 bg-[#C23B3B] rounded-lg text-white cursor-pointer"
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
                 </div>
               )}
-              <label className="flex items-center gap-2 cursor-pointer text-slate-600 hover:text-[#6C5CE7] text-xs font-semibold border border-[#E5E7EB] bg-[#F8FAFC] rounded-xl px-4 py-2.5 transition-colors">
-                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+              <label className="flex items-center gap-2 cursor-pointer text-[#5C685F] hover:text-[#123524] text-xs font-semibold border border-[#E4E8E4] bg-[#F5F7F5] rounded-xl px-4 py-2.5 transition-colors">
+                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4 text-[#123524]" />}
                 {uploading ? "Uploading..." : "Upload Banner Image"}
                 <input
                   type="file"
@@ -302,8 +376,8 @@ export default function AdminBannersPage() {
               </label>
             </div>
 
-            <div className="flex items-center justify-between py-2 border-t border-[#E5E7EB]">
-              <Label className="text-slate-800 text-xs font-bold">Active Status</Label>
+            <div className="flex items-center justify-between py-2 border-t border-[#E4E8E4]">
+              <Label className="text-[#131914] text-xs font-bold">Active Status</Label>
               <Switch
                 checked={form.isActive}
                 onCheckedChange={(v) => setForm((f) => ({ ...f, isActive: v }))}
@@ -315,14 +389,14 @@ export default function AdminBannersPage() {
                 type="button"
                 variant="outline"
                 onClick={() => setShowForm(false)}
-                className="border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold rounded-xl"
+                className="border-[#E4E8E4] text-[#131914] hover:bg-[#F1F6F2] text-xs font-semibold rounded-xl cursor-pointer"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={submitting || !form.imageUrl}
-                className="bg-[#6C5CE7] hover:bg-[#5b4bc4] text-white text-xs font-semibold rounded-xl"
+                className="bg-[#123524] hover:bg-[#1B4A34] text-white text-xs font-bold rounded-xl cursor-pointer"
               >
                 {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                 {editTarget ? "Update Banner" : "Create Banner"}
@@ -334,25 +408,25 @@ export default function AdminBannersPage() {
 
       {/* Delete Dialog */}
       <Dialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
-        <DialogContent className="bg-white border-[#E5E7EB] text-slate-900 rounded-2xl p-6">
+        <DialogContent className="bg-white border-[#E4E8E4] text-[#131914] rounded-2xl p-6">
           <DialogHeader>
-            <DialogTitle className="text-slate-900 font-bold text-lg">Delete Banner</DialogTitle>
-            <DialogDescription className="text-slate-500 text-xs mt-1">
-              Are you sure you want to delete <strong className="text-slate-900">{deleteTarget?.title}</strong>?
+            <DialogTitle className="text-[#131914] font-bold text-lg font-['Manrope']">Delete Banner</DialogTitle>
+            <DialogDescription className="text-[#5C685F] text-xs mt-1">
+              Are you sure you want to delete <strong className="text-[#131914]">{deleteTarget?.title}</strong>?
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-3 mt-6">
             <Button
               variant="outline"
               onClick={() => setDeleteTarget(null)}
-              className="border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold rounded-xl"
+              className="border-[#E4E8E4] text-[#131914] hover:bg-[#F1F6F2] text-xs font-semibold rounded-xl cursor-pointer"
             >
               Cancel
             </Button>
             <Button
               onClick={handleDelete}
               disabled={deleting}
-              className="bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-xl"
+              className="bg-[#C23B3B] hover:bg-[#a82e2e] text-white text-xs font-bold rounded-xl cursor-pointer"
             >
               {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Confirm Delete

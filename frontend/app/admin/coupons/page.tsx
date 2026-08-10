@@ -129,50 +129,125 @@ export default function AdminCouponsPage() {
     }
   };
 
-  const typeLabel = (t: string) => (t === "FIXED" ? "Fixed ৳" : t === "PERCENTAGE" ? "% Off" : "Free Shipping");
+  const typeLabel = (t: string) => (t === "FIXED" ? "Fixed ৳" : t === "PERCENTAGE" ? "% Off" : "Free Delivery");
   const typeColor = (t: string) =>
     t === "FIXED"
-      ? "bg-blue-100 text-blue-700 border-blue-200"
+      ? "bg-[#F1F6F2] text-[#123524]"
       : t === "PERCENTAGE"
-      ? "bg-purple-100 text-purple-700 border-purple-200"
-      : "bg-emerald-100 text-emerald-700 border-emerald-200";
+      ? "bg-[#E4EEE7] text-[#123524]"
+      : "bg-[#E6F5EB] text-[#1F8A4C]";
+
+  const activeCount = coupons.filter((c) => c.isActive && new Date(c.expiresAt) >= new Date()).length;
+  const totalRedemptions = coupons.reduce((sum, c) => sum + (c.usageCount || 0), 0);
+  const percentageCount = coupons.filter((c) => c.type === "PERCENTAGE").length;
 
   return (
-    <div className="space-y-6 max-w-[1600px] mx-auto">
-      {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-5 max-w-[1600px] mx-auto font-['Inter',sans-serif]">
+      {/* 1. Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl md:text-3xl font-extrabold text-[#111827] tracking-tight">
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#131914] tracking-tight font-['Manrope',sans-serif]">
               Promotional Coupons
             </h1>
-            <span className="bg-[#6C5CE7]/10 text-[#6C5CE7] text-xs font-bold px-2.5 py-0.5 rounded-full border border-[#6C5CE7]/20">
-              {coupons.length} Coupons
+            <span className="bg-[#E4EEE7] text-[#123524] text-xs font-bold px-2.5 py-0.5 rounded-full font-['Manrope']">
+              {coupons.length} coupons
             </span>
           </div>
-          <p className="text-slate-500 text-xs md:text-sm mt-1">
+          <p className="text-[#5C685F] text-xs sm:text-sm mt-0.5">
             Create discount promo codes, usage limits, and campaign expiration dates.
           </p>
         </div>
 
         <button
           onClick={openCreate}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#6C5CE7] to-[#8B5CF6] text-white text-xs md:text-sm font-semibold rounded-xl shadow-md shadow-[#6C5CE7]/20 hover:opacity-95 transition-all"
+          className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-[#123524] hover:bg-[#1B4A34] text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer"
         >
           <Plus className="h-4 w-4" /> Add New Coupon
         </button>
       </div>
 
-      {/* Controls */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-[#E5E7EB] shadow-sm">
-        <div className="relative w-full sm:max-w-md">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+      {/* 2. Row of 4 KPI Summary Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white border border-[#E4E8E4] rounded-2xl p-4 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-[#5C685F]">Total Coupons</span>
+            <div className="w-6 h-6 rounded-md bg-[#F1F6F2] text-[#123524] flex items-center justify-center border border-[#E4EEE7]">
+              <Percent className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <div className="mt-2.5">
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-[#131914] font-['Manrope',sans-serif] tracking-tight leading-none">
+              {coupons.length}
+            </h3>
+            <p className="text-[11px] font-bold text-[#1F8A4C] mt-1.5 flex items-center gap-1">
+              <span>✓</span> Configured codes
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white border border-[#E4E8E4] rounded-2xl p-4 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-[#5C685F]">Active Promo</span>
+            <div className="w-6 h-6 rounded-md bg-[#E6F5EB] text-[#1F8A4C] flex items-center justify-center border border-emerald-200/50">
+              <span className="w-2 h-2 rounded-full bg-[#1F8A4C]" />
+            </div>
+          </div>
+          <div className="mt-2.5">
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-[#131914] font-['Manrope',sans-serif] tracking-tight leading-none">
+              {activeCount}
+            </h3>
+            <p className="text-[11px] font-semibold text-[#5C685F] mt-1.5">
+              Available to customers
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white border border-[#E4E8E4] rounded-2xl p-4 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-[#5C685F]">Total Redemptions</span>
+            <div className="w-6 h-6 rounded-md bg-[#F1F6F2] text-[#123524] flex items-center justify-center border border-[#E4EEE7]">
+              <span className="font-extrabold text-[10px]">#</span>
+            </div>
+          </div>
+          <div className="mt-2.5">
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-[#131914] font-['Manrope',sans-serif] tracking-tight leading-none">
+              {totalRedemptions}
+            </h3>
+            <p className="text-[11px] font-semibold text-[#1F8A4C] mt-1.5">
+              Times redeemed
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white border border-[#E4E8E4] rounded-2xl p-4 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-[#5C685F]">Percent Off</span>
+            <div className="w-6 h-6 rounded-md bg-[#FBEEE0] text-[#B5601A] flex items-center justify-center border border-amber-200/50">
+              <Percent className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <div className="mt-2.5">
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-[#131914] font-['Manrope',sans-serif] tracking-tight leading-none">
+              {percentageCount}
+            </h3>
+            <p className="text-[11px] font-semibold text-[#B5601A] mt-1.5">
+              Discount campaigns
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Search Bar */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 bg-white p-2 sm:p-2.5 rounded-2xl border border-[#E4E8E4] shadow-xs">
+        <div className="flex items-center gap-2 bg-[#F5F7F5] px-3.5 py-2 rounded-xl border border-[#E4E8E4] w-full sm:flex-1">
+          <Search className="w-4 h-4 text-[#8B958D] shrink-0" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by promo code..."
-            className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl pl-10 pr-4 py-2 text-xs md:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#6C5CE7]/30 focus:border-[#6C5CE7] transition-all"
+            className="w-full text-xs text-[#131914] placeholder:text-[#8B958D] bg-transparent border-0 focus:outline-none"
           />
         </div>
 
@@ -180,101 +255,104 @@ export default function AdminCouponsPage() {
           variant="outline"
           onClick={fetchCoupons}
           size="sm"
-          className="border-[#E5E7EB] text-slate-700 hover:bg-slate-50 text-xs font-semibold rounded-xl gap-2"
+          className="rounded-xl border-[#E4E8E4] bg-white text-[#131914] hover:bg-[#F1F6F2] font-semibold text-xs h-9 px-3.5 shadow-2xs cursor-pointer w-full sm:w-auto"
         >
-          <RefreshCw className="h-3.5 w-3.5 text-slate-500" />
+          <RefreshCw className="h-3.5 w-3.5 mr-1.5 text-[#5C685F]" />
           Refresh
         </Button>
       </div>
 
-      {/* Coupons Table */}
-      <div className="bg-white border border-[#E5E7EB] rounded-[24px] shadow-sm overflow-hidden">
+      {/* 4. Coupons Table */}
+      <div className="bg-white border border-[#E4E8E4] rounded-2xl shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           {loading ? (
             <div className="flex items-center justify-center h-64">
-              <Loader2 className="h-8 w-8 animate-spin text-[#6C5CE7]" />
+              <Loader2 className="h-8 w-8 animate-spin text-[#123524]" />
             </div>
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-12 text-center text-slate-500">
-              <Percent className="h-12 w-12 mb-3 text-slate-300" />
-              <p className="font-bold text-slate-800 text-base">No coupons found</p>
+            <div className="flex flex-col items-center justify-center p-12 text-center text-[#5C685F]">
+              <Percent className="h-12 w-12 mb-3 text-[#8B958D]" />
+              <p className="font-bold text-[#131914] text-base">No coupons found</p>
             </div>
           ) : (
-            <table className="w-full text-left text-xs md:text-sm">
+            <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-[#E5E7EB] bg-slate-50/80 text-slate-500 uppercase tracking-wider text-[11px] font-bold">
-                  <th className="py-4 px-6">Promo Code</th>
-                  <th className="py-4 px-4">Discount Type</th>
-                  <th className="py-4 px-4">Value</th>
-                  <th className="py-4 px-4">Min Spend</th>
-                  <th className="py-4 px-4">Usage Limit</th>
-                  <th className="py-4 px-4">Expires On</th>
-                  <th className="py-4 px-4">Status</th>
-                  <th className="py-4 px-6 text-center">Actions</th>
+                <tr className="border-b border-[#E4E8E4] bg-[#F1F6F2] text-[#5C685F] uppercase tracking-wider text-[10px] font-bold">
+                  <th className="py-3 px-4">PROMO CODE</th>
+                  <th className="py-3 px-4">DISCOUNT TYPE</th>
+                  <th className="py-3 px-4">VALUE</th>
+                  <th className="py-3 px-4">MIN SPEND</th>
+                  <th className="py-3 px-4">USAGE LIMIT</th>
+                  <th className="py-3 px-4">EXPIRES ON</th>
+                  <th className="py-3 px-4">STATUS</th>
+                  <th className="py-3 px-4 text-right">ACTIONS</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#E5E7EB]">
+              <tbody className="divide-y divide-[#E4E8E4]/60 font-medium text-[#131914]">
                 {filtered.map((coupon) => {
                   const expired = new Date(coupon.expiresAt) < new Date();
                   return (
-                    <tr key={coupon.id} className="hover:bg-purple-50/40 transition-colors">
-                      <td className="py-4 px-6">
-                        <span className="font-mono text-slate-900 font-extrabold text-xs bg-purple-50 text-[#6C5CE7] border border-purple-200 px-3 py-1 rounded-lg">
+                    <tr key={coupon.id} className="hover:bg-[#F1F6F2]/70 transition-colors">
+                      <td className="py-3 px-4">
+                        <span className="font-mono font-bold text-xs bg-[#E4EEE7] text-[#123524] px-2.5 py-1 rounded-lg">
                           {coupon.code}
                         </span>
                       </td>
 
-                      <td className="py-4 px-4">
-                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${typeColor(coupon.type)}`}>
+                      <td className="py-3 px-4">
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${typeColor(coupon.type)}`}>
                           {typeLabel(coupon.type)}
                         </span>
                       </td>
 
-                      <td className="py-4 px-4 font-extrabold text-slate-900">
+                      <td className="py-3 px-4 font-extrabold text-[#131914] font-['Manrope']">
                         {coupon.type === "FREE_DELIVERY" ? "Free Delivery" : coupon.type === "PERCENTAGE" ? `${coupon.value}%` : `৳${coupon.value}`}
                       </td>
 
-                      <td className="py-4 px-4 text-slate-600 font-semibold">৳{coupon.minPurchase}</td>
+                      <td className="py-3 px-4 text-[#5C685F] font-semibold">৳{coupon.minPurchase}</td>
 
-                      <td className="py-4 px-4 text-slate-600 font-semibold">
+                      <td className="py-3 px-4 text-[#5C685F]">
                         {coupon.usageCount} / {coupon.usageLimit}
                       </td>
 
-                      <td className="py-4 px-4">
-                        <span className={`text-xs font-semibold ${expired ? "text-rose-600" : "text-slate-600"}`}>
+                      <td className="py-3 px-4">
+                        <span className={`text-xs font-semibold ${expired ? "text-[#C23B3B]" : "text-[#5C685F]"}`}>
                           {new Date(coupon.expiresAt).toLocaleDateString()}
                         </span>
                       </td>
 
-                      <td className="py-4 px-4">
+                      <td className="py-3 px-4">
                         <span
-                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
                             expired
-                              ? "bg-rose-100 text-rose-700 border border-rose-200"
+                              ? "bg-[#FBEAEA] text-[#C23B3B]"
                               : coupon.isActive
-                              ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
-                              : "bg-slate-100 text-slate-600 border border-slate-200"
+                              ? "bg-[#E6F5EB] text-[#1F8A4C]"
+                              : "bg-[#F5F7F5] text-[#5C685F]"
                           }`}
                         >
-                          {expired ? "Expired" : coupon.isActive ? "Active" : "Inactive"}
+                          <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                          {expired ? "Expired" : coupon.isActive ? "Live" : "Inactive"}
                         </span>
                       </td>
 
-                      <td className="py-4 px-6 text-center">
-                        <div className="flex items-center justify-center gap-2">
+                      <td className="py-3 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1">
                           <button
+                            type="button"
                             onClick={() => openEdit(coupon)}
-                            className="p-2 rounded-xl bg-slate-100 hover:bg-[#6C5CE7]/10 text-slate-600 hover:text-[#6C5CE7] transition-all"
-                            title="Edit coupon"
+                            className="p-1.5 rounded-lg border border-[#E4E8E4] bg-white text-[#5C685F] hover:text-[#123524] hover:bg-[#F1F6F2] transition-colors cursor-pointer"
+                            title="Edit"
                           >
-                            <Edit className="h-4 w-4" />
+                            <Edit className="w-3.5 h-3.5" />
                           </button>
                           <button
+                            type="button"
                             onClick={() => setDeleteTarget(coupon)}
-                            className="p-2 rounded-xl bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-600 transition-all"
-                            title="Delete coupon"
+                            className="p-1.5 rounded-lg border border-[#E4E8E4] bg-white text-[#5C685F] hover:text-[#C23B3B] hover:bg-[#FBEAEA] transition-colors cursor-pointer"
+                            title="Delete"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>
@@ -382,14 +460,14 @@ export default function AdminCouponsPage() {
                 type="button"
                 variant="outline"
                 onClick={() => setShowForm(false)}
-                className="border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold rounded-xl"
+                className="border-[#E4E8E4] text-[#131914] hover:bg-[#F1F6F2] text-xs font-semibold rounded-xl cursor-pointer"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={submitting}
-                className="bg-[#6C5CE7] hover:bg-[#5b4bc4] text-white text-xs font-semibold rounded-xl"
+                className="bg-[#123524] hover:bg-[#1B4A34] text-white text-xs font-bold rounded-xl cursor-pointer"
               >
                 {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                 {editTarget ? "Update Coupon" : "Create Coupon"}
@@ -401,25 +479,25 @@ export default function AdminCouponsPage() {
 
       {/* Delete Dialog */}
       <Dialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
-        <DialogContent className="bg-white border-[#E5E7EB] text-slate-900 rounded-2xl p-6">
+        <DialogContent className="bg-white border-[#E4E8E4] text-[#131914] rounded-2xl p-6">
           <DialogHeader>
-            <DialogTitle className="text-slate-900 font-bold text-lg">Delete Coupon</DialogTitle>
-            <DialogDescription className="text-slate-500 text-xs mt-1">
-              Are you sure you want to delete <strong className="text-slate-900">{deleteTarget?.code}</strong>?
+            <DialogTitle className="text-[#131914] font-bold text-lg font-['Manrope']">Delete Coupon</DialogTitle>
+            <DialogDescription className="text-[#5C685F] text-xs mt-1">
+              Are you sure you want to delete <strong className="text-[#131914]">{deleteTarget?.code}</strong>?
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-3 mt-6">
             <Button
               variant="outline"
               onClick={() => setDeleteTarget(null)}
-              className="border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold rounded-xl"
+              className="border-[#E4E8E4] text-[#131914] hover:bg-[#F1F6F2] text-xs font-semibold rounded-xl cursor-pointer"
             >
               Cancel
             </Button>
             <Button
               onClick={handleDelete}
               disabled={deleting}
-              className="bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-xl"
+              className="bg-[#C23B3B] hover:bg-[#a82e2e] text-white text-xs font-bold rounded-xl cursor-pointer"
             >
               {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Confirm Delete

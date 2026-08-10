@@ -156,36 +156,34 @@ export function AdminSidebar({ mobileOpen = false, onCloseMobile }: AdminSidebar
 
       <aside
         className={cn(
-          "h-screen sticky top-0 z-50 transition-all duration-300 ease-in-out p-3 md:p-4 flex flex-col shrink-0",
+          "h-screen sticky top-0 z-50 transition-all duration-300 ease-in-out p-3 md:p-3.5 flex flex-col shrink-0 font-['Inter',sans-serif]",
           "lg:translate-x-0 lg:static",
           mobileOpen
             ? "fixed top-0 bottom-0 left-0 translate-x-0 w-72"
             : "fixed lg:sticky -translate-x-full lg:translate-x-0",
-          collapsed ? "lg:w-20" : "lg:w-72"
+          collapsed ? "lg:w-20" : "lg:w-64"
         )}
       >
-        <div className="w-full h-full bg-gradient-to-b from-[#6C5CE7] via-[#7C4DFF] to-[#8B5CF6] rounded-[24px] shadow-2xl shadow-[#6C5CE7]/30 flex flex-col justify-between overflow-hidden text-white relative border border-white/20">
-          {/* Top Decorative Glow */}
-          <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-10 left-0 w-40 h-40 bg-purple-400/20 rounded-full blur-2xl pointer-events-none" />
-
+        <div className="w-full h-full bg-[#123524] rounded-[20px] shadow-xl flex flex-col justify-between overflow-hidden text-white relative border border-[#1B4A34]/80">
           {/* Header Logo */}
           <div className="flex flex-col min-h-0 flex-1">
-            <div className="p-4 flex items-center justify-between border-b border-white/15 shrink-0">
+            <div className="p-4 flex items-center justify-between border-b border-[#1B4A34]/80 shrink-0">
               <Link
                 href="/admin/dashboard"
                 onClick={onCloseMobile}
-                className="flex items-center gap-3 overflow-hidden"
+                className="flex items-center gap-2.5 overflow-hidden"
               >
-                <div className="w-10 h-10 rounded-xl bg-white text-[#6C5CE7] flex items-center justify-center font-black text-xl shadow-lg shadow-black/10 shrink-0">
-                  <Sparkles className="w-5 h-5 text-[#6C5CE7]" />
+                <div className="w-9 h-9 rounded-xl bg-[#1B4A34] text-white flex items-center justify-center font-extrabold text-sm border border-emerald-400/20 shadow-sm shrink-0 font-['Manrope',sans-serif]">
+                  eB
                 </div>
                 {(!collapsed || mobileOpen) && (
                   <div className="flex flex-col">
-                    <span className="font-extrabold text-base tracking-tight text-white leading-tight">
-                      eBazar <span className="text-sky-300 font-semibold text-[10px] ml-1 px-1.5 py-0.5 rounded bg-white/15">PRO</span>
+                    <span className="font-extrabold text-base tracking-tight text-white leading-tight font-['Manrope',sans-serif]">
+                      eBazar
                     </span>
-                    <span className="text-[10px] text-purple-200 font-medium">Enterprise E-Commerce</span>
+                    <span className="text-[9px] uppercase tracking-wider text-[#8B958D] font-bold">
+                      ENTERPRISE COMMERCE
+                    </span>
                   </div>
                 )}
               </Link>
@@ -193,14 +191,14 @@ export function AdminSidebar({ mobileOpen = false, onCloseMobile }: AdminSidebar
               {/* Close Mobile Button */}
               <button
                 onClick={onCloseMobile}
-                className="lg:hidden text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10"
+                className="lg:hidden text-white/70 hover:text-white p-1 rounded-lg hover:bg-white/10 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Scrollable Accordion Navigation */}
-            <nav className="flex-1 overflow-y-auto p-3 space-y-1.5 text-xs scrollbar-none">
+            <nav className="flex-1 overflow-y-auto p-3 space-y-1 text-xs scrollbar-none">
               {navGroups.map((group) => {
                 const GroupIcon = group.icon;
                 const isGroupOpen = !!openGroups[group.label];
@@ -217,17 +215,17 @@ export function AdminSidebar({ mobileOpen = false, onCloseMobile }: AdminSidebar
                       onClick={onCloseMobile}
                       title={collapsed ? group.label : undefined}
                       className={cn(
-                        "flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all duration-200 group text-xs font-semibold",
+                        "flex items-center justify-between px-3 py-2 rounded-xl transition-all duration-150 group text-xs font-semibold",
                         isSingleActive
-                          ? "bg-white text-[#6C5CE7] shadow-lg shadow-black/10 font-bold backdrop-blur-md"
-                          : "text-purple-100 hover:bg-white/15 hover:text-white"
+                          ? "bg-[#1B4A34] text-white font-bold shadow-xs"
+                          : "text-[#C4D1C7] hover:bg-[#1B4A34]/50 hover:text-white"
                       )}
                     >
-                      <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex items-center gap-2.5 min-w-0">
                         <GroupIcon
                           className={cn(
-                            "w-4 h-4 shrink-0 transition-transform duration-200 group-hover:scale-110",
-                            isSingleActive ? "text-[#6C5CE7]" : "text-white/90"
+                            "w-4 h-4 shrink-0 transition-transform duration-150",
+                            isSingleActive ? "text-white" : "text-[#8B958D] group-hover:text-white"
                           )}
                         />
                         {(!collapsed || mobileOpen) && <span className="truncate">{group.label}</span>}
@@ -242,24 +240,29 @@ export function AdminSidebar({ mobileOpen = false, onCloseMobile }: AdminSidebar
                 );
 
                 return (
-                  <div key={group.label} className="space-y-1">
+                  <div key={group.label} className="space-y-0.5">
                     <button
                       onClick={() => toggleGroup(group.label)}
                       className={cn(
-                        "w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all duration-200 text-xs font-semibold group",
+                        "w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all duration-150 text-xs font-semibold group cursor-pointer",
                         hasActiveChild
-                          ? "text-white bg-white/20 font-bold"
-                          : "text-purple-100 hover:bg-white/15 hover:text-white"
+                          ? "text-white bg-[#1B4A34]/50 font-bold"
+                          : "text-[#C4D1C7] hover:bg-[#1B4A34]/50 hover:text-white"
                       )}
                     >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <GroupIcon className="w-4 h-4 shrink-0 text-white/90 group-hover:scale-110 transition-transform" />
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <GroupIcon
+                          className={cn(
+                            "w-4 h-4 shrink-0 transition-transform duration-150",
+                            hasActiveChild ? "text-white" : "text-[#8B958D] group-hover:text-white"
+                          )}
+                        />
                         {(!collapsed || mobileOpen) && <span className="truncate">{group.label}</span>}
                       </div>
                       {(!collapsed || mobileOpen) && (
                         <ChevronDown
                           className={cn(
-                            "w-3.5 h-3.5 transition-transform duration-200 text-purple-200",
+                            "w-3.5 h-3.5 transition-transform duration-200 text-[#8B958D]",
                             isGroupOpen ? "rotate-180 text-white" : ""
                           )}
                         />
@@ -268,7 +271,7 @@ export function AdminSidebar({ mobileOpen = false, onCloseMobile }: AdminSidebar
 
                     {/* Submenu Links */}
                     {isGroupOpen && (!collapsed || mobileOpen) && (
-                      <div className="pl-4 pr-1 py-1 space-y-1 border-l-2 border-white/20 ml-4">
+                      <div className="pl-3 pr-1 py-0.5 space-y-0.5 ml-3 border-l border-[#1B4A34]">
                         {group.items?.map((sub) => {
                           const SubIcon = sub.icon;
                           const active = pathname === sub.href;
@@ -278,13 +281,20 @@ export function AdminSidebar({ mobileOpen = false, onCloseMobile }: AdminSidebar
                               href={sub.href}
                               onClick={onCloseMobile}
                               className={cn(
-                                "flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all text-xs font-medium",
+                                "flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-all text-xs font-medium",
                                 active
-                                  ? "bg-white text-[#6C5CE7] font-bold shadow-md shadow-black/10"
-                                  : "text-purple-100 hover:bg-white/10 hover:text-white"
+                                  ? "bg-[#1B4A34] text-white font-bold shadow-xs"
+                                  : "text-[#A2B3A7] hover:bg-[#1B4A34]/40 hover:text-white"
                               )}
                             >
-                              {SubIcon && <SubIcon className="w-3.5 h-3.5 shrink-0 opacity-80" />}
+                              {SubIcon && (
+                                <SubIcon
+                                  className={cn(
+                                    "w-3.5 h-3.5 shrink-0",
+                                    active ? "text-white" : "text-[#8B958D]"
+                                  )}
+                                />
+                              )}
                               <span className="truncate">{sub.label}</span>
                             </Link>
                           );
@@ -298,30 +308,30 @@ export function AdminSidebar({ mobileOpen = false, onCloseMobile }: AdminSidebar
           </div>
 
           {/* Footer User Card */}
-          <div className="p-3 border-t border-white/15 space-y-2 shrink-0">
+          <div className="p-3 border-t border-[#1B4A34]/80 space-y-2 shrink-0">
             {(!collapsed || mobileOpen) ? (
-              <div className="p-2.5 bg-white/10 backdrop-blur-md rounded-2xl border border-white/15 flex items-center justify-between">
+              <div className="p-2 bg-[#1B4A34]/40 rounded-xl border border-white/5 flex items-center justify-between">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center font-bold text-xs ring-2 ring-white/40 shrink-0">
+                  <div className="w-7 h-7 rounded-lg bg-[#1B4A34] text-white flex items-center justify-center font-bold text-xs shrink-0 font-['Manrope']">
                     {user?.email?.charAt(0).toUpperCase() || "A"}
                   </div>
                   <div className="flex flex-col min-w-0">
-                    <span className="text-xs font-bold text-white truncate">{user?.email}</span>
-                    <span className="text-[10px] text-purple-200 truncate">{user?.role}</span>
+                    <span className="text-[11px] font-bold text-white truncate">{user?.email}</span>
+                    <span className="text-[9px] text-[#8B958D] font-semibold uppercase">{user?.role}</span>
                   </div>
                 </div>
                 <button
                   onClick={logout}
-                  className="text-white/70 hover:text-white p-1 hover:bg-white/15 rounded-lg transition-colors"
+                  className="text-white/60 hover:text-white p-1 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
                   title="Logout"
                 >
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="w-3.5 h-3.5" />
                 </button>
               </div>
             ) : (
               <button
                 onClick={logout}
-                className="w-full flex justify-center text-white/80 hover:text-white p-2 hover:bg-white/15 rounded-xl transition-colors"
+                className="w-full flex justify-center text-white/70 hover:text-white p-2 hover:bg-[#1B4A34] rounded-xl transition-colors cursor-pointer"
                 title="Logout"
               >
                 <LogOut className="w-4 h-4" />
@@ -331,15 +341,15 @@ export function AdminSidebar({ mobileOpen = false, onCloseMobile }: AdminSidebar
             {/* Desktop Collapse Toggle */}
             <button
               onClick={() => setCollapsed(!collapsed)}
-              className="hidden lg:flex w-full items-center justify-center py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white/90 hover:text-white transition-all text-xs font-medium gap-2"
+              className="hidden lg:flex w-full items-center justify-center py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-all text-xs font-medium gap-1.5 cursor-pointer"
             >
               <ChevronDown
                 className={cn(
-                  "w-4 h-4 transition-transform duration-300",
+                  "w-3.5 h-3.5 transition-transform duration-300",
                   collapsed ? "-rotate-90" : "rotate-90"
                 )}
               />
-              {!collapsed && <span>Collapse Menu</span>}
+              {!collapsed && <span className="text-[11px]">Collapse</span>}
             </button>
           </div>
         </div>
