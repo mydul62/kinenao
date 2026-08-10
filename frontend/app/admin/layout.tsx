@@ -25,8 +25,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
-        <Loader2 className="h-8 w-8 animate-spin text-[#6C5CE7]" />
+      <div className="min-h-screen flex items-center justify-center bg-[#F5F7F5]">
+        <Loader2 className="h-8 w-8 animate-spin text-[#123524]" />
       </div>
     );
   }
@@ -36,30 +36,30 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="flex min-h-screen bg-[#F8FAFC] text-[#111827] font-sans antialiased">
-      {/* Sidebar with Purple Gradient & Mobile Drawer */}
+    <div className="flex min-h-screen bg-[#F5F7F5] text-[#131914] font-['Inter',sans-serif] antialiased">
+      {/* Sidebar with Dark Green #123524 & Mobile Drawer */}
       <AdminSidebar mobileOpen={mobileOpen} onCloseMobile={() => setMobileOpen(false)} />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Sticky Top Header */}
-        <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-[#E5E7EB] px-4 md:px-6 py-3 flex items-center justify-between gap-3 shadow-sm">
+        <header className="sticky top-0 z-30 bg-white border-b border-[#E4E8E4] px-4 md:px-6 py-2.5 flex items-center justify-between gap-3 shadow-xs">
           {/* Mobile Menu Button & Search Bar */}
           <div className="flex items-center gap-3 flex-1 max-w-md">
             <button
               onClick={() => setMobileOpen(true)}
-              className="lg:hidden p-2 rounded-xl text-slate-700 hover:bg-slate-100 border border-slate-200"
+              className="lg:hidden p-2 rounded-xl text-[#131914] hover:bg-[#F1F6F2] border border-[#E4E8E4] cursor-pointer"
               title="Open Navigation"
             >
               <Menu className="w-5 h-5" />
             </button>
 
             <div className="relative w-full">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-[#8B958D] absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Search products, orders, customers..."
-                className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-2xl pl-10 pr-4 py-2 text-xs md:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#6C5CE7]/30 focus:border-[#6C5CE7] transition-all shadow-inner"
+                className="w-full bg-[#F5F7F5] border border-[#E4E8E4] rounded-xl pl-9 pr-4 py-2 text-xs text-[#131914] placeholder:text-[#8B958D] focus:outline-none focus:ring-1 focus:ring-[#123524] focus:border-[#123524] transition-all"
               />
             </div>
           </div>
@@ -68,33 +68,33 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/admin/products/new"
-              className="hidden sm:flex items-center gap-2 px-3.5 py-2 bg-gradient-to-r from-[#6C5CE7] to-[#8B5CF6] text-white text-xs font-semibold rounded-xl shadow-md shadow-[#6C5CE7]/20 hover:opacity-95 transition-all"
+              className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 bg-[#123524] hover:bg-[#1B4A34] text-white text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>Add Product</span>
+              <span>+ Add product</span>
             </Link>
 
             {/* Notifications Button */}
-            <button className="relative p-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">
-              <Bell className="w-4 h-4 text-slate-600" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#EF4444] ring-2 ring-white" />
+            <button className="relative p-2 rounded-xl border border-[#E4E8E4] bg-white text-[#5C685F] hover:bg-[#F1F6F2] transition-colors cursor-pointer">
+              <Bell className="w-4 h-4" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#B5601A] ring-2 ring-white" />
             </button>
 
             {/* User Profile Pill */}
-            <div className="flex items-center gap-2.5 pl-2 border-l border-slate-200">
-              <div className="w-8 h-8 rounded-full bg-[#6C5CE7]/15 text-[#6C5CE7] flex items-center justify-center font-bold text-xs ring-2 ring-[#6C5CE7]/30 shrink-0">
-                {user?.email?.charAt(0).toUpperCase() || "A"}
+            <div className="flex items-center gap-2.5 pl-2 border-l border-[#E4E8E4]">
+              <div className="w-8 h-8 rounded-full bg-[#1B4A34] text-white flex items-center justify-center font-bold text-xs ring-2 ring-[#E4EEE7] shrink-0 font-['Manrope']">
+                {user?.email?.charAt(0).toUpperCase() || "M"}
               </div>
               <div className="hidden xl:flex flex-col">
-                <span className="text-xs font-bold text-slate-900 leading-tight">{user?.email}</span>
-                <span className="text-[10px] text-purple-600 font-semibold uppercase">{user?.role}</span>
+                <span className="text-xs font-bold text-[#131914] leading-tight font-['Inter']">{user?.email}</span>
+                <span className="text-[10px] text-[#5C685F] font-semibold uppercase">{user?.role}</span>
               </div>
             </div>
           </div>
         </header>
 
         {/* Page Content View */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
           {children}
         </main>
       </div>

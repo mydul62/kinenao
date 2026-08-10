@@ -54,29 +54,103 @@ export default function AdminCustomersPage() {
     fetchCustomers();
   }, [fetchCustomers]);
 
+  const activeBuyers = customers.filter((c) => (c._count?.orders || 0) > 0).length;
+  const totalCustomerOrders = customers.reduce((sum, c) => sum + (c._count?.orders || 0), 0);
+
   return (
-    <div className="space-y-6 max-w-[1600px] mx-auto">
-      {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-5 max-w-[1600px] mx-auto font-['Inter',sans-serif]">
+      {/* 1. Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl md:text-3xl font-extrabold text-[#111827] tracking-tight">
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#131914] tracking-tight font-['Manrope',sans-serif]">
               Customer Accounts
             </h1>
-            <span className="bg-[#6C5CE7]/10 text-[#6C5CE7] text-xs font-bold px-2.5 py-0.5 rounded-full border border-[#6C5CE7]/20">
-              {total} Registered Users
+            <span className="bg-[#E4EEE7] text-[#123524] text-xs font-bold px-2.5 py-0.5 rounded-full font-['Manrope']">
+              {total || customers.length} users
             </span>
           </div>
-          <p className="text-slate-500 text-xs md:text-sm mt-1">
+          <p className="text-[#5C685F] text-xs sm:text-sm mt-0.5">
             View registered customer profiles, contact information, order history, and registration dates.
           </p>
         </div>
       </div>
 
-      {/* Controls */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-[#E5E7EB] shadow-sm">
-        <div className="relative w-full sm:max-w-md">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+      {/* 2. Row of 4 KPI Summary Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white border border-[#E4E8E4] rounded-2xl p-4 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-[#5C685F]">Total Customers</span>
+            <div className="w-6 h-6 rounded-md bg-[#F1F6F2] text-[#123524] flex items-center justify-center border border-[#E4EEE7]">
+              <Users className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <div className="mt-2.5">
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-[#131914] font-['Manrope',sans-serif] tracking-tight leading-none">
+              {total || customers.length}
+            </h3>
+            <p className="text-[11px] font-bold text-[#1F8A4C] mt-1.5 flex items-center gap-1">
+              <span>✓</span> Verified accounts
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white border border-[#E4E8E4] rounded-2xl p-4 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-[#5C685F]">Active Buyers</span>
+            <div className="w-6 h-6 rounded-md bg-[#E6F5EB] text-[#1F8A4C] flex items-center justify-center border border-emerald-200/50">
+              <span className="w-2 h-2 rounded-full bg-[#1F8A4C]" />
+            </div>
+          </div>
+          <div className="mt-2.5">
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-[#131914] font-['Manrope',sans-serif] tracking-tight leading-none">
+              {activeBuyers}
+            </h3>
+            <p className="text-[11px] font-semibold text-[#5C685F] mt-1.5">
+              With order history
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white border border-[#E4E8E4] rounded-2xl p-4 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-[#5C685F]">Total Customer Orders</span>
+            <div className="w-6 h-6 rounded-md bg-[#F1F6F2] text-[#123524] flex items-center justify-center border border-[#E4EEE7]">
+              <span className="font-extrabold text-[10px]">#</span>
+            </div>
+          </div>
+          <div className="mt-2.5">
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-[#131914] font-['Manrope',sans-serif] tracking-tight leading-none">
+              {totalCustomerOrders}
+            </h3>
+            <p className="text-[11px] font-semibold text-[#1F8A4C] mt-1.5">
+              Purchases placed
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white border border-[#E4E8E4] rounded-2xl p-4 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-[#5C685F]">User Engagement</span>
+            <div className="w-6 h-6 rounded-md bg-[#FBEEE0] text-[#B5601A] flex items-center justify-center border border-amber-200/50">
+              <span className="font-black text-xs">%</span>
+            </div>
+          </div>
+          <div className="mt-2.5">
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-[#131914] font-['Manrope',sans-serif] tracking-tight leading-none">
+              {customers.length > 0 ? ((activeBuyers / customers.length) * 100).toFixed(0) : "100"}%
+            </h3>
+            <p className="text-[11px] font-semibold text-[#B5601A] mt-1.5">
+              Conversion rate
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Search Bar */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 bg-white p-2 sm:p-2.5 rounded-2xl border border-[#E4E8E4] shadow-xs">
+        <div className="flex items-center gap-2 bg-[#F5F7F5] px-3.5 py-2 rounded-xl border border-[#E4E8E4] w-full sm:flex-1">
+          <Search className="w-4 h-4 text-[#8B958D] shrink-0" />
           <input
             type="text"
             value={search}
@@ -85,7 +159,7 @@ export default function AdminCustomersPage() {
               setPage(1);
             }}
             placeholder="Search by customer name or email..."
-            className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-xl pl-10 pr-4 py-2 text-xs md:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#6C5CE7]/30 focus:border-[#6C5CE7] transition-all"
+            className="w-full text-xs text-[#131914] placeholder:text-[#8B958D] bg-transparent border-0 focus:outline-none"
           />
         </div>
 
@@ -93,71 +167,71 @@ export default function AdminCustomersPage() {
           variant="outline"
           onClick={fetchCustomers}
           size="sm"
-          className="border-[#E5E7EB] text-slate-700 hover:bg-slate-50 text-xs font-semibold rounded-xl gap-2"
+          className="rounded-xl border-[#E4E8E4] bg-white text-[#131914] hover:bg-[#F1F6F2] font-semibold text-xs h-9 px-3.5 shadow-2xs cursor-pointer w-full sm:w-auto"
         >
-          <RefreshCw className="h-3.5 w-3.5 text-slate-500" />
+          <RefreshCw className="h-3.5 w-3.5 mr-1.5 text-[#5C685F]" />
           Refresh
         </Button>
       </div>
 
-      {/* Customers Table */}
-      <div className="bg-white border border-[#E5E7EB] rounded-[24px] shadow-sm overflow-hidden">
+      {/* 4. Customers Table */}
+      <div className="bg-white border border-[#E4E8E4] rounded-2xl shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           {loading ? (
             <div className="flex items-center justify-center h-64">
-              <Loader2 className="h-8 w-8 animate-spin text-[#6C5CE7]" />
+              <Loader2 className="h-8 w-8 animate-spin text-[#123524]" />
             </div>
           ) : customers.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-12 text-center text-slate-500">
-              <Users className="h-12 w-12 mb-3 text-slate-300" />
-              <p className="font-bold text-slate-800 text-base">No customers found</p>
+            <div className="flex flex-col items-center justify-center p-12 text-center text-[#5C685F]">
+              <Users className="h-12 w-12 mb-3 text-[#8B958D]" />
+              <p className="font-bold text-[#131914] text-base">No customers found</p>
             </div>
           ) : (
-            <table className="w-full text-left text-xs md:text-sm">
+            <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-[#E5E7EB] bg-slate-50/80 text-slate-500 uppercase tracking-wider text-[11px] font-bold">
-                  <th className="py-4 px-6">Customer Profile</th>
-                  <th className="py-4 px-4">Email Address</th>
-                  <th className="py-4 px-4">Phone Number</th>
-                  <th className="py-4 px-4">Total Purchases</th>
-                  <th className="py-4 px-6 text-right">Joined Date</th>
+                <tr className="border-b border-[#E4E8E4] bg-[#F1F6F2] text-[#5C685F] uppercase tracking-wider text-[10px] font-bold">
+                  <th className="py-3 px-4">CUSTOMER PROFILE</th>
+                  <th className="py-3 px-4">EMAIL ADDRESS</th>
+                  <th className="py-3 px-4">PHONE NUMBER</th>
+                  <th className="py-3 px-4">TOTAL PURCHASES</th>
+                  <th className="py-3 px-4 text-right">JOINED DATE</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#E5E7EB]">
+              <tbody className="divide-y divide-[#E4E8E4]/60 font-medium text-[#131914]">
                 {customers.map((c) => (
-                  <tr key={c.id} className="hover:bg-purple-50/40 transition-colors">
-                    <td className="py-4 px-6">
+                  <tr key={c.id} className="hover:bg-[#F1F6F2]/70 transition-colors">
+                    <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
                         {c.profile?.avatarUrl ? (
                           <img
                             src={c.profile.avatarUrl}
                             alt=""
-                            className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-100 shrink-0"
+                            className="w-9 h-9 rounded-full object-cover border border-[#E4E8E4] shrink-0"
                           />
                         ) : (
-                          <div className="w-10 h-10 rounded-full bg-[#6C5CE7]/15 text-[#6C5CE7] font-extrabold flex items-center justify-center text-xs shrink-0 ring-2 ring-[#6C5CE7]/20">
+                          <div className="w-9 h-9 rounded-full bg-[#1B4A34] text-white font-extrabold flex items-center justify-center text-xs shrink-0 font-['Manrope']">
                             {c.email.charAt(0).toUpperCase()}
                           </div>
                         )}
-                        <span className="text-slate-900 font-bold text-xs md:text-sm">
+                        <span className="text-[#131914] font-bold text-xs">
                           {c.profile?.fullName || c.email.split("@")[0]}
                         </span>
                       </div>
                     </td>
 
-                    <td className="py-4 px-4 text-slate-700 font-medium">{c.email}</td>
+                    <td className="py-3 px-4 text-[#5C685F]">{c.email}</td>
 
-                    <td className="py-4 px-4 text-slate-500 font-mono text-xs">
+                    <td className="py-3 px-4 text-[#5C685F] font-mono text-xs">
                       {c.profile?.phoneNumber || "Not provided"}
                     </td>
 
-                    <td className="py-4 px-4">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-purple-100 text-[#6C5CE7] border border-purple-200">
+                    <td className="py-3 px-4">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#E4EEE7] text-[#123524]">
                         {c._count?.orders || 0} Orders
                       </span>
                     </td>
 
-                    <td className="py-4 px-6 text-right text-slate-500 text-xs">
+                    <td className="py-3 px-4 text-right text-[#5C685F] text-xs">
                       {new Date(c.createdAt).toLocaleDateString()}
                     </td>
                   </tr>
@@ -169,7 +243,7 @@ export default function AdminCustomersPage() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="p-4 border-t border-[#E5E7EB] bg-slate-50/50 flex items-center justify-between text-xs text-slate-500">
+          <div className="px-5 py-3 border-t border-[#E4E8E4] bg-[#F5F7F5]/50 flex items-center justify-between text-xs text-[#5C685F]">
             <span>
               Page {page} of {totalPages}
             </span>
@@ -179,7 +253,7 @@ export default function AdminCustomersPage() {
                 size="sm"
                 disabled={page === 1}
                 onClick={() => setPage((p) => p - 1)}
-                className="border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-semibold rounded-lg"
+                className="rounded-xl h-8 px-3 text-xs border-[#E4E8E4] bg-white text-[#131914] hover:bg-[#F1F6F2] cursor-pointer"
               >
                 Previous
               </Button>
@@ -188,7 +262,7 @@ export default function AdminCustomersPage() {
                 size="sm"
                 disabled={page === totalPages}
                 onClick={() => setPage((p) => p + 1)}
-                className="border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-semibold rounded-lg"
+                className="rounded-xl h-8 px-3 text-xs border-[#E4E8E4] bg-white text-[#131914] hover:bg-[#F1F6F2] cursor-pointer"
               >
                 Next
               </Button>
