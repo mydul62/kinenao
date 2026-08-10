@@ -5,6 +5,7 @@ const optionalString = z.string().optional().nullable().transform((val) => (val 
 const variantSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(1, "Variant name is required"),
+  combination: z.any().optional().nullable(),
   colorName: optionalString,
   colorCode: optionalString,
   imageUrl: optionalString,
@@ -13,6 +14,7 @@ const variantSchema = z.object({
   discountPrice: z.number().nonnegative().optional().nullable(),
   stockQty: z.number().int().nonnegative().default(0),
   size: optionalString,
+  weight: optionalString,
   isActive: z.boolean().optional(),
   sortOrder: z.number().int().optional(),
 });
@@ -43,6 +45,7 @@ export const createProductSchema = z.object({
     thumbnail: optionalString,
     videoUrl: optionalString,
     videoPosterUrl: optionalString,
+    attributes: z.any().optional().nullable(),
     variants: z.array(variantSchema).optional(),
   }).refine((data) => {
     if (data.discountPrice !== undefined && data.discountPrice !== null) {
@@ -81,6 +84,7 @@ export const updateProductSchema = z.object({
     thumbnail: optionalString,
     videoUrl: optionalString,
     videoPosterUrl: optionalString,
+    attributes: z.any().optional().nullable(),
     variants: z.array(variantSchema).optional(),
   }).refine((data) => {
     if (data.price !== undefined && data.discountPrice !== undefined && data.discountPrice !== null) {

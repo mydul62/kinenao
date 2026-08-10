@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
-import { Check, AlertCircle, Sparkles } from "lucide-react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { Check, Sparkles } from "lucide-react";
 
 export interface VariantItem {
   id?: string;
@@ -35,6 +35,31 @@ interface CustomerVariantSelectorProps {
   className?: string;
 }
 
+/**
+ * Safely extracts combination object from a variant row
+ */
+function getVariantCombo(v: VariantItem): Record<string, string> {
+  let combo: Record<string, string> = {};
+  if (v.combination) {
+    if (typeof v.combination === "string") {
+      try {
+        combo = JSON.parse(v.combination);
+      } catch {
+        combo = {};
+      }
+    } else if (typeof v.combination === "object") {
+      combo = { ...v.combination };
+    }
+  }
+
+  // Fallback / merge explicit fields
+  if (v.size && !combo.size) combo.size = v.size;
+  if (v.colorName && !combo.color) combo.color = v.colorName;
+  if (v.weight && !combo.weight) combo.weight = v.weight;
+
+  return combo;
+}
+
 export default function CustomerVariantSelector({
   attributes = [],
   variants = [],
@@ -46,22 +71,40 @@ export default function CustomerVariantSelector({
   // If no variants exist, render nothing
   if (!variants || variants.length === 0) return null;
 
-  // 1. Determine structured attributes list
-  // If product has explicit `attributes`, use them.
-  // Otherwise, intelligently derive attribute groups from legacy variants.
+  // 1. Safely parse structured attributes
+  const parsedAttributes = useMemo(() => {
+    if (!attributes) return null;
+    let list = attributes;
+    if (typeof list === "string") {
+      try {
+        list = JSON.parse(list);
+      } catch {
+        list = null;
+      }
+    }
+    if (Array.isArray(list) && list.length > 0) {
+      return list.filter((a) => a && a.values && a.values.length > 0);
+    }
+    return null;
+  }, [attributes]);
+
+  // 2. Determine resolved attribute groups (from explicit attributes OR derived from variants)
   const resolvedAttributes: AttributeConfig[] = useMemo(() => {
-    if (attributes && Array.isArray(attributes) && attributes.length > 0) {
-      return attributes.filter((a) => a.values && a.values.length > 0);
+    if (parsedAttributes && parsedAttributes.length > 0) {
+      return parsedAttributes;
     }
 
-    // Derived from variants
+    // Intelligently derive attribute groups from variants
     const derived: AttributeConfig[] = [];
 
     // Check sizes
     const sizes = Array.from(
       new Set(
         variants
-          .map((v) => v.size || (v.combination && v.combination.size))
+          .map((v) => {
+            const combo = getVariantCombo(v);
+            return combo.size || v.size;
+          })
           .filter(Boolean)
       )
     );
@@ -77,8 +120,9 @@ export default function CustomerVariantSelector({
     // Check colors
     const colorsMap = new Map<string, string | undefined>();
     variants.forEach((v) => {
-      const cName = v.colorName || (v.combination && v.combination.color);
-      const cCode = v.colorCode || (v.combination && v.combination.colorCode);
+      const combo = getVariantCombo(v);
+      const cName = combo.color || v.colorName;
+      const cCode = v.colorCode || (combo && combo.colorCode);
       if (cName && !colorsMap.has(cName)) {
         colorsMap.set(cName, cCode || undefined);
       }
@@ -99,7 +143,10 @@ export default function CustomerVariantSelector({
     const weights = Array.from(
       new Set(
         variants
-          .map((v) => v.weight || (v.combination && v.combination.weight))
+          .map((v) => {
+            const combo = getVariantCombo(v);
+            return combo.weight || v.weight;
+          })
           .filter(Boolean)
       )
     );
@@ -112,7 +159,7 @@ export default function CustomerVariantSelector({
       });
     }
 
-    // If still empty but flat variants exist (e.g. general options)
+    // If still empty but flat variants exist
     if (derived.length === 0 && variants.length > 1) {
       derived.push({
         id: "option",
@@ -126,14 +173,13 @@ export default function CustomerVariantSelector({
     }
 
     return derived;
-  }, [attributes, variants]);
+  }, [parsedAttributes, variants]);
 
-  // 2. Active Customer Selections: { size: "M", color: "Red" }
+  // 3. Active Customer Selections: { size: "M", color: "Red" }
   const [selectedAttrs, setSelectedAttrs] = useState<Record<string, string>>(() => {
     if (selectedVariant) {
-      if (selectedVariant.combination) {
-        return { ...selectedVariant.combination };
-      }
+      const combo = getVariantCombo(selectedVariant);
+      if (Object.keys(combo).length > 0) return combo;
       return {
         ...(selectedVariant.size ? { size: selectedVariant.size } : {}),
         ...(selectedVariant.colorName ? { color: selectedVariant.colorName } : {}),
@@ -142,89 +188,111 @@ export default function CustomerVariantSelector({
       };
     }
 
-    // Default to first available combination
+    // Default to first variant
     const firstVar = variants[0];
-    if (firstVar?.combination) return { ...firstVar.combination };
-    return {
-      ...(firstVar?.size ? { size: firstVar.size } : {}),
-      ...(firstVar?.colorName ? { color: firstVar.colorName } : {}),
-      ...(firstVar?.weight ? { weight: firstVar.weight } : {}),
-      ...(firstVar?.name ? { option: firstVar.name } : {}),
-    };
-  });
-
-  // 3. Find exact matching variant whenever selections change
-  useEffect(() => {
-    // If only 1 attribute group or single option
-    if (resolvedAttributes.length === 1 && resolvedAttributes[0].id === "option") {
-      const selectedVal = selectedAttrs["option"];
-      const match = variants.find((v) => v.name === selectedVal) || variants[0];
-      onSelectVariant(match || null);
-      return;
+    if (firstVar) {
+      const combo = getVariantCombo(firstVar);
+      if (Object.keys(combo).length > 0) return combo;
+      return {
+        ...(firstVar.size ? { size: firstVar.size } : {}),
+        ...(firstVar.colorName ? { color: firstVar.colorName } : {}),
+        ...(firstVar.weight ? { weight: firstVar.weight } : {}),
+        ...(firstVar.name ? { option: firstVar.name } : {}),
+      };
     }
 
-    // Multi-attribute exact match
-    const matched = variants.find((v) => {
-      // If variant has combination object
-      if (v.combination) {
-        return Object.entries(selectedAttrs).every(
-          ([attrId, selectedVal]) =>
-            !selectedVal || v.combination[attrId] === selectedVal
-        );
+    return {};
+  });
+
+  // Sync selectedAttrs when selectedVariant prop updates from outside
+  useEffect(() => {
+    if (selectedVariant) {
+      const combo = getVariantCombo(selectedVariant);
+      if (Object.keys(combo).length > 0) {
+        setSelectedAttrs((prev) => {
+          // Check if different to avoid loop
+          const isSame = Object.entries(combo).every(([k, v]) => prev[k] === v);
+          return isSame ? prev : combo;
+        });
       }
+    }
+  }, [selectedVariant]);
 
-      // Legacy fallback matching
-      const sizeMatch = !selectedAttrs["size"] || v.size === selectedAttrs["size"];
-      const colorMatch = !selectedAttrs["color"] || v.colorName === selectedAttrs["color"];
-      const weightMatch = !selectedAttrs["weight"] || v.weight === selectedAttrs["weight"];
-      return sizeMatch && colorMatch && weightMatch;
-    });
-
-    onSelectVariant(matched || null);
-  }, [selectedAttrs, variants, resolvedAttributes]);
-
-  // Handle clicking an attribute value
-  const handleSelectValue = (attrId: string, value: string) => {
-    setSelectedAttrs((prev) => ({
-      ...prev,
-      [attrId]: value,
-    }));
-  };
-
-  // 4. Smart Availability Matrix Checker
-  // Checks if a given value (e.g. Color = "Blue") is valid and has stock given current selections
-  const checkValueAvailability = (attrId: string, value: string) => {
-    // Find all variants that match current other selections + this value
-    const potentialMatches = variants.filter((v) => {
-      const combo = v.combination || {
-        size: v.size,
-        color: v.colorName,
-        weight: v.weight,
-        option: v.name,
+  // 4. Handle clicking an attribute value (Smart Selection)
+  const handleSelectValue = useCallback(
+    (attrId: string, value: string) => {
+      const targetAttrs = {
+        ...selectedAttrs,
+        [attrId]: value,
       };
 
-      if (combo[attrId] !== value) return false;
+      // 1) Look for exact match with targetAttrs
+      let match = variants.find((v) => {
+        const combo = getVariantCombo(v);
+        return Object.entries(targetAttrs).every(
+          ([k, val]) => !val || combo[k] === val
+        );
+      });
 
-      // Check against all OTHER currently selected attributes
-      for (const [otherAttrId, otherVal] of Object.entries(selectedAttrs)) {
-        if (otherAttrId !== attrId && otherVal) {
-          if (combo[otherAttrId] && combo[otherAttrId] !== otherVal) {
-            return false;
+      // 2) If no exact match (e.g. selected color isn't available in new size),
+      // fallback to first variant having this clicked value
+      if (!match) {
+        match = variants.find((v) => {
+          const combo = getVariantCombo(v);
+          return combo[attrId] === value;
+        });
+      }
+
+      if (match) {
+        const newCombo = getVariantCombo(match);
+        setSelectedAttrs(newCombo);
+        onSelectVariant(match);
+      } else {
+        setSelectedAttrs(targetAttrs);
+      }
+    },
+    [selectedAttrs, variants, onSelectVariant]
+  );
+
+  // 5. Check availability of a specific value
+  const checkValueAvailability = useCallback(
+    (attrId: string, value: string) => {
+      // Does ANY variant in catalog have this value?
+      const variantsWithValue = variants.filter((v) => {
+        const combo = getVariantCombo(v);
+        return combo[attrId] === value;
+      });
+
+      const exists = variantsWithValue.length > 0;
+      if (!exists) {
+        return { exists: false, isCompatible: false, hasStock: false };
+      }
+
+      // Does this value exist with the CURRENT OTHER selections?
+      const compatibleMatches = variantsWithValue.filter((v) => {
+        const combo = getVariantCombo(v);
+        for (const [otherAttrId, otherVal] of Object.entries(selectedAttrs)) {
+          if (otherAttrId !== attrId && otherVal) {
+            if (combo[otherAttrId] && combo[otherAttrId] !== otherVal) {
+              return false;
+            }
           }
         }
-      }
-      return true;
-    });
+        return true;
+      });
 
-    const exists = potentialMatches.length > 0;
-    const hasStock = potentialMatches.some((v) => (v.stockQty ?? 0) > 0);
+      const isCompatible = compatibleMatches.length > 0;
+      const targetList = isCompatible ? compatibleMatches : variantsWithValue;
+      const hasStock = targetList.some((v) => (v.stockQty ?? 0) > 0);
 
-    return {
-      exists,
-      hasStock,
-      isAvailable: exists && hasStock,
-    };
-  };
+      return {
+        exists: true,
+        isCompatible,
+        hasStock,
+      };
+    },
+    [variants, selectedAttrs]
+  );
 
   return (
     <div className={`space-y-4 ${className}`}>
@@ -252,8 +320,8 @@ export default function CustomerVariantSelector({
               {attr.values.map((val) => {
                 const isSelected = currentValue === val.name;
                 const availability = checkValueAvailability(attr.id, val.name);
-                const isOutOfStock = !availability.hasStock && availability.exists;
-                const isInvalid = !availability.exists;
+                const isOutOfStock = !availability.hasStock;
+                const isNonExistent = !availability.exists;
 
                 // Color Swatches Layout
                 if (isColorAttr || val.code) {
@@ -261,15 +329,15 @@ export default function CustomerVariantSelector({
                     <button
                       key={val.name}
                       type="button"
-                      disabled={isInvalid}
+                      disabled={isNonExistent}
                       onClick={() => handleSelectValue(attr.id, val.name)}
                       className={`relative flex items-center gap-2 px-3 py-2 rounded-2xl border text-xs font-bold transition-all cursor-pointer ${
                         isSelected
                           ? "bg-emerald-50/90 border-emerald-600 ring-2 ring-emerald-500/30 text-emerald-950 shadow-xs scale-102"
-                          : isInvalid
+                          : isNonExistent
                           ? "bg-slate-50 border-slate-200 text-slate-300 opacity-40 cursor-not-allowed line-through"
                           : isOutOfStock
-                          ? "bg-white border-rose-200 text-slate-600 hover:border-rose-400"
+                          ? "bg-white border-rose-200 text-slate-600 hover:border-rose-400 opacity-70"
                           : "bg-white border-slate-200 text-slate-700 hover:border-emerald-300 hover:bg-slate-50 shadow-2xs"
                       }`}
                     >
@@ -306,15 +374,15 @@ export default function CustomerVariantSelector({
                   <button
                     key={val.name}
                     type="button"
-                    disabled={isInvalid}
+                    disabled={isNonExistent}
                     onClick={() => handleSelectValue(attr.id, val.name)}
                     className={`relative px-3.5 py-2 rounded-xl border text-xs font-extrabold transition-all cursor-pointer ${
                       isSelected
                         ? "bg-emerald-600 border-emerald-600 text-white shadow-sm scale-102"
-                        : isInvalid
+                        : isNonExistent
                         ? "bg-slate-50 border-slate-200 text-slate-300 opacity-40 cursor-not-allowed line-through"
                         : isOutOfStock
-                        ? "bg-white border-rose-200 text-slate-700 hover:border-rose-300"
+                        ? "bg-white border-rose-200 text-slate-700 hover:border-rose-300 opacity-70"
                         : "bg-white border-slate-200 text-slate-800 hover:border-emerald-400 hover:bg-emerald-50/50 shadow-2xs"
                     }`}
                   >
@@ -358,3 +426,4 @@ export default function CustomerVariantSelector({
     </div>
   );
 }
+
