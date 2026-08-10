@@ -54,7 +54,9 @@ export const dbGetCategories = async (queryType?: string, includeInactive: boole
         select: { id: true, name: true, slug: true },
       },
       childCategories: {
-        select: { id: true, name: true, slug: true, imageUrl: true, isActive: true },
+        include: {
+          _count: { select: { products: true } },
+        },
       },
       _count: {
         select: { products: true, childCategories: true },
@@ -63,9 +65,32 @@ export const dbGetCategories = async (queryType?: string, includeInactive: boole
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
   });
 
+  // Calculate cumulative product count for all categories
+  const directProductCountMap = new Map<string, number>();
+  categories.forEach((cat) => {
+    directProductCountMap.set(cat.id, cat._count?.products || 0);
+  });
+
+  const categoriesWithAggregatedCount = categories.map((cat) => {
+    const childIds = (cat.childCategories || []).map((ch) => ch.id);
+    const childProductsSum = childIds.reduce((sum, chId) => {
+      return sum + (directProductCountMap.get(chId) || 0);
+    }, 0);
+    const totalCount = (cat._count?.products || 0) + childProductsSum;
+
+    return {
+      ...cat,
+      _count: {
+        ...cat._count,
+        products: totalCount,
+        directProducts: cat._count?.products || 0,
+      },
+    };
+  });
+
   if (queryType === "tree") {
     const buildTree = (parentId: string | null = null): any[] => {
-      return categories
+      return categoriesWithAggregatedCount
         .filter((cat) => cat.parentId === parentId)
         .map((cat) => ({
           ...cat,
@@ -75,7 +100,7 @@ export const dbGetCategories = async (queryType?: string, includeInactive: boole
     return buildTree(null);
   }
 
-  return categories;
+  return categoriesWithAggregatedCount;
 };
 
 export const dbGetCategoryByIdOrSlug = async (identifier: string) => {
@@ -101,7 +126,20 @@ export const dbGetCategoryByIdOrSlug = async (identifier: string) => {
     throw new NotFoundError("Category not found");
   }
 
-  return category;
+  const childProductsSum = (category.childCategories || []).reduce(
+    (sum, ch) => sum + (ch._count?.products || 0),
+    0
+  );
+  const totalCount = (category._count?.products || 0) + childProductsSum;
+
+  return {
+    ...category,
+    _count: {
+      ...category._count,
+      products: totalCount,
+      directProducts: category._count?.products || 0,
+    },
+  };
 };
 
 export const dbUpdateCategory = async (id: string, input: ICategoryUpdateInput) => {

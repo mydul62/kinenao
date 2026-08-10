@@ -200,6 +200,22 @@ export default function CategoryClientView({
     setIsMobileFilterOpen(false);
   };
 
+  const getCategoryProductCount = (cat: any) => {
+    if (!cat) return 0;
+    let count = cat._count?.products ?? 0;
+    const childrenList = cat.childCategories || cat.children || [];
+    if (childrenList.length > 0) {
+      const childSum = childrenList.reduce(
+        (acc: number, ch: any) => acc + (ch._count?.products ?? ch.productsCount ?? 0),
+        0
+      );
+      if (childSum > 0) {
+        count = Math.max(count, (cat._count?.directProducts ?? 0) + childSum, childSum);
+      }
+    }
+    return count;
+  };
+
   return (
     <div className="min-h-screen bg-[#f6f3ec] text-slate-900 pb-20 md:pb-12">
       {/* ========================================================================= */}
@@ -384,6 +400,7 @@ export default function CategoryClientView({
                 {categories.map((cat) => {
                   const isCurrent = cat.slug === category?.slug || cat.id === category?.id;
                   const Icon = getCategoryIcon(cat.name, cat.slug);
+                  const count = getCategoryProductCount(cat);
 
                   return (
                     <Link
@@ -399,11 +416,9 @@ export default function CategoryClientView({
                         <Icon className={`w-3.5 h-3.5 ${isCurrent ? "text-[#123524]" : "text-slate-400"}`} />
                         <span className="truncate">{cat.name}</span>
                       </div>
-                      {cat._count?.products !== undefined && (
-                        <span className="text-[10px] text-slate-400 font-semibold">
-                          {cat._count.products}
-                        </span>
-                      )}
+                      <span className="text-[10px] text-slate-400 font-semibold">
+                        {count}
+                      </span>
                     </Link>
                   );
                 })}
@@ -1028,11 +1043,9 @@ export default function CategoryClientView({
                         </Link>
 
                         <div className="flex items-center gap-1.5 shrink-0">
-                          {cat._count?.products !== undefined && (
-                            <span className="text-[10px] text-slate-400 font-bold">
-                              {cat._count.products} পণ্য
-                            </span>
-                          )}
+                          <span className="text-[10px] text-slate-400 font-bold">
+                            {getCategoryProductCount(cat)} পণ্য
+                          </span>
                           {hasChildren && (
                             <button
                               type="button"
@@ -1057,6 +1070,7 @@ export default function CategoryClientView({
                         <div className="bg-slate-50/90 px-3.5 py-2 space-y-1 border-t border-slate-100">
                           {childrenList.map((sub: any) => {
                             const isSubActive = activeSubcat === sub.slug;
+                            const subCount = sub._count?.products ?? sub.productsCount;
                             return (
                               <Link
                                 key={sub.id || sub.slug}
@@ -1069,6 +1083,9 @@ export default function CategoryClientView({
                                 }`}
                               >
                                 <span>• {sub.name}</span>
+                                {subCount !== undefined && (
+                                  <span className="text-[10px] opacity-75">{subCount}</span>
+                                )}
                               </Link>
                             );
                           })}
