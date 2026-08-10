@@ -197,7 +197,7 @@ export default function HomeClientView({
       </section>
 
       {/* 2. Trust Badges Banner */}
-      <section className="w-full px-[4px] sm:px-2">
+      <section className="w-full px-3 md:px-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 bg-white border border-slate-200/80 p-3 sm:p-5 rounded-2xl sm:rounded-3xl shadow-xs">
           <div className="flex items-center gap-2.5 p-1.5">
             <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
@@ -243,7 +243,7 @@ export default function HomeClientView({
 
       {/* 3. Categories Grid Showcase (Full Width, No Slider) */}
       {categories.length > 0 && (
-        <section className="w-full px-[4px] sm:px-2 space-y-3">
+        <section className="w-full px-3 md:px-6 space-y-3">
           <div className="flex items-center justify-between px-1">
             <div>
               <h3 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
@@ -262,7 +262,7 @@ export default function HomeClientView({
             </Link>
           </div>
 
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 sm:gap-3">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-11 gap-2 sm:gap-3">
             {categories.map((cat) => (
               <Link
                 key={cat.id || cat.slug}
@@ -291,7 +291,7 @@ export default function HomeClientView({
 
       {/* 4. Featured Products Showcase (Full Width) */}
       {featuredProducts.length > 0 && (
-        <section className="w-full px-[4px] sm:px-2 space-y-3">
+        <section className="w-full px-3 md:px-6 space-y-3">
           <div className="flex items-center justify-between px-1">
             <div>
               <h3 className="text-base sm:text-lg font-black text-slate-900">ফিচার্ড কালেকশন</h3>
@@ -305,7 +305,7 @@ export default function HomeClientView({
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5 sm:gap-3.5">
             {featuredProducts.map((prod) => (
               <ProductCard key={prod.id} product={prod} />
             ))}
@@ -315,7 +315,7 @@ export default function HomeClientView({
 
       {/* 5. Best Sellers Showcase (Full Width) */}
       {bestSellers.length > 0 && (
-        <section className="w-full px-[4px] sm:px-2 space-y-3">
+        <section className="w-full px-3 md:px-6 space-y-3">
           <div className="flex items-center justify-between px-1">
             <div>
               <h3 className="text-base sm:text-lg font-black text-slate-900">বেস্ট সেলার আইটেম</h3>
@@ -329,7 +329,7 @@ export default function HomeClientView({
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5 sm:gap-3.5">
             {bestSellers.map((prod) => (
               <ProductCard key={prod.id} product={prod} />
             ))}
@@ -339,13 +339,13 @@ export default function HomeClientView({
 
       {/* 6. FAQs Section (Full Width) */}
       {faqs.length > 0 && (
-        <section className="w-full px-[4px] sm:px-2 space-y-3">
+        <section className="w-full px-3 md:px-6 space-y-3">
           <div className="text-center max-w-xl mx-auto mb-4">
             <h3 className="text-lg sm:text-xl font-black text-slate-900">সচরাচর জিজ্ঞাসিত প্রশ্নাবলী</h3>
             <p className="text-xs text-slate-500 mt-0.5">অর্ডার ও ডেলিভারি সম্পর্কিত তথ্য</p>
           </div>
 
-          <div className="space-y-2 max-w-4xl mx-auto">
+          <div className="space-y-2 w-full max-w-5xl mx-auto">
             {faqs.map((faq, i) => (
               <details
                 key={faq.id || i}
@@ -366,14 +366,14 @@ export default function HomeClientView({
 
       {/* 7. Testimonials (Full Width) */}
       {testimonials.length > 0 && (
-        <section className="w-full py-10 bg-white border-t border-b border-slate-200/60 px-[4px] sm:px-2">
+        <section className="w-full py-10 bg-white border-t border-b border-slate-200/60 px-3 md:px-6">
           <div className="w-full">
             <div className="text-center max-w-md mx-auto mb-6">
               <h3 className="text-lg sm:text-xl font-black text-slate-900">গ্রাহকদের মতামত</h3>
               <p className="text-xs text-slate-500 mt-0.5">আমাদের সন্তুষ্ট গ্রাহকদের অভিজ্ঞতা</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 max-w-6xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 w-full">
               {testimonials.map((t, idx) => (
                 <div
                   key={t.id || idx}

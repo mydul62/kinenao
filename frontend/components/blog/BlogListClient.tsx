@@ -45,7 +45,7 @@ export default function BlogListClient({ posts }: BlogListClientProps) {
   return (
     <div className="space-y-12">
       {/* Category Tabs */}
-      <div className="container mx-auto px-4 max-w-6xl">
+      <div className="w-full px-3 md:px-6">
         <div className="flex items-center justify-center gap-2 overflow-x-auto pb-4 scrollbar-none">
           {categories.map((cat) => (
             <button
@@ -63,7 +63,7 @@ export default function BlogListClient({ posts }: BlogListClientProps) {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 max-w-6xl space-y-12">
+      <div className="w-full px-3 md:px-6 space-y-12">
         {/* Featured Post */}
         {activeCategory === "All" && featuredPost && (
           <div className="group relative overflow-hidden rounded-3xl border border-neutral-800/80 bg-neutral-900/40 backdrop-blur-md transition-all hover:border-primary/50">

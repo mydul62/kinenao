@@ -298,7 +298,7 @@ export default function ProductDetailClient({
 
   return (
     <div className="min-h-screen bg-[#f6f4ef] text-slate-900 pb-24 md:pb-12">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 pt-3 sm:pt-4 space-y-6">
+      <div className="w-full px-3 md:px-6 pt-3 sm:pt-4 space-y-6">
         {/* ========================================================================= */}
         {/* 1. BREADCRUMBS                                                           */}
         {/* ========================================================================= */}

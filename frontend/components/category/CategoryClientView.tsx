@@ -207,8 +207,8 @@ export default function CategoryClientView({
       {/* ========================================================================= */}
       <div className="bg-[#123524] text-white">
         {/* Sticky Mobile/Desktop Top Bar */}
-        <div className="sticky top-0 z-30 bg-[#123524] border-b border-white/10 px-3 sm:px-6 py-2.5">
-          <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
+        <div className="sticky top-0 z-30 bg-[#123524] border-b border-white/10 px-3 md:px-6 py-2.5">
+          <div className="w-full flex items-center justify-between gap-3">
             {/* Left: Hamburger Menu Button (opens Category Drawer) */}
             <button
               type="button"
@@ -260,7 +260,7 @@ export default function CategoryClientView({
           </div>
 
           {/* Search Input Bar (Inside Forest Green Header) */}
-          <div className="max-w-7xl mx-auto mt-2.5">
+          <div className="w-full mt-2.5">
             <div className="relative flex items-center">
               <Search className="w-4 h-4 text-emerald-300/80 absolute left-3.5 pointer-events-none" />
               <input
@@ -284,8 +284,8 @@ export default function CategoryClientView({
         </div>
 
         {/* Horizontal Category Thumbnail Rail (Below Header in Forest Green) */}
-        <div className="px-3 sm:px-6 py-3 border-t border-white/10 overflow-hidden">
-          <div className="max-w-7xl mx-auto flex items-center gap-3.5 overflow-x-auto scrollbar-none py-1">
+        <div className="px-3 md:px-6 py-3 border-t border-white/10 overflow-hidden">
+          <div className="w-full flex items-center gap-3.5 overflow-x-auto scrollbar-none py-1">
             {/* "সবগুলো" (All) Button */}
             <button
               type="button"
@@ -359,7 +359,7 @@ export default function CategoryClientView({
       {/* ========================================================================= */}
       {/* 2. MAIN BODY SECTION ON WARM CREAM BACKGROUND (#f6f3ec)                 */}
       {/* ========================================================================= */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 pt-4 space-y-4">
+      <div className="w-full px-3 md:px-6 pt-4 space-y-4">
         {/* Desktop Sidebar + Products Grid 2-Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* DESKTOP LEFT SIDEBAR (Screenshot 4) */}

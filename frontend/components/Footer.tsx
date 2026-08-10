@@ -26,7 +26,7 @@ export const Footer: React.FC = () => {
   };
 
   return (
-    <footer className="w-full bg-muted/40 border-t py-12 px-[4px] sm:px-3">
+    <footer className="w-full bg-muted/40 border-t py-12 px-3 md:px-6">
       <div className="w-full grid grid-cols-1 md:grid-cols-4 gap-6 sm:gap-8">
         {/* About Column */}
         <div className="space-y-4">
@@ -94,7 +94,7 @@ export const Footer: React.FC = () => {
         </div>
       </div>
 
-      <div className="container mx-auto mt-12 pt-6 border-t text-center text-xs text-muted-foreground">
+      <div className="w-full mt-12 pt-6 border-t text-center text-xs text-muted-foreground">
         &copy; {new Date().getFullYear()} KineNao Store. All rights reserved.
       </div>
     </footer>
