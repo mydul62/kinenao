@@ -163,9 +163,9 @@ export const Header: React.FC = () => {
       <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b">
         <div className="w-full flex h-20 items-center justify-between px-3 md:px-6">
           
-          {/* Logo - Akira Typographic Style */}
-          <Link href="/" className="flex items-center gap-1 font-black text-2xl tracking-widest text-foreground font-sans">
-            K I N E N A O <span className="h-2.5 w-2.5 rounded-full bg-primary inline-block self-end mb-1.5" />
+          {/* Logo - Akira Typographic Style (Unbroken Single Line) */}
+          <Link href="/" className="flex items-center gap-1 font-black text-lg sm:text-2xl tracking-widest text-foreground font-sans whitespace-nowrap shrink-0">
+            K I N E N A O <span className="h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full bg-primary inline-block self-end mb-1 sm:mb-1.5 shrink-0" />
           </Link>
 
           {/* Navigation Menu Links */}
@@ -258,10 +258,10 @@ export const Header: React.FC = () => {
           </nav>
 
           {/* User actions */}
-          <div className="flex items-center gap-5">
-            {/* Account link */}
+          <div className="flex items-center gap-3 sm:gap-5">
+            {/* Account link - Hidden on Mobile, Desktop Only */}
             {isAuthenticated ? (
-              <div className="relative group">
+              <div className="relative group hidden md:block">
                 <button className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-widest text-foreground hover:text-primary cursor-pointer transition-colors">
                   Your Account
                 </button>
@@ -289,7 +289,7 @@ export const Header: React.FC = () => {
             ) : (
               <Link
                 href="/login"
-                className="text-[11px] font-bold uppercase tracking-widest text-foreground hover:text-primary transition-colors"
+                className="text-[11px] font-bold uppercase tracking-widest text-foreground hover:text-primary transition-colors hidden md:block"
               >
                 Your Account
               </Link>
