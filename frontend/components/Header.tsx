@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import CategoryMegaMenu, { getCategoryIcon } from "@/components/header/CategoryMegaMenu";
+import SearchAutocomplete from "@/components/header/SearchAutocomplete";
 import { useSettings } from "@/context/SettingsContext";
 
 export const Header: React.FC = () => {
@@ -322,19 +323,8 @@ export const Header: React.FC = () => {
               </Link>
             )}
 
-            {/* Search Trigger (Standard dialog or input toggler) */}
-            <form onSubmit={handleSearchSubmit} className="hidden lg:flex items-center relative">
-              <input
-                type="text"
-                placeholder="Search..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-32 focus:w-48 h-8 pl-3 pr-8 rounded border border-border bg-muted/40 focus:bg-background focus:outline-none focus:ring-1 focus:ring-primary/20 text-xs transition-all"
-              />
-              <button type="submit" className="absolute right-2.5 text-muted-foreground hover:text-primary">
-                <Search className="h-3.5 w-3.5" />
-              </button>
-            </form>
+            {/* Professional Instant Search Autocomplete Bar */}
+            <SearchAutocomplete className="hidden sm:block flex-1 max-w-xs md:max-w-sm lg:max-w-md mx-2 md:mx-4" />
 
             {/* Wishlist */}
             <Link href="/dashboard" className="p-1 hover:text-primary text-foreground transition-colors hidden sm:block">
@@ -412,19 +402,8 @@ export const Header: React.FC = () => {
 
               {/* Drawer Scrollable Content */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {/* Search Bar */}
-                <form onSubmit={handleSearchSubmit} className="relative flex items-center">
-                  <input
-                    type="text"
-                    placeholder="Search all products..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full h-10 pl-4 pr-10 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#123524]"
-                  />
-                  <button type="submit" className="absolute right-3 text-slate-400 hover:text-[#123524]">
-                    <Search className="h-4 w-4" />
-                  </button>
-                </form>
+                {/* Professional Search Bar */}
+                <SearchAutocomplete onSelect={() => setIsMobileMenuOpen(false)} />
 
                 {/* Primary Nav Links */}
                 <div className="grid grid-cols-2 gap-2 text-xs font-bold uppercase tracking-wider">
