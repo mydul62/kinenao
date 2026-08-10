@@ -34,6 +34,7 @@ import {
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { getCategoryIcon } from "@/components/header/CategoryMegaMenu";
+import { matchesMultilingualQuery } from "@/lib/searchUtils";
 import { toast } from "sonner";
 
 interface ShopClientViewProps {
@@ -197,16 +198,9 @@ export default function ShopClientView({
       );
     }
 
-    // Search query filter
+    // Multilingual Search query filter (Bangla, English, Banglish)
     if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      list = list.filter(
-        (p) =>
-          p.name.toLowerCase().includes(q) ||
-          (p.description && p.description.toLowerCase().includes(q)) ||
-          (p.tags && p.tags.toLowerCase().includes(q)) ||
-          (p.category?.name && p.category.name.toLowerCase().includes(q))
-      );
+      list = list.filter((p) => matchesMultilingualQuery(p, searchQuery));
     }
 
     // In stock filter

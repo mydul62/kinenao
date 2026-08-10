@@ -177,6 +177,74 @@ export const dbGetProducts = async (query: IProductQuery) => {
 
   const queryFilters: any[] = [];
 
+const SYNONYM_MAP: Record<string, string[]> = {
+  saree: ["saree", "sari", "shari", "শাড়ি", "শাড়ি"],
+  sari: ["saree", "sari", "shari", "শাড়ি", "শাড়ি"],
+  shari: ["saree", "sari", "shari", "শাড়ি", "শাড়ি"],
+  "শাড়ি": ["saree", "sari", "shari", "শাড়ি", "শাড়ি"],
+  "শাড়ি": ["saree", "sari", "shari", "শাড়ি", "শাড়ি"],
+  threepiece: ["three piece", "3 piece", "three-piece", "থ্রি পিস", "থ্রিপিস", "থ্রি-পিস", "salwar", "kameez"],
+  "three piece": ["three piece", "3 piece", "three-piece", "থ্রি পিস", "থ্রিপিস", "থ্রি-পিস"],
+  "3piece": ["three piece", "3 piece", "three-piece", "থ্রি পিস", "থ্রিপিস", "থ্রি-পিস"],
+  "3 piece": ["three piece", "3 piece", "three-piece", "থ্রি পিস", "থ্রিপিস", "থ্রি-পিস"],
+  "থ্রি পিস": ["three piece", "3 piece", "three-piece", "থ্রি পিস", "থ্রিপিস", "থ্রি-পিস"],
+  "থ্রি-পিস": ["three piece", "3 piece", "three-piece", "থ্রি পিস", "থ্রিপিস", "থ্রি-পিস"],
+  watch: ["watch", "ghori", "gori", "ঘড়ি", "ঘরি"],
+  ghori: ["watch", "ghori", "gori", "ঘড়ি", "ঘরি"],
+  gori: ["watch", "ghori", "gori", "ঘড়ি", "ঘরি"],
+  "ঘড়ি": ["watch", "ghori", "gori", "ঘড়ি", "ঘরি"],
+  "ঘরি": ["watch", "ghori", "gori", "ঘড়ি", "ঘরি"],
+  cosmetics: ["cosmetics", "cosmetic", "makeup", "beauty", "কসমেটিকস", "মেকআপ"],
+  cosmetic: ["cosmetics", "cosmetic", "makeup", "beauty", "কসমেটিকস", "মেকআপ"],
+  makeup: ["cosmetics", "cosmetic", "makeup", "beauty", "কসমেটিকস", "মেকআপ"],
+  "কসমেটিকস": ["cosmetics", "cosmetic", "makeup", "beauty", "কসমেটিকস", "মেকআপ"],
+  lipstick: ["lipstick", "lip balm", "lipbalm", "লিপস্টিক"],
+  "লিপস্টিক": ["lipstick", "lip balm", "lipbalm", "লিপস্টিক"],
+  bag: ["bag", "handbag", "purse", "wallet", "ব্যাগ", "ওয়ালেট"],
+  wallet: ["bag", "handbag", "purse", "wallet", "ব্যাগ", "ওয়ালেট"],
+  "ব্যাগ": ["bag", "handbag", "purse", "wallet", "ব্যাগ", "ওয়ালেট"],
+  panjabi: ["panjabi", "punjabi", "পাঞ্জাবি", "পাঞ্জাবী"],
+  punjabi: ["panjabi", "punjabi", "পাঞ্জাবি", "পাঞ্জাবী"],
+  "পাঞ্জাবি": ["panjabi", "punjabi", "পাঞ্জাবি", "পাঞ্জাবী"],
+  dress: ["dress", "jama", "kapor", "ড্রেস", "জামা", "পোশাক"],
+  jama: ["dress", "jama", "kapor", "ড্রেস", "জামা", "পোশাক"],
+  kapor: ["dress", "jama", "kapor", "ড্রেস", "জামা", "পোশাক"],
+  "ড্রেস": ["dress", "jama", "kapor", "ড্রেস", "জামা", "পোশাক"],
+  perfume: ["perfume", "attar", "fragrance", "পারফিউম", "আতর"],
+  attar: ["perfume", "attar", "fragrance", "পারফিউম", "আতর"],
+  "পারফিউম": ["perfume", "attar", "fragrance", "পারফিউম", "আতর"],
+  cream: ["cream", "lotion", "skincare", "ক্রিম", "লোশন"],
+  shoe: ["shoe", "shoes", "juta", "জুতা", "জুতো"],
+  juta: ["shoe", "shoes", "juta", "জুতা", "জুতো"],
+  "জুতা": ["shoe", "shoes", "juta", "জুতা", "জুতো"],
+  hijab: ["hijab", "borka", "burqa", "abaya", "হিজাব", "বোরকা"],
+  "হিজাব": ["hijab", "borka", "burqa", "abaya", "হিজাব", "বোরকা"],
+};
+
+function getExpandedSearchTerms(query: string): string[] {
+  if (!query || !query.trim()) return [];
+  const raw = query.toLowerCase().trim();
+  const cleanKey = raw.replace(/[-_]/g, "");
+
+  const terms = new Set<string>();
+  terms.add(raw);
+
+  if (SYNONYM_MAP[raw]) {
+    SYNONYM_MAP[raw].forEach((t) => terms.add(t));
+  }
+  if (SYNONYM_MAP[cleanKey]) {
+    SYNONYM_MAP[cleanKey].forEach((t) => terms.add(t));
+  }
+
+  Object.keys(SYNONYM_MAP).forEach((key) => {
+    if (raw.includes(key) || key.includes(raw)) {
+      SYNONYM_MAP[key].forEach((t) => terms.add(t));
+    }
+  });
+
+  return Array.from(terms);
+}
+
   if (status === "active") {
     queryFilters.push({ isActive: true });
   } else if (status === "inactive") {
@@ -186,14 +254,15 @@ export const dbGetProducts = async (query: IProductQuery) => {
   }
 
   if (search) {
-    queryFilters.push({
-      OR: [
-        { name: { contains: search, mode: "insensitive" } },
-        { sku: { contains: search, mode: "insensitive" } },
-        { description: { contains: search, mode: "insensitive" } },
-        { tags: { contains: search, mode: "insensitive" } },
-      ],
-    });
+    const searchTerms = getExpandedSearchTerms(search);
+    const searchConditions = searchTerms.flatMap((term) => [
+      { name: { contains: term, mode: "insensitive" } },
+      { sku: { contains: term, mode: "insensitive" } },
+      { description: { contains: term, mode: "insensitive" } },
+      { tags: { contains: term, mode: "insensitive" } },
+      { category: { name: { contains: term, mode: "insensitive" } } },
+    ]);
+    queryFilters.push({ OR: searchConditions });
   }
 
   if (categoryId) {
