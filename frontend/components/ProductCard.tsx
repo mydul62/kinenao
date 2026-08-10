@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ShoppingBag, Loader2, Check, Zap, Film, Star } from "lucide-react";
+import { ShoppingBag, Loader2, Check, Zap, Play, Heart, Tag } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { toast } from "sonner";
 
@@ -42,6 +42,7 @@ export default function ProductCard({
   const [adding, setAdding] = useState(false);
   const [buyingNow, setBuyingNow] = useState(false);
   const [addedSuccess, setAddedSuccess] = useState(false);
+  const [isWishlisted, setIsWishlisted] = useState(false);
 
   const price =
     product.discountPrice !== null && product.discountPrice !== undefined
@@ -50,22 +51,15 @@ export default function ProductCard({
 
   const originalPrice = product.price;
 
-  const discountPercent =
-    product.discountPrice !== null && product.discountPrice !== undefined && product.price > 0
-      ? Math.round(((product.price - product.discountPrice) / product.price) * 100)
-      : 0;
+  const hasDiscount =
+    product.discountPrice !== null &&
+    product.discountPrice !== undefined &&
+    product.price > product.discountPrice;
 
-  const colorVariants = product.variants?.filter((v: any) => Boolean(v.colorName || v.colorCode)) || [];
-  const sizeVariants = product.variants?.filter((v: any) => Boolean(v.size)) || [];
-  
-  let variantBadgeText: string | null = null;
-  if (colorVariants.length > 1) {
-    variantBadgeText = `${colorVariants.length} টি কালার`;
-  } else if (sizeVariants.length > 1) {
-    variantBadgeText = `${sizeVariants.length} টি সাইজ`;
-  } else if (product.variants && product.variants.length > 1) {
-    variantBadgeText = `${product.variants.length} টি অপশন`;
-  }
+  const discountPercent =
+    hasDiscount && originalPrice > 0
+      ? Math.round(((originalPrice - price) / originalPrice) * 100)
+      : 0;
 
   const hasVideo = Boolean(product.videoUrl);
 
@@ -87,7 +81,7 @@ export default function ProductCard({
       setAddedSuccess(true);
       toast.success(`"${product.name}" কার্টে যুক্ত হয়েছে!`);
       setTimeout(() => setAddedSuccess(false), 1800);
-    }, 300);
+    }, 250);
   };
 
   const handleBuyNow = (e: React.MouseEvent) => {
@@ -95,224 +89,237 @@ export default function ProductCard({
     e.stopPropagation();
 
     setBuyingNow(true);
-    router.push(`/product/${product.slug || product.id}`);
+    addToCart({
+      id: product.id,
+      name: product.name,
+      slug: product.slug,
+      price: product.price,
+      discountPrice: product.discountPrice,
+      thumbnail: product.thumbnail || (product.images && product.images[0]) || "",
+    });
+    router.push("/checkout");
+  };
+
+  const toggleWishlist = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsWishlisted((prev) => {
+      const next = !prev;
+      if (next) {
+        toast.success(`"${product.name}" উইশলিস্টে যুক্ত হয়েছে!`, {
+          icon: <Heart className="w-4 h-4 fill-rose-500 text-rose-500" />,
+        });
+      } else {
+        toast.info(`"${product.name}" উইশলিস্ট থেকে সরানো হয়েছে`);
+      }
+      return next;
+    });
   };
 
   const imageSrc =
     product.thumbnail ||
     (product.images && product.images.length > 0 ? product.images[0] : "") ||
-    "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=600&auto=format&fit=crop";
+    "https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=400";
 
-  // List View Layout for Mobile / Wide Browsing
+  // List View Layout
   if (viewMode === "list") {
     return (
       <div
-        className={`bg-white border border-slate-200/90 rounded-2xl p-3 sm:p-4 flex flex-row items-center gap-3 sm:gap-4 hover:shadow-lg hover:border-emerald-300/80 transition-all duration-300 group ${className}`}
+        className={`bg-white rounded-2xl border border-[#e8e4db] p-3 flex flex-row items-center gap-3 sm:gap-4 shadow-2xs hover:shadow-md transition-all hover:border-[#123524]/30 group ${className}`}
       >
         {/* Left Thumbnail */}
-        <Link
-          href={`/product/${product.slug || product.id}`}
-          className="relative w-24 h-24 sm:w-32 sm:h-32 shrink-0 rounded-xl overflow-hidden bg-slate-50 border border-slate-100 block"
-        >
-          <img
-            src={imageSrc}
-            alt={product.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-            loading="lazy"
-          />
-          {discountPercent > 0 && (
-            <span className="absolute top-1.5 left-1.5 z-10 bg-emerald-700 text-white text-[9px] font-black px-1.5 py-0.5 rounded-md shadow-xs">
-              {discountPercent}% OFF
+        <div className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-xl overflow-hidden bg-slate-100 shrink-0">
+          <Link href={`/product/${product.slug || product.id}`}>
+            <img
+              src={imageSrc}
+              alt={product.name}
+              className="w-full h-full object-cover group-hover:scale-104 transition-transform duration-300"
+              loading="lazy"
+            />
+          </Link>
+          {hasDiscount && (
+            <span className="absolute top-1 left-1 bg-[#123524] text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-xs font-['Manrope']">
+              {discountPercent}% ছাড়
             </span>
           )}
-        </Link>
+        </div>
 
-        {/* Right Info */}
-        <div className="flex-1 min-w-0 flex flex-col justify-between h-full py-0.5">
+        {/* Right Details */}
+        <div className="flex-1 min-w-0 flex flex-col justify-between h-full space-y-1">
           <div>
-            <div className="flex items-center gap-2">
-              {product.category && (
-                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider truncate">
-                  {product.category.name}
-                </span>
-              )}
-              {product.customBadge && (
-                <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded">
-                  {product.customBadge}
-                </span>
-              )}
-            </div>
-            <Link
-              href={`/product/${product.slug || product.id}`}
-              className="block font-bold text-xs sm:text-sm text-slate-900 group-hover:text-emerald-700 transition-colors line-clamp-2 leading-snug mt-0.5"
-            >
-              {product.name}
+            <p className="text-[10px] font-extrabold text-emerald-800 truncate">
+              {product.category?.name || "পণ্য"}
+            </p>
+            <Link href={`/product/${product.slug || product.id}`}>
+              <h3 className="text-xs sm:text-sm font-black text-slate-900 line-clamp-1 group-hover:text-[#123524] transition-colors">
+                {product.name}
+              </h3>
             </Link>
           </div>
 
-          <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-baseline gap-2">
-              <span className="text-sm sm:text-base font-black text-emerald-700">
-                ৳{price.toLocaleString()}
+          <div className="flex items-baseline gap-2 font-['Manrope']">
+            <span className="text-sm sm:text-base font-black text-[#123524]">
+              ৳{price.toLocaleString()}
+            </span>
+            {hasDiscount && (
+              <span className="text-xs text-slate-400 line-through font-semibold">
+                ৳{originalPrice.toLocaleString()}
               </span>
-              {discountPercent > 0 && (
-                <span className="text-[11px] text-slate-400 line-through font-semibold">
-                  ৳{originalPrice.toLocaleString()}
-                </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 pt-1">
+            <button
+              type="button"
+              onClick={handleAddToCart}
+              disabled={adding}
+              className="py-1.5 px-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+            >
+              {adding ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : addedSuccess ? (
+                <Check className="w-3.5 h-3.5 text-emerald-700" />
+              ) : (
+                <ShoppingBag className="w-3.5 h-3.5" />
               )}
-            </div>
-
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={handleAddToCart}
-                disabled={adding}
-                className={`py-1.5 px-2.5 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
-                  addedSuccess
-                    ? "bg-emerald-600 text-white"
-                    : "bg-slate-100 hover:bg-slate-200 text-slate-800"
-                }`}
-              >
-                {adding ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : addedSuccess ? (
-                  <Check className="w-3 h-3" />
-                ) : (
-                  <ShoppingBag className="w-3 h-3" />
-                )}
-                <span className="hidden sm:inline">কার্ট</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleBuyNow}
-                disabled={buyingNow}
-                className="py-1.5 px-3 rounded-lg text-[11px] font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center gap-1 shadow-xs cursor-pointer"
-              >
-                <Zap className="w-3 h-3 fill-white" />
-                <span>অর্ডার</span>
-              </button>
-            </div>
+              <span>কার্ট</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleBuyNow}
+              disabled={buyingNow}
+              className="py-1.5 px-3 rounded-xl bg-[#123524] hover:bg-[#1b4d36] text-white text-xs font-black flex items-center gap-1 shadow-xs cursor-pointer transition-all"
+            >
+              <Zap className="w-3.5 h-3.5 fill-white" />
+              <span>অর্ডার</span>
+            </button>
           </div>
         </div>
       </div>
     );
   }
 
-  // Grid View Layout (Optimized for 2-column mobile + desktop)
+  // Grid View Layout
   return (
     <div
-      className={`bg-white border border-slate-200/90 rounded-2xl sm:rounded-[22px] p-2.5 sm:p-3.5 flex flex-col justify-between hover:shadow-xl hover:border-emerald-300/80 transition-all duration-300 group ${className}`}
+      className={`group bg-white rounded-2xl sm:rounded-3xl border border-[#e8e4db] shadow-2xs hover:shadow-md transition-all overflow-hidden flex flex-col justify-between hover:border-[#123524]/30 ${className}`}
     >
-      {/* Image Showcase Container */}
-      <Link
-        href={`/product/${product.slug || product.id}`}
-        className="relative w-full aspect-square rounded-xl sm:rounded-[18px] overflow-hidden bg-slate-50 mb-2 sm:mb-3 border border-slate-100 block"
-      >
-        <img
-          src={imageSrc}
-          alt={product.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          loading="lazy"
-        />
+      {/* Top Image Area */}
+      <div>
+        <div className="relative aspect-square w-full bg-slate-100 overflow-hidden">
+          {/* Wishlist Heart Button (Top-Left) */}
+          <button
+            type="button"
+            onClick={toggleWishlist}
+            className="absolute top-2 left-2 z-10 w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-full bg-white/90 backdrop-blur-xs flex items-center justify-center text-slate-700 hover:text-rose-600 transition-transform active:scale-90 shadow-xs cursor-pointer"
+            aria-label="উইশলিস্টে যুক্ত করুন"
+          >
+            <Heart
+              className={`w-4 h-4 ${
+                isWishlisted ? "fill-rose-500 text-rose-500" : ""
+              }`}
+            />
+          </button>
 
-        {/* Video Indicator Badge */}
-        {hasVideo && (
-          <div className="absolute bottom-2 left-2 z-10 bg-black/70 backdrop-blur-sm text-white text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full flex items-center gap-1">
-            <Film className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-emerald-400" />
-            <span>ভিডিও</span>
-          </div>
-        )}
-
-        {/* Promotional Badge Pill */}
-        {product.customBadge ? (
-          <span className="absolute top-2 right-2 z-10 bg-emerald-700 text-white text-[9px] sm:text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs uppercase max-w-[110px] truncate">
-            {product.customBadge}
-          </span>
-        ) : discountPercent > 0 ? (
-          <span className="absolute top-2 right-2 z-10 bg-emerald-700 text-white text-[9px] sm:text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs uppercase">
-            {discountPercent}% OFF
-          </span>
-        ) : null}
-
-        {/* Variant count badge (Only if real colors/sizes/options exist) */}
-        {variantBadgeText && (
-          <div className="absolute top-2 left-2 z-10 bg-white/90 backdrop-blur-md border border-slate-200 text-slate-800 text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full shadow-xs">
-            {variantBadgeText}
-          </div>
-        )}
-      </Link>
-
-      {/* Info Container */}
-      <div className="flex-1 flex flex-col justify-between space-y-2">
-        <div>
-          {/* Category breadcrumb pill */}
-          {product.category && (
-            <span className="text-[9px] sm:text-[10px] uppercase font-bold text-slate-400 tracking-wider truncate block">
-              {product.category.name}
+          {/* Discount Tag Badge (Top-Right) */}
+          {hasDiscount && (
+            <span className="absolute top-0 right-0 z-10 bg-[#123524] text-white font-black text-[10px] sm:text-[11px] px-2 py-1 rounded-bl-xl shadow-xs font-['Manrope']">
+              {discountPercent}% ছাড়
             </span>
           )}
 
-          {/* Product Title */}
-          <Link
-            href={`/product/${product.slug || product.id}`}
-            className="block font-bold text-xs sm:text-sm text-slate-900 group-hover:text-emerald-700 transition-colors line-clamp-2 leading-snug mt-0.5 min-h-[2rem]"
-          >
-            {product.name}
+          {/* Product Thumbnail */}
+          <Link href={`/product/${product.slug || product.id}`} className="block w-full h-full">
+            <img
+              src={imageSrc}
+              alt={product.name}
+              className="w-full h-full object-cover group-hover:scale-104 transition-transform duration-300"
+              loading="lazy"
+            />
           </Link>
+
+          {/* Video Tag (Bottom-Left) */}
+          {hasVideo && (
+            <div className="absolute bottom-2 left-2 z-10 bg-black/75 backdrop-blur-xs text-white text-[9px] sm:text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-xs">
+              <Play className="w-2.5 h-2.5 fill-white" />
+              <span>ভিডিও</span>
+            </div>
+          )}
         </div>
 
-        {/* Price & Rating */}
-        <div>
-          <div className="flex items-baseline gap-1.5 sm:gap-2">
-            <span className="text-sm sm:text-base md:text-lg font-black text-emerald-700 tracking-tight">
+        {/* Dotted border separator */}
+        <div className="border-b border-dashed border-slate-200" />
+
+        {/* Content Area */}
+        <div className="p-2.5 sm:p-3.5 space-y-1.5">
+          {/* Subcategory / Category Tagline */}
+          <p className="text-[10px] font-extrabold text-emerald-800 truncate">
+            {product.category?.name || "ফ্যাশন"}
+          </p>
+
+          {/* Product Title */}
+          <Link href={`/product/${product.slug || product.id}`} className="block">
+            <h3 className="text-xs sm:text-sm font-black text-slate-900 line-clamp-2 leading-tight group-hover:text-[#123524] transition-colors min-h-[32px]">
+              {product.name}
+            </h3>
+          </Link>
+
+          {/* Price & Original Strikethrough */}
+          <div className="flex items-baseline gap-1.5 pt-0.5 font-['Manrope']">
+            <span className="text-sm sm:text-base font-black text-[#123524]">
               ৳{price.toLocaleString()}
             </span>
-            {discountPercent > 0 && (
-              <span className="text-[10px] sm:text-xs text-slate-400 line-through font-semibold">
+            {hasDiscount && (
+              <span className="text-[11px] sm:text-xs text-slate-400 line-through font-semibold">
                 ৳{originalPrice.toLocaleString()}
               </span>
             )}
           </div>
-        </div>
 
-        {/* Actions Button Row - Mobile Perfected */}
-        <div className="pt-2 grid grid-cols-2 gap-1.5 sm:gap-2 border-t border-slate-100">
-          <button
-            type="button"
-            onClick={handleAddToCart}
-            disabled={adding}
-            className={`py-1.5 sm:py-2 px-1 sm:px-2 rounded-xl text-[11px] sm:text-xs font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
-              addedSuccess
-                ? "bg-emerald-600 text-white"
-                : "bg-slate-100 hover:bg-slate-200 text-slate-800"
-            }`}
-          >
-            {adding ? (
-              <Loader2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-spin" />
-            ) : addedSuccess ? (
-              <>
-                <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                <span className="hidden xs:inline">কার্টে</span>
-              </>
-            ) : (
-              <>
-                <ShoppingBag className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                <span>কার্ট</span>
-              </>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={handleBuyNow}
-            disabled={buyingNow}
-            className="py-1.5 sm:py-2 px-1 sm:px-2 rounded-xl text-[11px] sm:text-xs font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center gap-1 shadow-xs hover:shadow transition-all cursor-pointer whitespace-nowrap"
-          >
-            <Zap className="w-3 h-3 sm:w-3.5 sm:h-3.5 fill-white" />
-            <span>অর্ডার</span>
-          </button>
+          {/* Savings Line Tag */}
+          {hasDiscount && (
+            <div className="flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200/60 px-2 py-0.5 rounded-md w-fit">
+              <Tag className="w-2.5 h-2.5" />
+              <span>৳{(originalPrice - price).toLocaleString()} সাশ্রয়</span>
+            </div>
+          )}
         </div>
+      </div>
+
+      {/* Card Action Buttons (Cart + Instant Order) */}
+      <div className="p-2.5 sm:p-3.5 pt-0 grid grid-cols-2 gap-1.5">
+        {/* 1. Add to Cart Button */}
+        <button
+          type="button"
+          onClick={handleAddToCart}
+          disabled={adding}
+          className="w-full flex items-center justify-center gap-1 py-2 px-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800 text-[11px] font-bold transition-all cursor-pointer"
+        >
+          {adding ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : addedSuccess ? (
+            <>
+              <Check className="w-3.5 h-3.5 text-emerald-700" />
+              <span>যুক্ত</span>
+            </>
+          ) : (
+            <>
+              <ShoppingBag className="w-3.5 h-3.5" />
+              <span>কার্ট</span>
+            </>
+          )}
+        </button>
+
+        {/* 2. Order Button */}
+        <button
+          type="button"
+          onClick={handleBuyNow}
+          disabled={buyingNow}
+          className="w-full flex items-center justify-center gap-1 py-2 px-1.5 rounded-xl bg-[#123524] hover:bg-[#1b4d36] text-white text-[11px] font-black shadow-xs transition-all cursor-pointer"
+        >
+          <Zap className="w-3.5 h-3.5 fill-white" />
+          <span>অর্ডার</span>
+        </button>
       </div>
     </div>
   );

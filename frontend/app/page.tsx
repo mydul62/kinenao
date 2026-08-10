@@ -34,7 +34,7 @@ export default async function HomePage() {
     ]);
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#f8fafc] text-slate-900 selection:bg-emerald-500 selection:text-white">
+    <div className="flex flex-col min-h-screen bg-[#f6f3ec] text-slate-900 selection:bg-[#123524] selection:text-white font-['Inter',sans-serif]">
       <Header />
 
       <main className="flex-1 py-4 sm:py-6">
