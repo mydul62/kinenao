@@ -1267,54 +1267,6 @@ export default function CategoryClientView({
           </>
         )}
       </AnimatePresence>
-
-      {/* ========================================================================= */}
-      {/* 6. BOTTOM MOBILE NAVIGATION BAR (Home / Categories / Cart / Account)     */}
-      {/* ========================================================================= */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200/90 shadow-xl md:hidden px-2 py-1.5 flex items-center justify-around">
-        {/* Home */}
-        <Link
-          href="/"
-          className="flex flex-col items-center justify-center gap-0.5 text-slate-600 hover:text-[#123524] transition-colors py-1 px-3"
-        >
-          <Home className="w-5 h-5" />
-          <span className="text-[10px] font-bold">হোম</span>
-        </Link>
-
-        {/* Categories Drawer Trigger */}
-        <button
-          type="button"
-          onClick={() => setIsCategoryDrawerOpen(true)}
-          className="flex flex-col items-center justify-center gap-0.5 text-slate-600 hover:text-[#123524] transition-colors py-1 px-3 cursor-pointer"
-        >
-          <LayoutGrid className="w-5 h-5" />
-          <span className="text-[10px] font-bold">ক্যাটাগরি</span>
-        </button>
-
-        {/* Cart Trigger */}
-        <button
-          type="button"
-          onClick={() => setIsCartOpen(true)}
-          className="relative flex flex-col items-center justify-center gap-0.5 text-slate-600 hover:text-[#123524] transition-colors py-1 px-3 cursor-pointer"
-        >
-          <ShoppingBag className="w-5 h-5" />
-          {cartCount > 0 && (
-            <span className="absolute 0 top-0.5 right-2 w-4.5 h-4.5 rounded-full bg-[#f59e0b] text-[#123524] font-black text-[9px] flex items-center justify-center border border-white">
-              {cartCount}
-            </span>
-          )}
-          <span className="text-[10px] font-bold">কার্ট</span>
-        </button>
-
-        {/* Account */}
-        <Link
-          href={isAuthenticated ? (user?.role === "CUSTOMER" ? "/dashboard" : "/admin/dashboard") : "/login"}
-          className="flex flex-col items-center justify-center gap-0.5 text-slate-600 hover:text-[#123524] transition-colors py-1 px-3"
-        >
-          <User className="w-5 h-5" />
-          <span className="text-[10px] font-bold">একাউন্ট</span>
-        </Link>
-      </nav>
     </div>
   );
 }
