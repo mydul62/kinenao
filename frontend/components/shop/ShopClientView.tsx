@@ -190,8 +190,8 @@ export default function ShopClientView({
 
         {/* RIGHT MAIN AREA */}
         <div className="lg:col-span-9 space-y-4">
-          {/* Sticky Compact Control Bar */}
-          <div className="sticky top-16 z-20 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-2.5 sm:p-3 flex items-center justify-between gap-2 shadow-xs">
+          {/* Sticky Compact Control Bar - Attached on Top during scroll on Desktop & Mobile */}
+          <div className="sticky top-20 z-30 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-2.5 sm:p-3 flex items-center justify-between gap-2 shadow-md transition-all">
             {/* Left: Mobile Drawer Trigger + Item Count */}
             <div className="flex items-center gap-2">
               <button
@@ -216,12 +216,12 @@ export default function ShopClientView({
 
             {/* Right: Controls (In Stock + Sort + View Mode) */}
             <div className="flex items-center gap-1.5 sm:gap-2.5">
-              <label className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-slate-50 border border-slate-200 px-2.5 py-1.5 rounded-xl cursor-pointer select-none">
+              <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-2.5 py-1.5 rounded-xl cursor-pointer select-none transition-colors">
                 <input
                   type="checkbox"
                   checked={inStockOnly}
                   onChange={(e) => setInStockOnly(e.target.checked)}
-                  className="w-3.5 h-3.5 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                  className="w-3.5 h-3.5 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer accent-emerald-600"
                 />
                 <span>স্টকে আছে</span>
               </label>

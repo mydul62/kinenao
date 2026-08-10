@@ -449,8 +449,8 @@ export default function CategoryClientView({
               </div>
             </div>
 
-            {/* STICKY / INLINE TOOLBAR (Filter, Sort, View Toggle) */}
-            <div className="sticky top-[108px] sm:top-0 z-20 bg-[#f6f3ec]/95 backdrop-blur-xs py-1">
+            {/* STICKY / INLINE TOOLBAR (Filter, Sort, View Toggle) - Stays attached to top during scroll */}
+            <div className="sticky top-[108px] sm:top-[76px] z-30 bg-[#f6f3ec]/95 backdrop-blur-md py-1.5 transition-all">
               <div className="flex items-center gap-2">
                 {/* 1. Filter Button (Opens Bottom Sheet on Mobile / Sidebar toggle) */}
                 <button
