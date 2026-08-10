@@ -119,7 +119,7 @@ export default function ShopClientView({
   };
 
   return (
-    <div className="w-full px-[4px] sm:px-2 py-3 space-y-4">
+    <div className="w-full px-3 md:px-6 py-3 space-y-4">
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-1.5 text-xs text-slate-500 overflow-x-auto whitespace-nowrap py-1">
         <Link href="/" className="hover:text-emerald-700 font-semibold transition-colors">
