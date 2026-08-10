@@ -12,7 +12,7 @@
     --card-foreground: 240 10% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
-    --primary: 0 72% 51%; /* Akira Scarlet Red (#E55E5E) */
+    --primary: 151 49% 14%; /* Deep Forest Dark Green (#123524) */
     --primary-foreground: 0 0% 100%;
     --secondary: 240 4.8% 95.9%;
     --secondary-foreground: 240 5.9% 10%;
@@ -24,8 +24,8 @@
     --destructive-foreground: 0 0% 98%;
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
-    --ring: 0 72% 51%;
-    --radius: 0rem; /* Akira style uses sharp rectangular edges for a clean modern boutique look */
+    --ring: 151 49% 14%;
+    --radius: 0.5rem;
   }
 
   .dark {
@@ -35,7 +35,7 @@
     --card-foreground: 0 0% 98%;
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 0 72% 51%;
+    --primary: 151 49% 14%; /* Deep Forest Dark Green (#123524) */
     --primary-foreground: 0 0% 100%;
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
@@ -47,7 +47,7 @@
     --destructive-foreground: 0 85.7% 97.3%;
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
-    --ring: 0 72% 51%;
+    --ring: 151 49% 14%;
   }
 }
 

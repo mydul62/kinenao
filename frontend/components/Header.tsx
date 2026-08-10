@@ -363,14 +363,14 @@ export const Header: React.FC = () => {
               className="fixed top-0 left-0 bottom-0 z-50 w-[85%] max-w-sm bg-white shadow-2xl flex flex-col md:hidden overflow-hidden border-r border-slate-200"
             >
               {/* Drawer Header */}
-              <div className="flex h-16 items-center justify-between border-b px-5 bg-slate-900 text-white">
+              <div className="flex h-16 items-center justify-between border-b px-5 bg-[#123524] text-white">
                 <Link
                   href="/"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="font-black text-lg tracking-widest text-white flex items-center gap-1.5"
+                  className="font-black text-lg tracking-widest text-white flex items-center gap-1.5 font-sans"
                 >
                   K I N E N A O
-                  <span className="h-2 w-2 rounded-full bg-primary inline-block self-end mb-1" />
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 inline-block self-end mb-1" />
                 </Link>
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}
@@ -389,9 +389,9 @@ export const Header: React.FC = () => {
                     placeholder="Search all products..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full h-10 pl-4 pr-10 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="w-full h-10 pl-4 pr-10 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#123524]"
                   />
-                  <button type="submit" className="absolute right-3 text-slate-400 hover:text-primary">
+                  <button type="submit" className="absolute right-3 text-slate-400 hover:text-[#123524]">
                     <Search className="h-4 w-4" />
                   </button>
                 </form>
@@ -403,8 +403,8 @@ export const Header: React.FC = () => {
                     onClick={() => setIsMobileMenuOpen(false)}
                     className={`p-2.5 rounded-xl text-center border transition-colors ${
                       pathname === "/"
-                        ? "bg-primary text-white border-primary font-black shadow-xs"
-                        : "bg-slate-50 hover:bg-rose-50 text-slate-800 border-slate-100"
+                        ? "bg-[#123524] text-white border-[#123524] font-black shadow-xs"
+                        : "bg-slate-50 hover:bg-[#E4EEE7] text-slate-800 border-slate-100"
                     }`}
                   >
                     Home
@@ -414,8 +414,8 @@ export const Header: React.FC = () => {
                     onClick={() => setIsMobileMenuOpen(false)}
                     className={`p-2.5 rounded-xl text-center border transition-colors ${
                       pathname === "/shop"
-                        ? "bg-primary text-white border-primary font-black shadow-xs"
-                        : "bg-slate-50 hover:bg-rose-50 text-slate-800 border-slate-100"
+                        ? "bg-[#123524] text-white border-[#123524] font-black shadow-xs"
+                        : "bg-slate-50 hover:bg-[#E4EEE7] text-slate-800 border-slate-100"
                     }`}
                   >
                     Shop All
@@ -425,8 +425,8 @@ export const Header: React.FC = () => {
                     onClick={() => setIsMobileMenuOpen(false)}
                     className={`p-2.5 rounded-xl text-center border transition-colors ${
                       pathname.startsWith("/blog")
-                        ? "bg-primary text-white border-primary font-black shadow-xs"
-                        : "bg-slate-50 hover:bg-rose-50 text-slate-800 border-slate-100"
+                        ? "bg-[#123524] text-white border-[#123524] font-black shadow-xs"
+                        : "bg-slate-50 hover:bg-[#E4EEE7] text-slate-800 border-slate-100"
                     }`}
                   >
                     Blog
@@ -434,7 +434,7 @@ export const Header: React.FC = () => {
                   <Link
                     href="/shop"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="p-2.5 rounded-xl bg-slate-50 hover:bg-blue-50 text-slate-800 hover:text-blue-600 text-center border border-slate-100 transition-colors"
+                    className="p-2.5 rounded-xl bg-slate-50 hover:bg-[#E4EEE7] text-slate-800 hover:text-[#123524] text-center border border-slate-100 transition-colors"
                   >
                     Live Demo
                   </Link>
@@ -446,19 +446,19 @@ export const Header: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setIsMobileCatsExpanded((prev) => !prev)}
-                      className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-slate-700 hover:text-primary cursor-pointer"
+                      className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider text-slate-700 hover:text-[#123524] cursor-pointer"
                     >
                       <span>CATEGORIES ({categories.length})</span>
                       <ChevronDown
                         className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                          isMobileCatsExpanded ? "rotate-180 text-primary" : "text-slate-400"
+                          isMobileCatsExpanded ? "rotate-180 text-[#123524]" : "text-slate-400"
                         }`}
                       />
                     </button>
                     <Link
                       href="/shop"
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className="text-[10px] font-bold text-primary hover:underline"
+                      className="text-[10px] font-bold text-[#123524] hover:underline"
                     >
                       View All →
                     </Link>
@@ -485,10 +485,10 @@ export const Header: React.FC = () => {
                                 onClick={() => setIsMobileMenuOpen(false)}
                                 className="flex items-center gap-2.5 min-w-0 flex-1"
                               >
-                                <div className="w-7 h-7 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                                <div className="w-7 h-7 rounded-xl bg-[#E4EEE7] text-[#123524] flex items-center justify-center shrink-0">
                                   <Icon className="w-3.5 h-3.5" />
                                 </div>
-                                <span className="text-xs font-extrabold text-slate-800 hover:text-primary truncate">
+                                <span className="text-xs font-extrabold text-slate-800 hover:text-[#123524] truncate">
                                   {cat.name}
                                 </span>
                               </Link>
@@ -500,11 +500,11 @@ export const Header: React.FC = () => {
                                     e.preventDefault();
                                     toggleCategoryExpand(cat.id || cat.slug);
                                   }}
-                                  className="p-1.5 text-slate-400 hover:text-primary cursor-pointer rounded-lg hover:bg-slate-100"
+                                  className="p-1.5 text-slate-400 hover:text-[#123524] cursor-pointer rounded-lg hover:bg-slate-100"
                                 >
                                   <ChevronDown
                                     className={`w-4 h-4 transition-transform duration-200 ${
-                                      isExpanded ? "rotate-180 text-primary" : ""
+                                      isExpanded ? "rotate-180 text-[#123524]" : ""
                                     }`}
                                   />
                                 </button>
@@ -519,16 +519,16 @@ export const Header: React.FC = () => {
                                     key={sub.id || sub.slug}
                                     href={`/category/${cat.slug}?sub=${sub.slug}`}
                                     onClick={() => setIsMobileMenuOpen(false)}
-                                    className="flex items-center gap-2 py-1.5 px-2.5 text-xs font-bold text-slate-600 hover:text-primary hover:bg-white rounded-xl transition-colors"
+                                    className="flex items-center gap-2 py-1.5 px-2.5 text-xs font-bold text-slate-600 hover:text-[#123524] hover:bg-white rounded-xl transition-colors"
                                   >
-                                    <span className="w-1.5 h-1.5 rounded-full bg-primary/70" />
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[#123524]" />
                                     <span>{sub.name}</span>
                                   </Link>
                                 ))}
                                 <Link
                                   href={`/category/${cat.slug}`}
                                   onClick={() => setIsMobileMenuOpen(false)}
-                                  className="block pt-1 px-2.5 text-[11px] font-black text-primary hover:underline"
+                                  className="block pt-1 px-2.5 text-[11px] font-black text-[#123524] hover:underline"
                                 >
                                   সকল {cat.name} দেখুন →
                                 </Link>
@@ -549,7 +549,7 @@ export const Header: React.FC = () => {
                     <Link
                       href={user?.role === "CUSTOMER" ? "/dashboard" : "/admin/dashboard"}
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className="flex items-center gap-1.5 text-xs font-extrabold text-emerald-700 hover:underline"
+                      className="flex items-center gap-1.5 text-xs font-extrabold text-[#123524] hover:underline"
                     >
                       <LayoutDashboard className="w-4 h-4" /> My Dashboard
                     </Link>
@@ -567,7 +567,7 @@ export const Header: React.FC = () => {
                   <Link
                     href="/login"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="block w-full py-2.5 bg-slate-900 text-white rounded-xl text-center text-xs font-bold uppercase tracking-wider hover:bg-slate-800 transition-colors"
+                    className="block w-full py-2.5 bg-[#123524] hover:bg-[#1B4A34] text-white rounded-xl text-center text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
                   >
                     Login / Register
                   </Link>
