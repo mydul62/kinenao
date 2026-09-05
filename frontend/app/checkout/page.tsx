@@ -99,7 +99,10 @@ export default function CheckoutPage() {
     }
   };
 
-  const shippingCharge = selectedZone ? selectedZone.charge : 60;
+  const hasFreeDelivery = cart.some(
+    (item: any) => item.product?.isFreeDelivery || item.isFreeDelivery
+  );
+  const shippingCharge = hasFreeDelivery ? 0 : (selectedZone ? selectedZone.charge : 60);
   const grandTotal = Math.max(0, cartSubtotal + shippingCharge - couponDiscount);
 
   // Handle Direct Cash on Delivery Instant Order Placement
@@ -341,7 +344,13 @@ export default function CheckoutPage() {
                           <p className="font-extrabold text-xs text-slate-900">{zone.zoneName}</p>
                           <p className="text-[10px] text-slate-500">{zone.estDeliveryTime || "১-৩ দিন"}</p>
                         </div>
-                        <span className="font-black text-sm text-[#009669]">৳{zone.charge}</span>
+                        <span className={`font-black text-xs sm:text-sm px-2.5 py-0.5 rounded-lg border ${
+                          hasFreeDelivery
+                            ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                            : "text-[#009669]"
+                        }`}>
+                          {hasFreeDelivery ? "৳0 (ফ্রি!)" : `৳${zone.charge}`}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -450,7 +459,9 @@ export default function CheckoutPage() {
                   </div>
                   <div className="flex justify-between text-slate-600">
                     <span>ডেলিভারি চার্জ:</span>
-                    <span className="font-bold text-slate-900">৳{shippingCharge}</span>
+                    <span className="font-bold text-slate-900">
+                      {hasFreeDelivery ? "৳0 (ফ্রি!)" : `৳${shippingCharge}`}
+                    </span>
                   </div>
                   {couponDiscount > 0 && (
                     <div className="flex justify-between text-emerald-600 font-bold">

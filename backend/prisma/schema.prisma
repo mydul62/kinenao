@@ -111,6 +111,7 @@ model Product {
   isFeatured        Boolean          @default(false)
   isBestSeller      Boolean          @default(false)
   isFlashSale       Boolean          @default(false)
+  isFreeDelivery    Boolean          @default(false)
   customBadge       String?
   promotionalBadges String[]         @default([])
   seoTitle          String?

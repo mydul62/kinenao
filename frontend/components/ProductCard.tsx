@@ -23,6 +23,7 @@ interface ProductCardProps {
     stockQty?: number;
     reservedStockQty?: number;
     customBadge?: string | null;
+    isFreeDelivery?: boolean;
     rating?: number;
     reviewsCount?: number;
     weight?: number;
@@ -229,13 +230,20 @@ export default function ProductCard({
             />
           </Link>
 
-          {/* Video Tag (Bottom-Left) */}
-          {hasVideo && (
-            <div className="absolute bottom-2 left-2 z-10 bg-black/75 backdrop-blur-xs text-white text-[9px] sm:text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-xs">
-              <Play className="w-2.5 h-2.5 fill-white" />
-              <span>ভিডিও</span>
-            </div>
-          )}
+          {/* Video / Free Delivery Tag (Bottom) */}
+          <div className="absolute bottom-2 left-2 z-10 flex items-center gap-1">
+            {hasVideo && (
+              <div className="bg-black/75 backdrop-blur-xs text-white text-[9px] sm:text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-xs">
+                <Play className="w-2.5 h-2.5 fill-white" />
+                <span>ভিডিও</span>
+              </div>
+            )}
+            {product.isFreeDelivery && (
+              <div className="bg-emerald-600/90 backdrop-blur-xs text-white text-[9px] sm:text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs">
+                🚚 ফ্রি ডেলিভারি
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Dotted border separator */}

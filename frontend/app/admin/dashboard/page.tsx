@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { getSocket } from "@/lib/socket";
+import { toast } from "sonner";
 import {
   ShoppingBag,
   Users,
@@ -75,6 +77,32 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     loadAllDashboardData();
+  }, []);
+
+  // Real-time WebSocket listener for new orders on Dashboard
+  useEffect(() => {
+    const socket = getSocket();
+
+    const handleNewOrder = (newOrder: any) => {
+      // Refresh dashboard metrics in background
+      loadAllDashboardData();
+
+      toast.success(
+        `🔔 নতুন অর্ডার প্রসেস করা হয়েছে! (Order #${newOrder.orderNumber} - ৳${newOrder.grandTotal})`,
+        {
+          duration: 5000,
+          description: `Customer: ${
+            newOrder.guestInfo?.fullName || newOrder.customer?.profile?.fullName || "Guest Customer"
+          }`,
+        }
+      );
+    };
+
+    socket.on("new_order", handleNewOrder);
+
+    return () => {
+      socket.off("new_order", handleNewOrder);
+    };
   }, []);
 
   const handleRefresh = () => {

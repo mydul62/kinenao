@@ -55,6 +55,7 @@ export const dbCreateProduct = async (input: IProductCreateInput) => {
     isFeatured,
     isBestSeller,
     isFlashSale,
+    isFreeDelivery,
     customBadge,
     promotionalBadges,
     seoTitle,
@@ -109,6 +110,7 @@ export const dbCreateProduct = async (input: IProductCreateInput) => {
     isFeatured: isFeatured !== undefined ? isFeatured : false,
     isBestSeller: isBestSeller !== undefined ? isBestSeller : false,
     isFlashSale: isFlashSale !== undefined ? isFlashSale : false,
+    isFreeDelivery: isFreeDelivery !== undefined ? isFreeDelivery : false,
     seoTitle: seoTitle || null,
     seoDescription: seoDescription || null,
     isActive: isActive !== undefined ? isActive : true,
@@ -166,6 +168,7 @@ export const dbGetProducts = async (query: IProductQuery) => {
     isFeatured,
     isBestSeller,
     isFlashSale,
+    isFreeDelivery,
     hasVideo,
     hasVariants,
     stock,
@@ -310,6 +313,7 @@ function getExpandedSearchTerms(query: string): string[] {
   if (isFeatured === "true") queryFilters.push({ isFeatured: true });
   if (isBestSeller === "true") queryFilters.push({ isBestSeller: true });
   if (isFlashSale === "true") queryFilters.push({ isFlashSale: true });
+  if (isFreeDelivery === "true") queryFilters.push({ isFreeDelivery: true });
 
   if (hasVideo === "true") {
     queryFilters.push({ videoUrl: { not: null } });
@@ -555,6 +559,7 @@ export const dbUpdateProduct = async (id: string, input: IProductUpdateInput) =>
     isFeatured,
     isBestSeller,
     isFlashSale,
+    isFreeDelivery,
     customBadge,
     promotionalBadges,
     seoTitle,
@@ -624,6 +629,7 @@ export const dbUpdateProduct = async (id: string, input: IProductUpdateInput) =>
   if (isFeatured !== undefined) data.isFeatured = isFeatured;
   if (isBestSeller !== undefined) data.isBestSeller = isBestSeller;
   if (isFlashSale !== undefined) data.isFlashSale = isFlashSale;
+  if (isFreeDelivery !== undefined) data.isFreeDelivery = isFreeDelivery;
   if (customBadge !== undefined) data.customBadge = customBadge || null;
   if (promotionalBadges !== undefined) data.promotionalBadges = promotionalBadges || [];
   if (seoTitle !== undefined) data.seoTitle = seoTitle || null;

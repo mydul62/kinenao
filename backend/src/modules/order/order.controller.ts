@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { prisma } from "../../app/config/db";
 import { BadRequestError, NotFoundError, ForbiddenError } from "../../app/errors/AppError";
 import { OrderStatus, Role } from "@prisma/client";
+import { emitNewOrder, emitOrderStatusUpdate, emitBulkOrderUpdate } from "../../socket";
 
 export const createOrder = async (
   req: Request,
@@ -120,6 +121,8 @@ export const createOrder = async (
       const productUpdates: { id: string; reservedStockQty: number }[] = [];
       const variantUpdates: { id: string; reservedStockQty: number }[] = [];
 
+      let hasFreeDeliveryItem = false;
+
       for (const item of items) {
         let product = await tx.product.findFirst({
           where: {
@@ -143,7 +146,11 @@ export const createOrder = async (
         }
 
         if (!product) {
-          continue;
+          throw new NotFoundError(`Product with ID "${item.productId}" not found or inactive`);
+        }
+
+        if (product.isFreeDelivery) {
+          hasFreeDeliveryItem = true;
         }
 
         let variant = null;
@@ -227,6 +234,10 @@ export const createOrder = async (
         }
       }
 
+      if (hasFreeDeliveryItem) {
+        deliveryCharge = 0;
+      }
+
       // 5. Validate Coupon if provided
       let couponId: string | null = null;
       let discountAmount = 0;
@@ -286,8 +297,8 @@ export const createOrder = async (
       let timelineNote = "Order created, waiting for payment.";
 
       if (isCashOnDelivery) {
-        initialStatus = OrderStatus.CONFIRMED;
-        timelineNote = "Cash on Delivery order confirmed. Payment will be collected upon delivery.";
+        initialStatus = OrderStatus.PENDING_PAYMENT;
+        timelineNote = "Cash on Delivery order placed. Pending confirmation by manager.";
       } else if (transactionId || senderNumber) {
         initialStatus = OrderStatus.PENDING_PAYMENT_VERIFICATION;
         timelineNote = `Payment details submitted (TrxID: ${transactionId || "N/A"}). Waiting for admin verification.`;
@@ -336,6 +347,8 @@ export const createOrder = async (
 
       return order;
     });
+
+    emitNewOrder(result);
 
     res.status(201).json({
       status: "success",
@@ -543,7 +556,7 @@ export const getOrderById = async (
       include: {
         orderItems: {
           include: {
-            product: { select: { id: true, name: true, thumbnail: true, sku: true } },
+            product: { select: { id: true, name: true, thumbnail: true, sku: true, isFreeDelivery: true } },
             variant: true,
           },
         },
@@ -620,7 +633,7 @@ export const getAllOrders = async (
       ];
     }
 
-    const [orders, total] = await Promise.all([
+    const [orders, total, statusCountsRaw] = await Promise.all([
       prisma.order.findMany({
         where,
         include: {
@@ -644,12 +657,22 @@ export const getAllOrders = async (
         take: limitNum,
       }),
       prisma.order.count({ where }),
+      prisma.order.groupBy({
+        by: ["status"],
+        _count: { status: true },
+      }),
     ]);
+
+    const statusCounts: Record<string, number> = {};
+    statusCountsRaw.forEach((sc) => {
+      statusCounts[sc.status] = sc._count.status;
+    });
 
     res.status(200).json({
       status: "success",
       data: {
         orders,
+        statusCounts,
         pagination: {
           total,
           page: pageNum,
@@ -747,6 +770,13 @@ export const updateOrderStatus = async (
           orderItems: { include: { variant: true, product: true } },
         },
       });
+    });
+
+    emitOrderStatusUpdate({
+      orderId: updated.id,
+      status: updated.status,
+      orderNumber: updated.orderNumber,
+      order: updated,
     });
 
     res.status(200).json({
@@ -900,6 +930,11 @@ export const bulkUpdateOrderStatus = async (
 
     const count = updatedOrders.filter(Boolean).length;
 
+    emitBulkOrderUpdate({
+      orderIds,
+      status,
+    });
+
     res.status(200).json({
       status: "success",
       message: `Successfully updated ${count} orders to ${status}`,
@@ -909,4 +944,3 @@ export const bulkUpdateOrderStatus = async (
     next(error);
   }
 };
-

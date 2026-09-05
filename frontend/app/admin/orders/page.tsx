@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { getSocket } from "@/lib/socket";
 import { toast } from "sonner";
 import {
   Search,
@@ -25,6 +27,8 @@ import {
   Filter,
   ArrowUpDown,
   Check,
+  Sparkles,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -100,11 +104,25 @@ const allStatuses = [
   "CANCELLED",
 ];
 
+const statusTabs = [
+  { id: "", label: "All Orders", icon: Sparkles },
+  { id: "PENDING_PAYMENT", label: "Pending Payment", icon: Clock },
+  { id: "PENDING_PAYMENT_VERIFICATION", label: "Verifying Payment", icon: ShieldCheck },
+  { id: "CONFIRMED", label: "Confirmed", icon: CheckCircle2 },
+  { id: "PACKED", label: "Packed", icon: Package },
+  { id: "SHIPPED", label: "Shipped", icon: Truck },
+  { id: "OUT_FOR_DELIVERY", label: "Out for Delivery", icon: MapPin },
+  { id: "DELIVERED", label: "Delivered", icon: Check },
+  { id: "CANCELLED", label: "Cancelled", icon: AlertTriangle },
+];
+
 export default function AdminOrdersPage() {
+  const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("PENDING_PAYMENT");
+  const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
@@ -128,6 +146,9 @@ export default function AdminOrdersPage() {
       if (statusFilter) params.status = statusFilter;
       const { data } = await api.get("/orders", { params });
       setOrders(data.data.orders || []);
+      if (data.data.statusCounts) {
+        setStatusCounts(data.data.statusCounts);
+      }
       setTotalPages(data.data.pagination?.totalPages || 1);
       setTotal(data.data.pagination?.total || 0);
     } catch {
@@ -140,6 +161,75 @@ export default function AdminOrdersPage() {
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
+
+  // Real-time WebSocket Order Listener
+  useEffect(() => {
+    const socket = getSocket();
+
+    const handleNewOrder = (newOrder: any) => {
+      // Audio Chime Synthesizer
+      try {
+        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+        osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15); // A5
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+      } catch {
+        // Fallback
+      }
+
+      toast.success(
+        `🔔 নতুন অর্ডার প্রাপ্তি! Order #${newOrder.orderNumber} (৳${newOrder.grandTotal})`,
+        {
+          duration: 6000,
+          description: `Customer: ${
+            newOrder.guestInfo?.fullName || newOrder.customer?.profile?.fullName || "Guest Customer"
+          }`,
+          action: {
+            label: "View Order",
+            onClick: () => router.push(`/admin/orders/${newOrder.id}`),
+          },
+        }
+      );
+
+      setOrders((prev) => {
+        if (prev.some((o) => o.id === newOrder.id)) return prev;
+        return [newOrder, ...prev];
+      });
+      setTotal((t) => t + 1);
+    };
+
+    const handleStatusUpdated = (data: { orderId: string; status: string }) => {
+      setOrders((prev) =>
+        prev.map((o) => (o.id === data.orderId ? { ...o, status: data.status } : o))
+      );
+      fetchOrders();
+    };
+
+    const handleBulkUpdated = (data: { orderIds: string[]; status: string }) => {
+      setOrders((prev) =>
+        prev.map((o) => (data.orderIds.includes(o.id) ? { ...o, status: data.status } : o))
+      );
+      fetchOrders();
+    };
+
+    socket.on("new_order", handleNewOrder);
+    socket.on("order_status_updated", handleStatusUpdated);
+    socket.on("bulk_orders_updated", handleBulkUpdated);
+
+    return () => {
+      socket.off("new_order", handleNewOrder);
+      socket.off("order_status_updated", handleStatusUpdated);
+      socket.off("bulk_orders_updated", handleBulkUpdated);
+    };
+  }, [router, fetchOrders]);
 
   // Bulk Selection Handlers
   const handleSelectAll = (checked: boolean) => {
@@ -201,20 +291,9 @@ export default function AdminOrdersPage() {
     }
   };
 
-  // View Details Modal Trigger
-  const handleViewDetails = async (order: Order) => {
-    setActiveOrderDetails(order);
-    setLoadingDetails(true);
-    try {
-      const { data } = await api.get(`/orders/${order.id}`);
-      if (data.data?.order) {
-        setActiveOrderDetails(data.data.order);
-      }
-    } catch {
-      // fallback to row data if full details fetch fails
-    } finally {
-      setLoadingDetails(false);
-    }
+  // View Details Trigger -> Navigates to Full Page View
+  const handleViewDetails = (order: Order) => {
+    router.push(`/admin/orders/${order.id}`);
   };
 
   // Summary Metrics
@@ -323,6 +402,44 @@ export default function AdminOrdersPage() {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* STATUS FILTER TABS STRIP */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1.5 pt-1 no-scrollbar scrollbar-none font-['Inter',sans-serif]">
+        {statusTabs.map((tab) => {
+          const isActive = statusFilter === tab.id;
+          const count =
+            tab.id === ""
+              ? Object.values(statusCounts).reduce((a, b) => a + b, 0) || total
+              : statusCounts[tab.id] || 0;
+          const Icon = tab.icon;
+
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => {
+                setStatusFilter(tab.id);
+                setPage(1);
+              }}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-black shrink-0 transition-all cursor-pointer border ${
+                isActive
+                  ? "bg-[#123524] text-white border-[#123524] shadow-xs ring-2 ring-[#123524]/20"
+                  : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
+              }`}
+            >
+              <Icon className={`w-3.5 h-3.5 ${isActive ? "text-emerald-300" : "text-slate-400"}`} />
+              <span>{tab.label}</span>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                  isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-700"
+                }`}
+              >
+                {count}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* 3. Search Bar & Status Filter */}
@@ -642,18 +759,18 @@ export default function AdminOrdersPage() {
 
       {/* 7. QUICK ORDER DETAILS DRAWER / MODAL */}
       <Dialog open={!!activeOrderDetails} onOpenChange={() => setActiveOrderDetails(null)}>
-        <DialogContent className="bg-white border-[#E4E8E4] text-[#131914] rounded-2xl p-6 max-w-3xl max-h-[85vh] overflow-y-auto font-['Inter',sans-serif]">
+        <DialogContent className="bg-white border-[#E4E8E4] text-[#131914] rounded-3xl p-6 sm:p-8 max-w-5xl max-h-[90vh] overflow-y-auto font-['Inter',sans-serif]">
           {activeOrderDetails && (
             <div className="space-y-6">
               {/* Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#E4E8E4] pb-4 gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#E4E8E4] pb-4 gap-3">
                 <div>
                   <div className="flex items-center gap-2.5">
-                    <h2 className="text-xl font-extrabold text-[#131914] font-['Manrope'] font-mono">
+                    <h2 className="text-xl sm:text-2xl font-extrabold text-[#131914] font-['Manrope'] font-mono">
                       Order #{activeOrderDetails.orderNumber}
                     </h2>
                     <span
-                      className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                      className={`px-3 py-1 rounded-full text-xs font-black border ${
                         statusColors[activeOrderDetails.status] || "bg-[#F5F7F5] text-[#5C685F]"
                       }`}
                     >
@@ -666,20 +783,34 @@ export default function AdminOrdersPage() {
                   </p>
                 </div>
 
-                {/* Status Switcher in Modal */}
-                <div className="flex items-center gap-2">
-                  <label className="text-xs font-bold text-[#5C685F]">Status:</label>
-                  <select
-                    value={activeOrderDetails.status}
-                    onChange={(e) => handleSingleStatusUpdate(activeOrderDetails.id, e.target.value)}
-                    className="h-8 px-2.5 bg-[#F5F7F5] border border-[#E4E8E4] text-[#131914] text-xs font-bold rounded-xl focus:outline-none cursor-pointer"
+                {/* Open Dedicated Page & Status Switcher */}
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-bold text-[#5C685F]">Status:</label>
+                    <select
+                      value={activeOrderDetails.status}
+                      onChange={(e) => handleSingleStatusUpdate(activeOrderDetails.id, e.target.value)}
+                      className="h-9 px-2.5 bg-[#F5F7F5] border border-[#E4E8E4] text-[#131914] text-xs font-bold rounded-xl focus:outline-none cursor-pointer"
+                    >
+                      {allStatuses.map((st) => (
+                        <option key={st} value={st}>
+                          {statusLabels[st] || st}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      const orderId = activeOrderDetails.id;
+                      setActiveOrderDetails(null);
+                      router.push(`/admin/orders/${orderId}`);
+                    }}
+                    className="bg-[#123524] hover:bg-[#1B4A34] text-white text-xs font-bold rounded-xl h-9 px-4 cursor-pointer"
                   >
-                    {allStatuses.map((st) => (
-                      <option key={st} value={st}>
-                        {statusLabels[st] || st}
-                      </option>
-                    ))}
-                  </select>
+                    Open Full Page View →
+                  </Button>
                 </div>
               </div>
 

@@ -31,6 +31,7 @@ export interface IProductCreateInput {
   isFeatured?: boolean;
   isBestSeller?: boolean;
   isFlashSale?: boolean;
+  isFreeDelivery?: boolean;
   customBadge?: string | null;
   promotionalBadges?: string[];
   seoTitle?: string | null;
@@ -57,6 +58,7 @@ export interface IProductQuery {
   isFeatured?: string;
   isBestSeller?: string;
   isFlashSale?: string;
+  isFreeDelivery?: string;
   hasVideo?: string;
   hasVariants?: string;
   stock?: string;

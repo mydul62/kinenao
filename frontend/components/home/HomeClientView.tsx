@@ -43,8 +43,8 @@ export default function HomeClientView({
   const categoryScrollRef = useRef<HTMLDivElement>(null);
 
   // Group products for home showcases
-  const featuredProducts = allProducts.filter((p: any) => p.isActive && p.isFeatured).slice(0, 8);
-  const bestSellers = allProducts.filter((p: any) => p.isActive && p.isBestSeller).slice(0, 8);
+  const featuredProducts = allProducts.filter((p: any) => p.isActive && p.isFeatured).slice(0, 10);
+  const bestSellers = allProducts.filter((p: any) => p.isActive && p.isBestSeller).slice(0, 10);
   const flashSale = allProducts.filter((p: any) => p.isActive && p.isFlashSale).slice(0, 8);
   const newArrivals = allProducts
     .filter(
@@ -310,7 +310,7 @@ export default function HomeClientView({
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5 sm:gap-3.5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
             {featuredProducts.map((prod) => (
               <ProductCard key={prod.id} product={prod} />
             ))}
@@ -334,7 +334,7 @@ export default function HomeClientView({
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5 sm:gap-3.5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
             {bestSellers.map((prod) => (
               <ProductCard key={prod.id} product={prod} />
             ))}

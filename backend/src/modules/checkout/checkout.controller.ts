@@ -36,6 +36,8 @@ export const previewCheckout = async (
     let itemsSubtotal = 0;
     const checkoutItems: any[] = [];
 
+    let hasFreeDeliveryItem = false;
+
     for (const item of items) {
       const product = await prisma.product.findFirst({
         where: {
@@ -52,6 +54,10 @@ export const previewCheckout = async (
 
       if (!product || !product.isActive) {
         throw new NotFoundError(`Product with ID "${item.productId}" not found or inactive`);
+      }
+
+      if (product.isFreeDelivery) {
+        hasFreeDeliveryItem = true;
       }
 
       let variant = null;
@@ -117,6 +123,10 @@ export const previewCheckout = async (
           availableStock,
         });
       }
+    }
+
+    if (hasFreeDeliveryItem) {
+      deliveryCharge = 0;
     }
 
     // 3. Process coupon if provided

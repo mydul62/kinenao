@@ -89,6 +89,7 @@ export default function EditProductPage() {
     isFeatured: false,
     isBestSeller: false,
     isFlashSale: false,
+    isFreeDelivery: false,
     isActive: true,
     customBadge: "",
     seoTitle: "",
@@ -135,6 +136,7 @@ export default function EditProductPage() {
             isFeatured: Boolean(product.isFeatured),
             isBestSeller: Boolean(product.isBestSeller),
             isFlashSale: Boolean(product.isFlashSale),
+            isFreeDelivery: Boolean(product.isFreeDelivery),
             isActive: Boolean(product.isActive),
             customBadge: product.customBadge || "",
             seoTitle: product.seoTitle || "",
@@ -274,6 +276,7 @@ export default function EditProductPage() {
         isFeatured: form.isFeatured,
         isBestSeller: form.isBestSeller,
         isFlashSale: form.isFlashSale,
+        isFreeDelivery: form.isFreeDelivery,
         isActive: publish !== undefined ? publish : form.isActive,
         customBadge: form.customBadge.trim() || null,
         promotionalBadges,
@@ -463,6 +466,16 @@ export default function EditProductPage() {
                 onCheckedChange={(c) => set("isFlashSale", c)}
               />
               <span className="text-xs font-bold text-slate-800">Flash Sale</span>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer bg-emerald-50 text-emerald-900 px-3 py-1.5 rounded-xl border border-emerald-200 shadow-2xs hover:bg-emerald-100/70 transition-colors">
+              <Switch
+                checked={form.isFreeDelivery}
+                onCheckedChange={(c) => set("isFreeDelivery", c)}
+              />
+              <span className="text-xs font-extrabold flex items-center gap-1.5">
+                🚚 ফ্রি হোম ডেলিভারি (Free Delivery)
+              </span>
             </label>
 
             <label className="flex items-center gap-2 cursor-pointer">

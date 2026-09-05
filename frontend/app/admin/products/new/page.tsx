@@ -88,6 +88,7 @@ export default function NewProductPage() {
     isFeatured: false,
     isBestSeller: false,
     isFlashSale: false,
+    isFreeDelivery: false,
     isActive: true,
     customBadge: "",
     seoTitle: "",
@@ -246,6 +247,7 @@ export default function NewProductPage() {
         isFeatured: form.isFeatured,
         isBestSeller: form.isBestSeller,
         isFlashSale: form.isFlashSale,
+        isFreeDelivery: form.isFreeDelivery,
         isActive: publish,
         customBadge: form.customBadge.trim() || null,
         promotionalBadges,
@@ -450,6 +452,16 @@ export default function NewProductPage() {
                 onCheckedChange={(c) => set("isFlashSale", c)}
               />
               <span className="text-xs font-bold text-slate-800">Flash Sale Badge</span>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer bg-emerald-50 text-emerald-900 px-3 py-1.5 rounded-xl border border-emerald-200 shadow-2xs hover:bg-emerald-100/70 transition-colors">
+              <Switch
+                checked={form.isFreeDelivery}
+                onCheckedChange={(c) => set("isFreeDelivery", c)}
+              />
+              <span className="text-xs font-extrabold flex items-center gap-1.5">
+                🚚 ফ্রি হোম ডেলিভারি (Free Delivery)
+              </span>
             </label>
           </div>
         </div>

@@ -77,7 +77,7 @@ export default function ProductDetailClient({
   });
 
   // Delivery Zones
-  const [deliveryZones] = useState<any[]>([
+  const [deliveryZones, setDeliveryZones] = useState<any[]>([
     { id: "zone-dhaka", zoneName: "ঢাকা সিটির ভিতরে (Inside Dhaka)", charge: 60 },
     { id: "zone-suburbs", zoneName: "ঢাকা সাব-এরিয়া (সাভার, গাজীপুর, কেরানীগঞ্জ)", charge: 100 },
     { id: "zone-outside", zoneName: "সারাদেশে জেলা শহর (Outside Dhaka)", charge: 120 },
@@ -87,6 +87,19 @@ export default function ProductDetailClient({
     zoneName: "ঢাকা সিটির ভিতরে (Inside Dhaka)",
     charge: 60,
   });
+
+  React.useEffect(() => {
+    api
+      .get("/delivery-zones")
+      .then((res) => {
+        const zones = res.data?.data?.deliveryZones || res.data?.data?.zones || [];
+        if (zones.length > 0) {
+          setDeliveryZones(zones);
+          setSelectedZone(zones[0]);
+        }
+      })
+      .catch(console.error);
+  }, []);
 
   // Coupon
   const [couponCode, setCouponCode] = useState("");
@@ -140,7 +153,7 @@ export default function ProductDetailClient({
 
   const savingsAmount = Math.max(0, (originalUnitPrice - unitPrice) * quantity);
   const itemsSubtotal = unitPrice * quantity;
-  const shippingCharge = selectedZone ? Number(selectedZone.charge || 0) : 60;
+  const shippingCharge = product?.isFreeDelivery ? 0 : (selectedZone ? Number(selectedZone.charge || 0) : 60);
   const grandTotal = Math.max(0, itemsSubtotal + shippingCharge - couponDiscount);
 
   // Images list
@@ -351,9 +364,17 @@ export default function ProductDetailClient({
             <div className="bg-white rounded-3xl p-5 sm:p-7 border border-[#e8e4db] shadow-sm space-y-5">
               {/* Top Row: Verified Badge + SKU */}
               <div className="flex flex-wrap items-center justify-between gap-2.5">
-                <div className="inline-flex items-center gap-1.5 bg-emerald-50 text-[#0d8a4e] border border-emerald-200 px-3 py-1 rounded-full text-xs font-extrabold">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>১০০% অরিজিনাল পণ্য</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="inline-flex items-center gap-1.5 bg-emerald-50 text-[#0d8a4e] border border-emerald-200 px-3 py-1 rounded-full text-xs font-extrabold">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>১০০% অরিজিনাল পণ্য</span>
+                  </div>
+                  {product.isFreeDelivery && (
+                    <div className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-900 border border-amber-300 px-3 py-1 rounded-full text-xs font-black shadow-2xs">
+                      <Truck className="w-3.5 h-3.5 text-amber-600" />
+                      <span>🚚 ফ্রি হোম ডেলিভারি!</span>
+                    </div>
+                  )}
                 </div>
                 <span className="text-xs font-bold text-slate-400">
                   SKU: <span className="text-slate-700 font-extrabold">{product.sku || "KIN-0184"}</span>
@@ -668,8 +689,12 @@ export default function ProductDetailClient({
                                 />
                                 <span>{zone.zoneName}</span>
                               </div>
-                              <span className="text-xs sm:text-sm font-black bg-white px-3 py-1 rounded-xl border border-slate-200">
-                                ৳{zone.charge}
+                              <span className={`text-xs sm:text-sm font-black px-3 py-1 rounded-xl border ${
+                                product.isFreeDelivery
+                                  ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                                  : "bg-white border-slate-200 text-slate-800"
+                              }`}>
+                                {product.isFreeDelivery ? "৳0 (ফ্রি!)" : `৳${zone.charge}`}
                               </span>
                             </label>
                           );
