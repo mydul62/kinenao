@@ -133,3 +133,19 @@ export const updateProfile = async (
     next(error);
   }
 };
+
+export const getUsers = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const result = await authService.getUsers(req.query);
+    res.status(200).json({
+      status: "success",
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};

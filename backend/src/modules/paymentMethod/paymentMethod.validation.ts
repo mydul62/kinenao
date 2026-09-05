@@ -1,13 +1,15 @@
 import { z } from "zod";
 
+const optionalString = z.string().optional().nullable().transform((v) => (v === "" ? null : v));
+
 export const createPaymentMethodSchema = z.object({
   body: z.object({
     name: z.string().min(2, "Payment method name must be at least 2 characters"),
-    logoUrl: z.string().url("Invalid logo URL").nullable().optional(),
-    accountNumber: z.string().min(4, "Account number must be at least 4 digits"),
-    accountName: z.string().min(2, "Account name must be at least 2 characters").optional().nullable(),
-    accountType: z.string().min(2, "Account type must be at least 2 characters").optional().nullable(),
-    instructions: z.string().min(10, "Instructions must be at least 10 characters"),
+    logoUrl: optionalString,
+    accountNumber: z.string().min(1, "Account number is required"),
+    accountName: optionalString,
+    accountType: optionalString,
+    instructions: z.string().optional().nullable().transform((v) => (v === undefined ? "" : v)),
     isActive: z.boolean().optional(),
   }),
 });
@@ -15,14 +17,14 @@ export const createPaymentMethodSchema = z.object({
 export const updatePaymentMethodSchema = z.object({
   body: z.object({
     name: z.string().min(2).optional(),
-    logoUrl: z.string().url().nullable().optional(),
-    accountNumber: z.string().min(4).optional(),
-    accountName: z.string().min(2).optional().nullable(),
-    accountType: z.string().min(2).optional().nullable(),
-    instructions: z.string().min(10).optional(),
+    logoUrl: optionalString,
+    accountNumber: z.string().optional(),
+    accountName: optionalString,
+    accountType: optionalString,
+    instructions: optionalString,
     isActive: z.boolean().optional(),
   }),
   params: z.object({
-    id: z.string().uuid("Invalid payment method ID"),
+    id: z.string().min(1, "Invalid payment method ID"),
   }),
 });

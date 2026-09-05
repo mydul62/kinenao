@@ -5,7 +5,7 @@ import { authMiddleware } from "../../app/middlewares/auth";
 
 const router = Router();
 
-// Endpoint for single image upload matching the frontend (POST /api/upload/image with field name "file" or "image")
+// Endpoint for single image upload matching the frontend (POST /api/upload/image)
 router.post(
   "/image",
   authMiddleware,
@@ -16,10 +16,10 @@ router.post(
       const folder = req.body.folder || "kinenao";
 
       if (!file) {
-        throw new BadRequestError("No file uploaded with field name 'file'");
+        throw new BadRequestError("No image file uploaded");
       }
 
-      const secureUrl = await uploadToCloudinary(file.buffer, folder);
+      const secureUrl = await uploadToCloudinary(file.buffer, folder, file.originalname);
       res.status(200).json({
         status: "success",
         data: {
@@ -32,7 +32,34 @@ router.post(
   }
 );
 
-// Endpoint for product video upload (POST /api/upload/video with field name "file" or "video")
+// Endpoint for avatar image upload (POST /api/upload/avatar)
+router.post(
+  "/avatar",
+  authMiddleware,
+  upload.single("file"),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const file = req.file;
+      const folder = req.body.folder || "kinenao/avatars";
+
+      if (!file) {
+        throw new BadRequestError("No avatar file uploaded");
+      }
+
+      const secureUrl = await uploadToCloudinary(file.buffer, folder, file.originalname);
+      res.status(200).json({
+        status: "success",
+        data: {
+          url: secureUrl,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Endpoint for product video upload (POST /api/upload/video)
 router.post(
   "/video",
   authMiddleware,
@@ -43,10 +70,10 @@ router.post(
       const folder = req.body.folder || "kinenao/videos";
 
       if (!file) {
-        throw new BadRequestError("No video file uploaded with field name 'file'");
+        throw new BadRequestError("No video file uploaded");
       }
 
-      const secureUrl = await uploadVideoToCloudinary(file.buffer, folder);
+      const secureUrl = await uploadVideoToCloudinary(file.buffer, folder, file.originalname);
       res.status(200).json({
         status: "success",
         data: {
@@ -78,7 +105,7 @@ router.post(
 
       if (files["image"] && files["image"][0]) {
         const file = files["image"][0];
-        const secureUrl = await uploadToCloudinary(file.buffer, folder);
+        const secureUrl = await uploadToCloudinary(file.buffer, folder, file.originalname);
         res.status(200).json({
           status: "success",
           data: {
@@ -90,7 +117,7 @@ router.post(
 
       if (files["images"] && files["images"].length > 0) {
         const uploadPromises = files["images"].map((file) =>
-          uploadToCloudinary(file.buffer, folder)
+          uploadToCloudinary(file.buffer, folder, file.originalname)
         );
         const urls = await Promise.all(uploadPromises);
         res.status(200).json({

@@ -197,3 +197,52 @@ export const updateUserProfile = async (userId: string, input: any) => {
 
   return profile;
 };
+
+export const getUsers = async (query: any) => {
+  const { page = "1", limit = "20", search } = query;
+  const skip = (Number(page) - 1) * Number(limit);
+
+  const where: any = { role: Role.CUSTOMER };
+  if (search) {
+    where.OR = [
+      { email: { contains: String(search), mode: "insensitive" } },
+      { profile: { fullName: { contains: String(search), mode: "insensitive" } } },
+    ];
+  }
+
+  const [users, total] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        createdAt: true,
+        profile: {
+          select: {
+            fullName: true,
+            phoneNumber: true,
+            avatarUrl: true,
+          },
+        },
+        _count: {
+          select: { orders: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: Number(limit),
+    }),
+    prisma.user.count({ where }),
+  ]);
+
+  return {
+    users,
+    pagination: {
+      total,
+      page: Number(page),
+      limit: Number(limit),
+      totalPages: Math.ceil(total / Number(limit)),
+    },
+  };
+};

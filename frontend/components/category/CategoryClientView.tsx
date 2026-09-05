@@ -107,15 +107,7 @@ export default function CategoryClientView({
   const handleDirectOrder = (product: any, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    addToCart({
-      id: product.id,
-      name: product.name,
-      slug: product.slug,
-      price: product.price,
-      discountPrice: product.discountPrice,
-      thumbnail: product.thumbnail || (product.images && product.images[0]) || "",
-    });
-    router.push(`/product/${product.slug || product.id}#order-form`);
+    router.push(`/product/${product.slug || product.id}`);
   };
 
   // Add to Cart with Toast
@@ -221,7 +213,7 @@ export default function CategoryClientView({
       {/* ========================================================================= */}
       {/* CATEGORY HEADER BANNER & SUBCATEGORIES FILTER RAIL                        */}
       {/* ========================================================================= */}
-      <div className="w-full px-3 md:px-6 pt-4 pb-1">
+      <div className="w-full px-4 md:px-[50px] pt-4 pb-1">
         {/* Breadcrumbs & Title Card */}
         <div className="bg-white border border-[#E4E8E4] rounded-2xl p-4 sm:p-5 shadow-xs">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -365,7 +357,7 @@ export default function CategoryClientView({
       {/* ========================================================================= */}
       {/* 2. MAIN BODY SECTION ON WARM CREAM BACKGROUND (#f6f3ec)                 */}
       {/* ========================================================================= */}
-      <div className="w-full px-3 md:px-6 pt-4 space-y-4">
+      <div className="w-full px-4 md:px-[50px] pt-4 space-y-4">
         {/* Desktop Sidebar + Products Grid 2-Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* DESKTOP LEFT SIDEBAR (Screenshot 4) */}

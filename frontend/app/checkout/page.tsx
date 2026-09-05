@@ -251,7 +251,7 @@ export default function CheckoutPage() {
     <div className="flex flex-col min-h-screen bg-[#fafafa]">
       <Header />
 
-      <main className="flex-1 container mx-auto px-4 py-8 max-w-4xl space-y-6">
+      <main className="flex-1 container mx-auto px-4 md:px-[50px] py-8 max-w-4xl space-y-6">
         <div className="text-center space-y-1 max-w-md mx-auto">
           <span className="inline-flex items-center gap-1.5 bg-[#009669]/10 text-[#009669] text-xs font-black px-3 py-1 rounded-full uppercase tracking-wider">
             <PackageCheck className="h-4 w-4" /> ১০০% ক্যাশ অন ডেলিভারি (অগ্রিম পেমেন্ট নেই)

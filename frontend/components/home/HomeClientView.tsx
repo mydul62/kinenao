@@ -15,6 +15,10 @@ import {
   Percent,
   Sparkles,
   Layers,
+  HelpCircle,
+  MessageCircle,
+  PhoneCall,
+  ChevronDown,
 } from "lucide-react";
 
 interface HomeClientViewProps {
@@ -35,6 +39,7 @@ export default function HomeClientView({
   testimonials,
 }: HomeClientViewProps) {
   const [currentBanner, setCurrentBanner] = useState(0);
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
   const categoryScrollRef = useRef<HTMLDivElement>(null);
 
   // Group products for home showcases
@@ -197,7 +202,7 @@ export default function HomeClientView({
       </section>
 
       {/* 2. Trust Badges Banner */}
-      <section className="w-full px-3 md:px-6">
+      <section className="w-full px-4 md:px-[50px]">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 bg-white border border-slate-200/80 p-3 sm:p-5 rounded-2xl sm:rounded-3xl shadow-xs">
           <div className="flex items-center gap-2.5 p-1.5">
             <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
@@ -243,7 +248,7 @@ export default function HomeClientView({
 
       {/* 3. Categories Grid Showcase (Full Width, No Slider) */}
       {categories.length > 0 && (
-        <section className="w-full px-3 md:px-6 space-y-3">
+        <section className="w-full px-4 md:px-[50px] space-y-3">
           <div className="flex items-center justify-between px-1">
             <div>
               <h3 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
@@ -291,7 +296,7 @@ export default function HomeClientView({
 
       {/* 4. Featured Products Showcase (Full Width) */}
       {featuredProducts.length > 0 && (
-        <section className="w-full px-3 md:px-6 space-y-3">
+        <section className="w-full px-4 md:px-[50px] space-y-3">
           <div className="flex items-center justify-between px-1">
             <div>
               <h3 className="text-base sm:text-lg font-black text-slate-900">ফিচার্ড কালেকশন</h3>
@@ -315,7 +320,7 @@ export default function HomeClientView({
 
       {/* 5. Best Sellers Showcase (Full Width) */}
       {bestSellers.length > 0 && (
-        <section className="w-full px-3 md:px-6 space-y-3">
+        <section className="w-full px-4 md:px-[50px] space-y-3">
           <div className="flex items-center justify-between px-1">
             <div>
               <h3 className="text-base sm:text-lg font-black text-slate-900">বেস্ট সেলার আইটেম</h3>
@@ -337,36 +342,113 @@ export default function HomeClientView({
         </section>
       )}
 
-      {/* 6. FAQs Section (Full Width) */}
+      {/* 6. FAQs Section (Full Width, Modern Card Design) */}
       {faqs.length > 0 && (
-        <section className="w-full px-3 md:px-6 space-y-3">
-          <div className="text-center max-w-xl mx-auto mb-4">
-            <h3 className="text-lg sm:text-xl font-black text-slate-900">সচরাচর জিজ্ঞাসিত প্রশ্নাবলী</h3>
-            <p className="text-xs text-slate-500 mt-0.5">অর্ডার ও ডেলিভারি সম্পর্কিত তথ্য</p>
+        <section className="w-full px-4 md:px-[50px] space-y-6">
+          <div className="text-center max-w-xl mx-auto space-y-1.5">
+            <div className="inline-flex items-center gap-1.5 bg-emerald-50 text-[#0d8a4e] border border-emerald-200 px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider">
+              <HelpCircle className="w-3.5 h-3.5" />
+              <span>সচরাচর জিজ্ঞাসা</span>
+            </div>
+            <h3 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 tracking-tight">
+              আপনার যেকোনো প্রশ্নের উত্তর
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-md mx-auto">
+              অর্ডার, পেমেন্ট ও ডেলিভারি সংক্রান্ত প্রয়োজনীয় তথ্যাবলী নিচে দেওয়া হলো।
+            </p>
           </div>
 
-          <div className="space-y-2 w-full max-w-5xl mx-auto">
-            {faqs.map((faq, i) => (
-              <details
-                key={faq.id || i}
-                className="group bg-white border border-slate-200/90 rounded-2xl p-3.5 shadow-2xs cursor-pointer"
+          <div className="space-y-3 w-full max-w-4xl mx-auto">
+            {faqs.map((faq, i) => {
+              const isOpen = openFaqIndex === i;
+              return (
+                <div
+                  key={faq.id || i}
+                  onClick={() => setOpenFaqIndex(isOpen ? null : i)}
+                  className={`bg-white border rounded-2xl sm:rounded-3xl p-4 sm:p-5 transition-all duration-300 shadow-2xs cursor-pointer group ${
+                    isOpen
+                      ? "bg-gradient-to-r from-emerald-50/70 via-white to-white border-[#0d8a4e] ring-2 ring-[#0d8a4e]/20 shadow-md"
+                      : "border-[#e8e4db] hover:border-emerald-300 hover:shadow-sm"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-3 select-none">
+                    <div className="flex items-center gap-3.5">
+                      <span
+                        className={`w-8 h-8 rounded-2xl text-xs font-black flex items-center justify-center shrink-0 transition-colors ${
+                          isOpen
+                            ? "bg-[#0d8a4e] text-white shadow-xs"
+                            : "bg-emerald-50 text-[#0d8a4e] border border-emerald-200"
+                        }`}
+                      >
+                        Q{i + 1}
+                      </span>
+                      <h4
+                        className={`font-black text-xs sm:text-sm transition-colors ${
+                          isOpen ? "text-[#0d8a4e]" : "text-slate-800 group-hover:text-slate-900"
+                        }`}
+                      >
+                        {faq.question}
+                      </h4>
+                    </div>
+
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${
+                        isOpen
+                          ? "bg-[#0d8a4e] text-white rotate-180 shadow-xs"
+                          : "bg-slate-100 text-slate-400 group-hover:bg-emerald-50 group-hover:text-[#0d8a4e]"
+                      }`}
+                    >
+                      <ChevronDown className="w-4 h-4" />
+                    </div>
+                  </div>
+
+                  {isOpen && (
+                    <div className="mt-3.5 pt-3.5 border-t border-emerald-100 text-xs sm:text-sm text-slate-700 leading-relaxed font-medium bg-white/80 p-3.5 rounded-2xl border border-slate-100/80">
+                      {faq.answer}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Customer Support Quick Bar */}
+          <div className="max-w-4xl mx-auto bg-gradient-to-r from-slate-900 to-slate-950 text-white rounded-3xl p-5 sm:p-6 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <h4 className="text-sm sm:text-base font-black flex items-center gap-2">
+                <MessageCircle className="w-4 h-4 text-emerald-400" />
+                <span>আপনার কি আরো কোনো প্রশ্ন আছে?</span>
+              </h4>
+              <p className="text-xs text-slate-300 font-medium">
+                আমাদের কাস্টমার কেয়ার প্রতিনিধি আপনার সহায়তায় সার্বক্ষণিক নিয়োজিত।
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2.5 shrink-0">
+              <a
+                href="tel:01700000000"
+                className="px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs font-black flex items-center gap-1.5 transition-colors cursor-pointer"
               >
-                <summary className="font-extrabold text-xs sm:text-sm text-slate-800 flex items-center justify-between select-none">
-                  <span>{faq.question}</span>
-                  <ChevronRight className="w-4 h-4 text-slate-400 group-open:rotate-90 transition-transform" />
-                </summary>
-                <p className="text-xs text-slate-600 leading-relaxed mt-2.5 pt-2.5 border-t border-slate-100">
-                  {faq.answer}
-                </p>
-              </details>
-            ))}
+                <PhoneCall className="w-3.5 h-3.5 text-emerald-400" />
+                <span>01700-000000</span>
+              </a>
+              <a
+                href="https://wa.me/8801700000000"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2.5 rounded-2xl bg-[#25D366] hover:bg-[#20ba5a] text-white text-xs font-black flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+              >
+                <MessageCircle className="w-3.5 h-3.5 fill-white" />
+                <span>হোয়াটসঅ্যাপ</span>
+              </a>
+            </div>
           </div>
         </section>
       )}
 
       {/* 7. Testimonials (Full Width) */}
       {testimonials.length > 0 && (
-        <section className="w-full py-10 bg-white border-t border-b border-slate-200/60 px-3 md:px-6">
+        <section className="w-full py-10 bg-white border-t border-b border-slate-200/60 px-4 md:px-[50px]">
           <div className="w-full">
             <div className="text-center max-w-md mx-auto mb-6">
               <h3 className="text-lg sm:text-xl font-black text-slate-900">গ্রাহকদের মতামত</h3>

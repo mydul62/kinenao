@@ -15,6 +15,6 @@ router.get("/", getBanners);
 router.get("/:id", getBannerById);
 router.post("/", authMiddleware, roleMiddleware([Role.ADMIN, Role.MANAGER]), createBanner);
 router.patch("/:id", authMiddleware, roleMiddleware([Role.ADMIN, Role.MANAGER]), updateBanner);
-router.delete("/:id", authMiddleware, roleMiddleware([Role.ADMIN]), deleteBanner);
+router.delete("/:id", authMiddleware, roleMiddleware([Role.ADMIN, Role.MANAGER]), deleteBanner);
 
 export default router;

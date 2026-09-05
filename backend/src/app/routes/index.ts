@@ -40,6 +40,7 @@ const moduleRoutes = [
   { path: "/dashboard", route: dashboardRoutes },
   { path: "/newsletter", route: newsletterRoutes },
   { path: "/settings", route: websiteSettingRoutes },
+  { path: "/setting", route: websiteSettingRoutes },
   { path: "/banners", route: bannerRoutes },
   { path: "/faqs", route: faqRoutes },
   { path: "/testimonials", route: testimonialRoutes },

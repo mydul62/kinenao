@@ -144,16 +144,7 @@ export default function ShopClientView({
     e.preventDefault();
     e.stopPropagation();
 
-    addToCart({
-      id: product.id,
-      name: product.name,
-      slug: product.slug,
-      price: product.price,
-      discountPrice: product.discountPrice,
-      thumbnail: product.thumbnail || (product.images && product.images[0]) || "",
-    });
-
-    router.push("/checkout");
+    router.push(`/product/${product.slug || product.id}`);
   };
 
   // Filtered & Sorted Products
@@ -265,7 +256,7 @@ export default function ShopClientView({
       {/* ========================================================================= */}
       {/* 1. TOP SHOP CATALOG HEADER BANNER & CATEGORIES CARD RAIL                  */}
       {/* ========================================================================= */}
-      <div className="w-full px-3 md:px-6 pt-4 pb-1">
+      <div className="w-full px-4 md:px-[50px] pt-4 pb-1">
         {/* Breadcrumbs & Title Card */}
         <div className="bg-white border border-[#E4E8E4] rounded-2xl p-4 sm:p-5 shadow-xs">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -481,7 +472,7 @@ export default function ShopClientView({
       {/* ========================================================================= */}
       {/* 2. MAIN 2-COLUMN BODY SECTION (SIDEBAR + PRODUCTS GRID)                   */}
       {/* ========================================================================= */}
-      <div className="w-full px-3 md:px-6 pt-4 space-y-4">
+      <div className="w-full px-4 md:px-[50px] pt-4 space-y-4">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* --------------------------------------------------------------------- */}
           {/* DESKTOP SIDEBAR: Hidden on Mobile                                     */}

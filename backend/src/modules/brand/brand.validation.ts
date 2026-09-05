@@ -1,9 +1,12 @@
 import { z } from "zod";
 
+const optionalString = z.string().optional().nullable().transform((v) => (v === "" ? null : v));
+
 export const createBrandSchema = z.object({
   body: z.object({
     name: z.string().min(2, "Brand name must be at least 2 characters"),
-    logoUrl: z.string().url("Invalid logo URL").nullable().optional(),
+    slug: optionalString,
+    logoUrl: optionalString,
     isActive: z.boolean().optional(),
   }),
 });
@@ -11,10 +14,11 @@ export const createBrandSchema = z.object({
 export const updateBrandSchema = z.object({
   body: z.object({
     name: z.string().min(2, "Brand name must be at least 2 characters").optional(),
-    logoUrl: z.string().url("Invalid logo URL").nullable().optional(),
+    slug: optionalString,
+    logoUrl: optionalString,
     isActive: z.boolean().optional(),
   }),
   params: z.object({
-    id: z.string().uuid("Invalid brand ID"),
+    id: z.string().min(1, "Invalid brand ID"),
   }),
 });

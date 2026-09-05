@@ -1,9 +1,11 @@
 import { Router } from "express";
 import {
   createOrder,
+  createDirectOrder,
   submitPaymentProof,
   verifyPayment,
   updateOrderStatus,
+  bulkUpdateOrderStatus,
   getOrders,
   getOrderById,
 } from "./order.controller";
@@ -20,10 +22,13 @@ import { Role } from "@prisma/client";
 const router = Router();
 
 router.post("/", optionalAuthMiddleware, validate(createOrderSchema), createOrder);
+router.post("/direct", optionalAuthMiddleware, createDirectOrder);
 router.post("/:id/submit-payment", optionalAuthMiddleware, validate(submitPaymentSchema), submitPaymentProof);
 
 router.get("/", optionalAuthMiddleware, getOrders);
 router.get("/:id", optionalAuthMiddleware, getOrderById);
+
+router.patch("/bulk-status", optionalAuthMiddleware, bulkUpdateOrderStatus);
 
 router.post(
   "/:id/verify-payment",

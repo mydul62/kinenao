@@ -88,16 +88,7 @@ export default function ProductCard({
     e.preventDefault();
     e.stopPropagation();
 
-    setBuyingNow(true);
-    addToCart({
-      id: product.id,
-      name: product.name,
-      slug: product.slug,
-      price: product.price,
-      discountPrice: product.discountPrice,
-      thumbnail: product.thumbnail || (product.images && product.images[0]) || "",
-    });
-    router.push("/checkout");
+    router.push(`/product/${product.slug || product.id}`);
   };
 
   const toggleWishlist = (e: React.MouseEvent) => {

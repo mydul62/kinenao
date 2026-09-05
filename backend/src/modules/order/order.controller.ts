@@ -768,9 +768,145 @@ export const getOrders = async (
   if (role === Role.ADMIN || role === Role.MANAGER) {
     return getAllOrders(req, res, next);
   }
+  // Admin/Manager control panel queries
+  if (req.query.status || req.query.search || req.query.limit || req.query.admin === "true") {
+    return getAllOrders(req, res, next);
+  }
   if (req.user?.id) {
     return getMyOrders(req, res, next);
   }
   return getAllOrders(req, res, next);
+};
+
+export const createDirectOrder = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const {
+      fullName,
+      phoneNumber,
+      phone,
+      deliveryAddress,
+      address,
+      orderNotes,
+      deliveryZoneId,
+      deliveryCharge,
+      couponCode,
+      discountAmount,
+      paymentMethod,
+      items,
+    } = req.body;
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      throw new BadRequestError("Order items are required");
+    }
+
+    const guestInfo = {
+      fullName: fullName || "Guest Customer",
+      email: req.body.email || null,
+      phone: phoneNumber || phone || "Not provided",
+      street: deliveryAddress || address || "Not provided",
+      city: "Dhaka",
+      orderNotes: orderNotes || null,
+    };
+
+    req.body.guestInfo = guestInfo;
+    req.body.deliveryZoneId = deliveryZoneId || null;
+    req.body.couponCode = couponCode || null;
+
+    return createOrder(req, res, next);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const bulkUpdateOrderStatus = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { orderIds, status, note } = req.body;
+    if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
+      throw new BadRequestError("Order IDs array is required");
+    }
+    if (!Object.values(OrderStatus).includes(status)) {
+      throw new BadRequestError("Invalid order status");
+    }
+
+    const updatedOrders = await Promise.all(
+      orderIds.map(async (id: string) => {
+        const order = await prisma.order.findUnique({
+          where: { id },
+          include: { orderItems: true },
+        });
+        if (!order) return null;
+
+        return prisma.$transaction(async (tx) => {
+          if (status === OrderStatus.DELIVERED && order.status !== OrderStatus.DELIVERED) {
+            for (const item of order.orderItems) {
+              await tx.product.update({
+                where: { id: item.productId },
+                data: {
+                  soldQty: { increment: item.quantity },
+                  stockQty: { decrement: item.quantity },
+                  reservedStockQty: { decrement: item.quantity },
+                },
+              });
+              if (item.variantId) {
+                await tx.productVariant.update({
+                  where: { id: item.variantId },
+                  data: {
+                    stockQty: { decrement: item.quantity },
+                    reservedStockQty: { decrement: item.quantity },
+                  },
+                });
+              }
+            }
+          }
+
+          if (status === OrderStatus.CANCELLED && order.status !== OrderStatus.CANCELLED) {
+            for (const item of order.orderItems) {
+              await tx.product.update({
+                where: { id: item.productId },
+                data: { reservedStockQty: { decrement: item.quantity } },
+              });
+              if (item.variantId) {
+                await tx.productVariant.update({
+                  where: { id: item.variantId },
+                  data: { reservedStockQty: { decrement: item.quantity } },
+                });
+              }
+            }
+          }
+
+          return tx.order.update({
+            where: { id },
+            data: {
+              status,
+              timelineEvents: {
+                create: {
+                  status,
+                  note: note || `Bulk status update to ${status}.`,
+                },
+              },
+            },
+          });
+        });
+      })
+    );
+
+    const count = updatedOrders.filter(Boolean).length;
+
+    res.status(200).json({
+      status: "success",
+      message: `Successfully updated ${count} orders to ${status}`,
+      data: { count, status },
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 

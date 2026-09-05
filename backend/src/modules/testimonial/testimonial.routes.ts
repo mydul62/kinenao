@@ -15,6 +15,6 @@ router.get("/", getTestimonials);
 router.get("/:id", getTestimonialById);
 router.post("/", authMiddleware, roleMiddleware([Role.ADMIN, Role.MANAGER]), createTestimonial);
 router.patch("/:id", authMiddleware, roleMiddleware([Role.ADMIN, Role.MANAGER]), updateTestimonial);
-router.delete("/:id", authMiddleware, roleMiddleware([Role.ADMIN]), deleteTestimonial);
+router.delete("/:id", authMiddleware, roleMiddleware([Role.ADMIN, Role.MANAGER]), deleteTestimonial);
 
 export default router;

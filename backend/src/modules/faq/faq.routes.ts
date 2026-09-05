@@ -15,6 +15,6 @@ router.get("/", getFAQs);
 router.get("/:id", getFAQById);
 router.post("/", authMiddleware, roleMiddleware([Role.ADMIN, Role.MANAGER]), createFAQ);
 router.patch("/:id", authMiddleware, roleMiddleware([Role.ADMIN, Role.MANAGER]), updateFAQ);
-router.delete("/:id", authMiddleware, roleMiddleware([Role.ADMIN]), deleteFAQ);
+router.delete("/:id", authMiddleware, roleMiddleware([Role.ADMIN, Role.MANAGER]), deleteFAQ);
 
 export default router;

@@ -4,12 +4,16 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
 
+import path from "path";
 import appRouter from "./app/routes";
 import { errorHandler } from "./app/middlewares/errorHandler";
 
 dotenv.config();
 
 const app = express();
+
+// Serve static uploaded files
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 // Security headers
 app.use(helmet());

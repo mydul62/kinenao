@@ -177,7 +177,7 @@ export const Header: React.FC = () => {
 
       {/* 2. Main Header Bar */}
       <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b">
-        <div className="w-full flex h-20 items-center justify-between px-3 md:px-6">
+        <div className="w-full flex h-20 items-center justify-between px-4 md:px-[50px]">
           
           {/* Logo - Dynamic from Settings (Image, Text, or Both) */}
           <Link href="/" className="flex items-center gap-2 font-black text-lg sm:text-2xl tracking-widest text-foreground font-sans whitespace-nowrap shrink-0">

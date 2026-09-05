@@ -8,8 +8,9 @@ import {
   getMe,
   changePassword,
   updateProfile,
+  getUsers,
 } from "./auth.controller";
-import { authMiddleware } from "../../app/middlewares/auth";
+import { authMiddleware, roleMiddleware } from "../../app/middlewares/auth";
 import { validate } from "../../app/middlewares/validate";
 import {
   registerSchema,
@@ -17,6 +18,7 @@ import {
   forgotPasswordSchema,
   resetPasswordSchema,
 } from "./auth.validation";
+import { Role } from "@prisma/client";
 
 const router = Router();
 
@@ -26,6 +28,7 @@ router.post("/refresh", refresh);
 router.post("/forgot-password", validate(forgotPasswordSchema), forgotPassword);
 router.post("/reset-password", validate(resetPasswordSchema), resetPassword);
 router.get("/me", authMiddleware, getMe);
+router.get("/users", authMiddleware, roleMiddleware([Role.ADMIN, Role.MANAGER]), getUsers);
 
 // Profiles & Security
 router.patch("/change-password", authMiddleware, changePassword);
